@@ -16,6 +16,11 @@ class NoteContent(BaseModel):
     content: str = ""
 
 
+class NoteMoveRequest(BaseModel):
+    """Request model for note move/copy operations."""
+    destination: str
+
+
 class NoteResponse(BaseModel):
     """Response model for note operations."""
     message: str
@@ -88,40 +93,6 @@ async def get_note(path: str):
         )
 
 
-@router.post("/{path:path}", response_model=NoteResponse)
-async def create_note(path: str, note_content: NoteContent):
-    """
-    Create a new note.
-    
-    Args:
-        path: The note path
-        note_content: The note content
-        
-    Returns:
-        NoteResponse: Success message and path
-        
-    Raises:
-        HTTPException: 400 if file exists or invalid path, 409 if conflict
-    """
-    try:
-        return file_service.create_note(path, note_content.content)
-    except ValueError as e:
-        if "already exists" in str(e):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(e)
-            )
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create note: {str(e)}"
-        )
-
-
 @router.put("/{path:path}", response_model=NoteResponse)
 async def update_note(path: str, note_content: NoteContent):
     """
@@ -186,4 +157,116 @@ async def delete_note(path: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete note: {str(e)}"
+        )
+
+
+@router.post("/{path:path}/move", response_model=NoteResponse)
+async def move_note(path: str, move_request: NoteMoveRequest):
+    """
+    Move a note to a new location.
+    
+    Args:
+        path: The current note path
+        move_request: The move request with destination path
+        
+    Returns:
+        NoteResponse: Success message and new path
+        
+    Raises:
+        HTTPException: 404 if note not found, 400 if invalid path or operation
+    """
+    try:
+        return file_service.move_note(path, move_request.destination)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Note not found: {path}"
+        )
+    except ValueError as e:
+        if "already exists" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to move note: {str(e)}"
+        )
+
+
+@router.post("/{path:path}/copy", response_model=NoteResponse)
+async def copy_note(path: str, copy_request: NoteMoveRequest):
+    """
+    Copy a note to a new location.
+    
+    Args:
+        path: The source note path
+        copy_request: The copy request with destination path
+        
+    Returns:
+        NoteResponse: Success message and new path
+        
+    Raises:
+        HTTPException: 404 if note not found, 400 if invalid path or operation
+    """
+    try:
+        return file_service.copy_note(path, copy_request.destination)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Note not found: {path}"
+        )
+    except ValueError as e:
+        if "already exists" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to copy note: {str(e)}"
+        )
+
+
+@router.post("/{path:path}", response_model=NoteResponse)
+async def create_note(path: str, note_content: NoteContent):
+    """
+    Create a new note.
+    
+    Args:
+        path: The note path
+        note_content: The note content
+        
+    Returns:
+        NoteResponse: Success message and path
+        
+    Raises:
+        HTTPException: 400 if file exists or invalid path, 409 if conflict
+    """
+    try:
+        return file_service.create_note(path, note_content.content)
+    except ValueError as e:
+        if "already exists" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create note: {str(e)}"
         )

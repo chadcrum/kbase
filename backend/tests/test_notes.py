@@ -192,3 +192,174 @@ def test_health_check(client: TestClient):
     data = response.json()
     assert data["status"] == "healthy"
     assert "vault_path" in data
+
+
+def test_move_note(client: TestClient):
+    """Test moving a note to a different directory."""
+    move_data = {"destination": "moved/note1.md"}
+    response = client.post("/api/v1/notes/note1.md/move", json=move_data)
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["message"] == "Note renamed successfully"
+    assert data["path"] == "/moved/note1.md"
+    
+    # Verify the note was moved
+    get_response = client.get("/api/v1/notes/moved/note1.md")
+    assert get_response.status_code == 200
+    assert get_response.json()["content"] == "# Test Note 1\n\nThis is a test note."
+    
+    # Verify original location no longer exists
+    get_original = client.get("/api/v1/notes/note1.md")
+    assert get_original.status_code == 404
+
+
+def test_move_note_to_root(client: TestClient):
+    """Test moving a note from subdirectory to root."""
+    move_data = {"destination": "note3_root.md"}
+    response = client.post("/api/v1/notes/subdir/note3.md/move", json=move_data)
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["message"] == "Note renamed successfully"
+    assert data["path"] == "/note3_root.md"
+    
+    # Verify the note was moved to root
+    get_response = client.get("/api/v1/notes/note3_root.md")
+    assert get_response.status_code == 200
+    assert get_response.json()["content"] == "# Test Note 3\n\nNested test note."
+    
+    # Verify original location no longer exists
+    get_original = client.get("/api/v1/notes/subdir/note3.md")
+    assert get_original.status_code == 404
+
+
+def test_move_note_rename(client: TestClient):
+    """Test moving and renaming a note simultaneously."""
+    move_data = {"destination": "newdir/renamed_note.md"}
+    response = client.post("/api/v1/notes/note2.md/move", json=move_data)
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["message"] == "Note renamed successfully"
+    assert data["path"] == "/newdir/renamed_note.md"
+    
+    # Verify the note was moved and renamed
+    get_response = client.get("/api/v1/notes/newdir/renamed_note.md")
+    assert get_response.status_code == 200
+    assert get_response.json()["content"] == "# Test Note 2\n\nAnother test note."
+    
+    # Verify original location no longer exists
+    get_original = client.get("/api/v1/notes/note2.md")
+    assert get_original.status_code == 404
+
+
+def test_move_note_same_directory(client: TestClient):
+    """Test renaming a note within the same directory."""
+    move_data = {"destination": "renamed_note1.md"}
+    response = client.post("/api/v1/notes/note1.md/move", json=move_data)
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["message"] == "Note renamed successfully"
+    assert data["path"] == "/renamed_note1.md"
+    
+    # Verify the note was renamed
+    get_response = client.get("/api/v1/notes/renamed_note1.md")
+    assert get_response.status_code == 200
+    assert get_response.json()["content"] == "# Test Note 1\n\nThis is a test note."
+    
+    # Verify original name no longer exists
+    get_original = client.get("/api/v1/notes/note1.md")
+    assert get_original.status_code == 404
+
+
+def test_move_note_not_found(client: TestClient):
+    """Test moving a non-existent note."""
+    move_data = {"destination": "nonexistent_dest.md"}
+    response = client.post("/api/v1/notes/nonexistent.md/move", json=move_data)
+    assert response.status_code == 404
+    assert "Note not found" in response.json()["detail"]
+
+
+def test_move_note_destination_exists(client: TestClient):
+    """Test moving to a destination that already exists."""
+    move_data = {"destination": "note2.md"}
+    response = client.post("/api/v1/notes/note1.md/move", json=move_data)
+    assert response.status_code == 409
+    assert "already exists" in response.json()["detail"]
+
+
+def test_copy_note(client: TestClient):
+    """Test copying a note to a different directory."""
+    copy_data = {"destination": "copied/note1.md"}
+    response = client.post("/api/v1/notes/note1.md/copy", json=copy_data)
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["message"] == "Note copied successfully"
+    assert data["path"] == "/copied/note1.md"
+    
+    # Verify the note was copied
+    get_response = client.get("/api/v1/notes/copied/note1.md")
+    assert get_response.status_code == 200
+    assert get_response.json()["content"] == "# Test Note 1\n\nThis is a test note."
+    
+    # Verify original still exists
+    get_original = client.get("/api/v1/notes/note1.md")
+    assert get_original.status_code == 200
+    assert get_original.json()["content"] == "# Test Note 1\n\nThis is a test note."
+
+
+def test_copy_note_to_root(client: TestClient):
+    """Test copying a note from subdirectory to root."""
+    copy_data = {"destination": "note3_copy.md"}
+    response = client.post("/api/v1/notes/subdir/note3.md/copy", json=copy_data)
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["message"] == "Note copied successfully"
+    assert data["path"] == "/note3_copy.md"
+    
+    # Verify the note was copied to root
+    get_response = client.get("/api/v1/notes/note3_copy.md")
+    assert get_response.status_code == 200
+    assert get_response.json()["content"] == "# Test Note 3\n\nNested test note."
+    
+    # Verify original still exists
+    get_original = client.get("/api/v1/notes/subdir/note3.md")
+    assert get_original.status_code == 200
+    assert get_original.json()["content"] == "# Test Note 3\n\nNested test note."
+
+
+def test_copy_note_destination_exists(client: TestClient):
+    """Test copying to a destination that already exists."""
+    copy_data = {"destination": "note2.md"}
+    response = client.post("/api/v1/notes/note1.md/copy", json=copy_data)
+    assert response.status_code == 409
+    assert "already exists" in response.json()["detail"]
+
+
+def test_copy_note_preserves_original(client: TestClient):
+    """Test that copy preserves the original note."""
+    copy_data = {"destination": "preserved_copy.md"}
+    response = client.post("/api/v1/notes/note1.md/copy", json=copy_data)
+    assert response.status_code == 200
+    
+    # Verify both original and copy exist
+    get_original = client.get("/api/v1/notes/note1.md")
+    assert get_original.status_code == 200
+    
+    get_copy = client.get("/api/v1/notes/preserved_copy.md")
+    assert get_copy.status_code == 200
+    
+    # Verify they have the same content
+    assert get_original.json()["content"] == get_copy.json()["content"]
+
+
+def test_move_note_not_found_copy(client: TestClient):
+    """Test copying a non-existent note."""
+    copy_data = {"destination": "nonexistent_dest.md"}
+    response = client.post("/api/v1/notes/nonexistent.md/copy", json=copy_data)
+    assert response.status_code == 404
+    assert "Note not found" in response.json()["detail"]

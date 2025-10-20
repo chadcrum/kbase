@@ -1,6 +1,7 @@
 """File service for handling note operations."""
 
 import os
+import shutil
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
@@ -233,4 +234,101 @@ class FileService:
         return {
             "message": "Note deleted successfully",
             "path": f"/{path}"
+        }
+    
+    def rename_note(self, old_path: str, new_path: str) -> Dict[str, str]:
+        """
+        Rename/move a note to a new location.
+        
+        Args:
+            old_path: Current note path
+            new_path: New note path
+            
+        Returns:
+            Dict: Success message and new path
+            
+        Raises:
+            FileNotFoundError: If source note doesn't exist
+            ValueError: If paths are invalid or destination already exists
+        """
+        source_path = self._validate_path(old_path)
+        dest_path = self._validate_path(new_path)
+        
+        if not source_path.exists():
+            raise FileNotFoundError(f"Note not found: {old_path}")
+        
+        if not source_path.is_file():
+            raise ValueError(f"Source path is not a file: {old_path}")
+        
+        if dest_path.exists():
+            raise ValueError(f"Destination already exists: {new_path}")
+        
+        # Ensure the destination has .md extension
+        if not self._is_markdown_file(dest_path):
+            dest_path = dest_path.with_suffix('.md')
+        
+        # Create parent directories if they don't exist
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Move the file
+        source_path.rename(dest_path)
+        
+        return {
+            "message": "Note renamed successfully",
+            "path": f"/{new_path}"
+        }
+    
+    def move_note(self, source_path: str, dest_path: str) -> Dict[str, str]:
+        """
+        Move a note (alias for rename).
+        
+        Args:
+            source_path: Source note path
+            dest_path: Destination note path
+            
+        Returns:
+            Dict: Success message and new path
+        """
+        return self.rename_note(source_path, dest_path)
+    
+    def copy_note(self, source_path: str, dest_path: str) -> Dict[str, str]:
+        """
+        Copy a note to a new location.
+        
+        Args:
+            source_path: Source note path
+            dest_path: Destination note path
+            
+        Returns:
+            Dict: Success message and new path
+            
+        Raises:
+            FileNotFoundError: If source note doesn't exist
+            ValueError: If paths are invalid or destination already exists
+        """
+        source_file = self._validate_path(source_path)
+        dest_file = self._validate_path(dest_path)
+        
+        if not source_file.exists():
+            raise FileNotFoundError(f"Note not found: {source_path}")
+        
+        if not source_file.is_file():
+            raise ValueError(f"Source path is not a file: {source_path}")
+        
+        if dest_file.exists():
+            raise ValueError(f"Destination already exists: {dest_path}")
+        
+        # Ensure the destination has .md extension
+        if not self._is_markdown_file(dest_file):
+            dest_file = dest_file.with_suffix('.md')
+        
+        # Create parent directories if they don't exist
+        dest_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Copy the file (preserving metadata)
+        shutil.copy2(source_file, dest_file)
+        
+        return {
+            "message": "Note copied successfully",
+            "path": f"/{dest_path}"
         }

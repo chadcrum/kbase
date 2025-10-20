@@ -5,6 +5,7 @@ A minimal FastAPI backend for the KBase note-taking application.
 ## Features
 
 - **File CRUD Operations**: Create, read, update, and delete markdown notes
+- **Directory CRUD Operations**: Create, read, update, delete, move, and copy directories
 - **Path Security**: Protection against directory traversal attacks
 - **File Tree API**: Hierarchical listing of notes and directories
 - **OpenAPI Documentation**: Auto-generated API docs at `/docs` and `/redoc`
@@ -47,11 +48,20 @@ A minimal FastAPI backend for the KBase note-taking application.
 
 ## API Endpoints
 
+### Notes
 - `GET /api/v1/notes/` - List all notes (tree structure)
 - `GET /api/v1/notes/{path}` - Get note content
 - `POST /api/v1/notes/{path}` - Create note
 - `PUT /api/v1/notes/{path}` - Update note
 - `DELETE /api/v1/notes/{path}` - Delete note
+
+### Directories
+- `POST /api/v1/directories/{path}` - Create directory
+- `GET /api/v1/directories/{path}` - Get directory metadata
+- `PUT /api/v1/directories/{path}` - Rename directory
+- `DELETE /api/v1/directories/{path}` - Delete directory
+- `POST /api/v1/directories/{path}/move` - Move directory
+- `POST /api/v1/directories/{path}/copy` - Copy directory
 
 ## Testing
 
@@ -83,5 +93,7 @@ The backend follows a clean architecture pattern:
 - `app/main.py` - FastAPI application setup
 - `app/config.py` - Configuration management
 - `app/services/file_service.py` - File operations logic
-- `app/api/v1/endpoints/notes.py` - API endpoints
+- `app/services/directory_service.py` - Directory operations logic
+- `app/api/v1/endpoints/notes.py` - Notes API endpoints
+- `app/api/v1/endpoints/directories.py` - Directory API endpoints
 - `tests/` - Test suite

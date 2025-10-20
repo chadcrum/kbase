@@ -63,6 +63,12 @@ vault/                           # Mounted Docker volume
 - `PUT /notes/{path}` - Update note (with conflict detection)
 - `DELETE /notes/{path}` - Delete note
 - `POST /notes/{path}/move` - Move/rename note 
+- `POST /directories/{path}` - Create directory
+- `GET /directories/{path}` - Get directory metadata
+- `PUT /directories/{path}` - Rename directory
+- `DELETE /directories/{path}` - Delete directory
+- `POST /directories/{path}/move` - Move directory
+- `POST /directories/{path}/copy` - Copy directory
 - `POST /search` - Omni-search (content, fuzzy)
 - `GET /config` - Get public config settings
 

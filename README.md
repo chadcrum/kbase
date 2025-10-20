@@ -62,11 +62,20 @@ uv run python -m app.main
 
 ## API Endpoints
 
+### Notes
 - `GET /api/v1/notes/` - List all notes (tree structure)
 - `GET /api/v1/notes/{path}` - Get note content
 - `POST /api/v1/notes/{path}` - Create note
 - `PUT /api/v1/notes/{path}` - Update note
 - `DELETE /api/v1/notes/{path}` - Delete note
+
+### Directories
+- `POST /api/v1/directories/{path}` - Create directory
+- `GET /api/v1/directories/{path}` - Get directory metadata
+- `PUT /api/v1/directories/{path}` - Rename directory
+- `DELETE /api/v1/directories/{path}` - Delete directory
+- `POST /api/v1/directories/{path}/move` - Move directory
+- `POST /api/v1/directories/{path}/copy` - Copy directory
 
 ## Development
 
@@ -130,6 +139,7 @@ The test suite includes:
 - API endpoint testing
 - Path traversal protection
 - File CRUD operations
+- Directory CRUD operations
 - Error handling
 - Security validation
 

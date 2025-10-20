@@ -1,0 +1,217 @@
+# KBase Development Rules for Cursor AI
+
+## 🚨 CRITICAL: Documentation Requirements
+
+**BEFORE EVERY COMMIT**, you MUST update relevant documentation to reflect any changes made. This is MANDATORY and non-negotiable.
+
+### Documentation Update Checklist
+
+When making ANY changes to the codebase, you MUST:
+
+1. **Update Architecture Documentation** (`docs/architecture-design.md`)
+   - Add new API endpoints
+   - Update service descriptions
+   - Document new configuration options
+   - Update performance benchmarks if applicable
+   - Add new security considerations
+
+2. **Update API Documentation** (if backend changes)
+   - Update endpoint descriptions in code comments
+   - Ensure OpenAPI/Swagger docs are accurate
+   - Update README.md API section if endpoints change
+
+3. **Update README.md** (if setup/usage changes)
+   - Update installation instructions
+   - Update configuration options
+   - Update development setup steps
+   - Update any changed environment variables
+
+4. **Update Feature Documentation** (if applicable)
+   - Create new feature requirement docs in `docs/templates/`
+   - Update existing feature docs if functionality changes
+
+5. **Update Performance Documentation** (`docs/performance-optimizations.md`)
+   - Document any performance improvements
+   - Update benchmarks if applicable
+   - Document new optimization techniques
+
+## Code Quality Standards
+
+### Python Backend
+- Follow PEP 8 style guidelines
+- Use type hints for all function parameters and return values
+- Write comprehensive docstrings for all public functions and classes
+- Use meaningful variable and function names
+- Keep functions small and focused (max 50 lines)
+- Use dependency injection for services
+- Write tests for all new functionality
+
+### API Design
+- Follow RESTful conventions
+- Use appropriate HTTP status codes
+- Include proper error handling and validation
+- Document all endpoints with OpenAPI annotations
+- Use consistent naming conventions (snake_case for Python, kebab-case for URLs)
+
+### Error Handling
+- Always handle exceptions gracefully
+- Return meaningful error messages
+- Log errors appropriately
+- Use proper HTTP status codes
+- Include error context for debugging
+
+## Security Requirements
+
+### Path Traversal Protection
+- Always validate file paths
+- Use `os.path.abspath()` and `os.path.commonpath()` for path validation
+- Never allow `../` in file paths
+- Sanitize user input before file operations
+
+### Input Validation
+- Validate all user inputs
+- Use Pydantic models for request/response validation
+- Sanitize file uploads
+- Validate file types and sizes
+
+### Authentication & Authorization
+- Use JWT tokens for authentication
+- Implement proper token refresh mechanisms
+- Use httpOnly cookies for security
+- Validate tokens on every protected endpoint
+
+## Testing Requirements
+
+### Test Coverage
+- Write unit tests for all new functions
+- Write integration tests for API endpoints
+- Test error conditions and edge cases
+- Maintain at least 80% test coverage
+- Test security features (path traversal, input validation)
+
+### Test Organization
+- Use descriptive test names
+- Group related tests in classes
+- Use fixtures for common test data
+- Mock external dependencies
+- Test both success and failure scenarios
+
+## Performance Guidelines
+
+### Backend Performance
+- Use database caching for file metadata
+- Implement lazy loading for large datasets
+- Use efficient search algorithms
+- Optimize database queries
+- Monitor memory usage
+
+### API Performance
+- Implement pagination for large result sets
+- Use appropriate HTTP caching headers
+- Minimize response payload sizes
+- Use async/await for I/O operations
+- Implement request rate limiting
+
+## File Organization
+
+### Backend Structure
+```
+backend/
+├── app/
+│   ├── api/v1/endpoints/     # API route handlers
+│   ├── services/             # Business logic services
+│   ├── models/               # Pydantic models
+│   ├── core/                 # Core configuration and utilities
+│   └── tests/                # Test files
+```
+
+### Documentation Structure
+```
+docs/
+├── architecture-design.md    # System architecture
+├── initial-mvp-design.md     # Original design concepts
+├── performance-optimizations.md # Performance documentation
+└── templates/                # Documentation templates
+```
+
+## Git Workflow
+
+### Commit Messages
+- Use conventional commit format: `type(scope): description`
+- Examples:
+  - `feat(api): add note search endpoint`
+  - `fix(auth): resolve JWT token validation issue`
+  - `docs(api): update endpoint documentation`
+  - `perf(cache): optimize file metadata caching`
+
+### Branch Naming
+- Use descriptive branch names: `feature/note-search`, `fix/auth-bug`, `docs/api-update`
+- Keep branches focused on single features or fixes
+- Delete branches after merging
+
+### Pre-commit Checklist
+1. ✅ All tests pass
+2. ✅ Code follows style guidelines
+3. ✅ Documentation is updated
+4. ✅ Security considerations addressed
+5. ✅ Performance impact assessed
+6. ✅ Commit message follows convention
+
+## Development Environment
+
+### Required Tools
+- Python 3.11+
+- uv package manager
+- pytest for testing
+- black for code formatting
+- mypy for type checking
+
+### Environment Setup
+- Use `.env` files for configuration
+- Never commit sensitive data
+- Use environment variables for all configuration
+- Document all required environment variables
+
+## Code Review Guidelines
+
+### What to Look For
+- Security vulnerabilities
+- Performance issues
+- Code quality and maintainability
+- Test coverage
+- Documentation completeness
+- Error handling
+- Input validation
+
+### Review Process
+1. Check that documentation is updated
+2. Verify all tests pass
+3. Review security implications
+4. Check performance impact
+5. Ensure code follows style guidelines
+6. Verify error handling is comprehensive
+
+## Emergency Procedures
+
+### If Documentation is Missing
+- **STOP** the commit process
+- Update all relevant documentation immediately
+- Re-run the pre-commit checklist
+- Only proceed after documentation is complete
+
+### If Tests Fail
+- Fix all failing tests before committing
+- Add tests for any new functionality
+- Ensure test coverage is maintained
+- Document any test changes
+
+## Remember: Documentation is NOT Optional
+
+Every change to the codebase MUST be reflected in the appropriate documentation. This ensures:
+- Code maintainability
+- Team collaboration
+- Onboarding new developers
+- System understanding
+- Future development planning
+
+**Documentation updates are as important as the code changes themselves.**

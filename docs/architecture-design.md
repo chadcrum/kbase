@@ -62,7 +62,8 @@ vault/                           # Mounted Docker volume
 - `POST /notes/{path}` - Create note
 - `PUT /notes/{path}` - Update note (with conflict detection)
 - `DELETE /notes/{path}` - Delete note
-- `POST /notes/{path}/move` - Move/rename note 
+- `POST /notes/{path}/move` - Move/rename note
+- `POST /notes/{path}/copy` - Copy note 
 - `POST /directories/{path}` - Create directory
 - `GET /directories/{path}` - Get directory metadata
 - `PUT /directories/{path}` - Rename directory
@@ -91,7 +92,8 @@ vault/                           # Mounted Docker volume
 
 - CRUD operations on markdown files
 - Conflict detection (compare mtime before write)
-- Move/rename 
+- Move/rename notes between directories
+- Copy notes to new locations
 - Attachment management
 - Integrates with DatabaseService for metadata caching
 

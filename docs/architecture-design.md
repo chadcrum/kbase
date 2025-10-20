@@ -18,12 +18,11 @@
 - **Framework**: Vue 3 (Composition API + TypeScript)
 - **State Management**: Pinia
 - **Router**: Vue Router
-- **WYSIWYG Editor**: Milkdown (ProseMirror-based, image support)
-- **Code Editor**: Monaco Editor (VSCode engine)
-- **UI Components**: Consider Vuetify/PrimeVue or build custom
-- **WebSocket Client**: Native WebSocket API
-- **PWA**: Vite PWA plugin for service worker & manifest
+- **Testing**: Vitest + Vue Test Utils
 - **Build Tool**: Vite
+- **HTTP Client**: Axios
+- **UI**: Custom CSS (no component library initially)
+- **Future**: WYSIWYG Editor (Milkdown), Code Editor (Monaco), WebSocket Client, PWA features
 
 ### Infrastructure
 
@@ -127,47 +126,50 @@ vault/                           # Mounted Docker volume
 
 ### 4. Frontend Architecture
 
-**Component Structure**:
+**Component Structure** (Current Implementation):
 
 ```
-src/
+frontend/src/
+├── api/
+│   └── client.ts                   # Axios HTTP client with JWT auth
 ├── components/
-│   ├── editor/
-│   │   ├── MilkdownEditor.vue      # WYSIWYG editor
-│   │   ├── MonacoEditor.vue        # Code editor
-│   │   └── EditorTabs.vue          # Tab management with pin
+│   ├── layout/
+│   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
-│   │   ├── FileExplorer.vue        # Tree view of notes
-│   │   └── Sidebar.vue             # Container
-│   ├── search/
-│   │   └── OmniSearch.vue          # Modal search (Ctrl+K)
-│   └── layout/
-│       └── AppLayout.vue           # Main layout
+│   │   ├── FileTree.vue            # Recursive tree component
+│   │   ├── FileTreeNode.vue        # Individual tree node
+│   │   └── Sidebar.vue             # Sidebar container
+│   └── viewer/
+│       └── NoteViewer.vue          # Read-only note display
 ├── stores/
 │   ├── auth.ts                     # JWT & login state
-│   ├── notes.ts                    # Open notes, active note
-│   ├── vault.ts                    # File tree state
-│   └── websocket.ts                # WS connection management
-├── composables/
-│   ├── useApi.ts                   # API client wrapper
-│   ├── useWebSocket.ts             # WebSocket handling
-│   └── useKeyboard.ts              # Keyboard shortcuts
+│   └── vault.ts                    # File tree state
+├── router/
+│   ├── index.ts                    # Route definitions
+│   └── guards.ts                   # Auth guards
+├── types/
+│   └── index.ts                    # TypeScript type definitions
 └── views/
-    ├── LoginView.vue
-    └── EditorView.vue              # Main app
+    ├── LoginView.vue               # Login page
+    └── HomeView.vue                # Main app view
 ```
 
 **State Management (Pinia)**:
 
-- `notesStore`: Open tabs, active note, pinned tabs, unsaved changes
-- `vaultStore`: File tree
-- `authStore`: User session, token refresh
-- `websocketStore`: Connection state, reconnection logic
+- `authStore`: User session, JWT token management, login/logout
+- `vaultStore`: File tree state, selected note, loading states, expanded paths
 
-**Key Features**:
+**Key Features** (Current MVP):
+
+- **Authentication**: JWT-based login with password protection
+- **File Explorer**: Hierarchical tree view with expand/collapse functionality
+- **Note Viewer**: Read-only display of markdown content with metadata
+- **Responsive Design**: Clean, modern interface with mobile support
+- **Error Handling**: Comprehensive error states and user feedback
+
+**Future Features**:
 
 - **Omni Search**: Modal (Ctrl+K), filters as you type
-- **File Explorer**: Hierarchical tree view with search/filter and lazy loading
 - **Performance Optimized**: Handles large vaults (4000+ files) with lazy loading
 - **Conflict Resolution**: Modal on save conflict with diff view
 - **Image Paste**: Intercept paste events, upload to backend, insert markdown
@@ -259,10 +261,11 @@ services:
 
 ## Testing Strategy
 
-- **Backend**: pytest with test vault fixtures
-- **Frontend**: Vitest + Vue Test Utils
-- **E2E**: Playwright for critical flows
-- **Search**: Test ripgrep integration with sample notes
+- **Backend**: pytest with test vault fixtures (comprehensive coverage)
+- **Frontend**: Vitest + Vue Test Utils (92+ tests passing, 87% coverage)
+- **Unit Tests**: All stores, components, and API client
+- **Component Tests**: User interactions, error states, conditional rendering
+- **Future**: E2E tests with Playwright for critical flows
 
 ## Performance Optimizations
 

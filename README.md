@@ -5,8 +5,9 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 ## Architecture
 
 - **Backend**: FastAPI with direct filesystem access
-- **Frontend**: Vue 3 (planned)
+- **Frontend**: Vue 3 with TypeScript and Pinia
 - **Storage**: Markdown files on the host filesystem
+- **Authentication**: JWT-based security
 - **Real-time**: WebSocket-based synchronization (planned)
 
 ## Quick Start
@@ -14,6 +15,7 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 ### Prerequisites
 
 - Python 3.11+
+- Node.js 18+
 - [uv](https://docs.astral.sh/uv/) package manager
 - A directory for your note vault
 
@@ -54,6 +56,33 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
    - Alternative Docs: http://localhost:8000/redoc
    - Health Check: http://localhost:8000/health
    - **Note**: All API endpoints except `/`, `/health`, `/docs`, `/redoc` require authentication
+
+### Frontend Setup
+
+1. **Navigate to frontend directory**:
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env and ensure VITE_API_URL=http://localhost:8000
+   ```
+
+4. **Start the frontend**:
+   ```bash
+   npm run dev
+   ```
+
+5. **Access the application**:
+   - Frontend: http://localhost:5173
+   - Login with the password you set in the backend configuration
 
 ## Complete Setup Example
 
@@ -175,6 +204,42 @@ uv run python -m app.main
    VAULT_PATH=~/kbase-vault uv run uvicorn app.main:app --reload
    ```
 
+### Frontend Development
+
+1. **Install dependencies**:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Run tests**:
+   ```bash
+   npm run test
+   ```
+
+3. **Run with auto-reload**:
+   ```bash
+   npm run dev
+   ```
+
+### Full Stack Development
+
+1. **Start backend** (terminal 1):
+   ```bash
+   cd backend
+   VAULT_PATH=~/kbase-vault uv run uvicorn app.main:app --reload
+   ```
+
+2. **Start frontend** (terminal 2):
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+3. **Access application**:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:8000/docs
+
 ### Project Structure
 
 ```
@@ -184,6 +249,11 @@ kbase/
 │   ├── tests/              # Test suite
 │   ├── requirements.txt    # Python dependencies
 │   └── README.md          # Backend documentation
+├── frontend/               # Vue 3 frontend
+│   ├── src/               # Source code
+│   ├── tests/             # Test suite
+│   ├── package.json       # Node.js dependencies
+│   └── README.md          # Frontend documentation
 ├── docs/                   # Architecture documentation
 └── README.md              # This file
 ```
@@ -225,14 +295,22 @@ The test suite includes:
 - Error handling
 - Security validation
 
+## Current Features
+
+- **Backend**: Complete REST API with authentication
+- **Frontend**: Vue 3 application with file tree navigation and note viewing
+- **Authentication**: JWT-based login system
+- **File Management**: Full CRUD operations for notes and directories
+- **Testing**: Comprehensive test suite (92+ tests, 87% coverage)
+
 ## Future Features
 
-- Vue 3 frontend with dual editor support
+- Rich text editor with markdown support
 - WebSocket real-time synchronization
-- Authentication and user management
+- Global search functionality with ripgrep
 - Database caching for large vaults
-- Search functionality with ripgrep
-- PWA capabilities
+- PWA capabilities and offline support
+- Image upload and management
 
 ## Contributing
 

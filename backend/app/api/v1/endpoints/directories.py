@@ -2,9 +2,10 @@
 
 from typing import Dict, List, Union
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
+from app.core.auth import get_current_user
 from app.services.directory_service import DirectoryService
 
 router = APIRouter()
@@ -48,7 +49,7 @@ class DirectoryMoveRequest(BaseModel):
 
 
 @router.post("/{path:path}/move", response_model=DirectoryResponse)
-async def move_directory(path: str, move_request: DirectoryMoveRequest):
+async def move_directory(path: str, move_request: DirectoryMoveRequest, current_user: str = Depends(get_current_user)):
     """
     Move a directory to a new location.
     
@@ -82,7 +83,7 @@ async def move_directory(path: str, move_request: DirectoryMoveRequest):
 
 
 @router.post("/{path:path}/copy", response_model=DirectoryResponse)
-async def copy_directory(path: str, copy_request: DirectoryMoveRequest):
+async def copy_directory(path: str, copy_request: DirectoryMoveRequest, current_user: str = Depends(get_current_user)):
     """
     Copy a directory to a new location.
     
@@ -116,7 +117,7 @@ async def copy_directory(path: str, copy_request: DirectoryMoveRequest):
 
 
 @router.post("/{path:path}", response_model=DirectoryResponse)
-async def create_directory(path: str):
+async def create_directory(path: str, current_user: str = Depends(get_current_user)):
     """
     Create a new directory.
     
@@ -149,7 +150,7 @@ async def create_directory(path: str):
 
 
 @router.get("/{path:path}", response_model=DirectoryData)
-async def get_directory(path: str):
+async def get_directory(path: str, current_user: str = Depends(get_current_user)):
     """
     Get directory information and contents.
     
@@ -182,7 +183,7 @@ async def get_directory(path: str):
 
 
 @router.put("/{path:path}", response_model=DirectoryResponse)
-async def rename_directory(path: str, rename_request: DirectoryRenameRequest):
+async def rename_directory(path: str, rename_request: DirectoryRenameRequest, current_user: str = Depends(get_current_user)):
     """
     Rename a directory.
     
@@ -223,7 +224,8 @@ async def rename_directory(path: str, rename_request: DirectoryRenameRequest):
 @router.delete("/{path:path}", response_model=DirectoryResponse)
 async def delete_directory(
     path: str, 
-    recursive: bool = Query(False, description="Delete non-empty directories")
+    recursive: bool = Query(False, description="Delete non-empty directories"),
+    current_user: str = Depends(get_current_user)
 ):
     """
     Delete a directory.

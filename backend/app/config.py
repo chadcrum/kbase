@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     app_name: str = Field(default="KBase", description="Application name")
     app_version: str = Field(default="0.1.0", description="Application version")
     
+    # Authentication settings
+    secret_key: str = Field(..., description="Secret key for JWT token signing")
+    password: str = Field(..., description="Plain text password for authentication")
+    access_token_expire_minutes: int = Field(default=30, description="Access token expiration time in minutes")
+    algorithm: str = Field(default="HS256", description="JWT signing algorithm")
+    
     @field_validator('vault_path', mode='before')
     @classmethod
     def validate_vault_path(cls, v):

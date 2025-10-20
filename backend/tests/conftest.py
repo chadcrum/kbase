@@ -50,3 +50,43 @@ def client(temp_vault: Path) -> Generator[TestClient, None, None]:
     # Clean up environment
     if "VAULT_PATH" in os.environ:
         del os.environ["VAULT_PATH"]
+
+
+@pytest.fixture
+def auth_client(temp_vault: Path) -> Generator[TestClient, None, None]:
+    """Create a test client with authentication configured."""
+    # Set environment variables for authentication
+    os.environ["VAULT_PATH"] = str(temp_vault)
+    os.environ["SECRET_KEY"] = "test-secret-key-for-jwt-signing"
+    os.environ["PASSWORD"] = "test-password"
+    
+    # Clear any cached modules to ensure fresh import
+    import sys
+    modules_to_clear = [mod for mod in sys.modules.keys() if mod.startswith('app.')]
+    for mod in modules_to_clear:
+        del sys.modules[mod]
+    
+    # Import app after setting environment variables
+    from app.main import app
+    
+    # Create test client
+    with TestClient(app) as test_client:
+        yield test_client
+    
+    # Clean up environment
+    env_vars = ["VAULT_PATH", "SECRET_KEY", "PASSWORD"]
+    for var in env_vars:
+        if var in os.environ:
+            del os.environ[var]
+
+
+@pytest.fixture
+def auth_token(auth_client: TestClient) -> str:
+    """Get a valid authentication token for testing."""
+    response = auth_client.post(
+        "/api/v1/auth/login",
+        json={"password": "test-password"}
+    )
+    
+    assert response.status_code == 200
+    return response.json()["access_token"]

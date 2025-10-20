@@ -2,9 +2,10 @@
 
 from typing import Dict, Union
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
+from app.core.auth import get_current_user
 from app.services.file_service import FileService
 
 router = APIRouter()
@@ -44,7 +45,7 @@ class FileTreeNode(BaseModel):
 
 
 @router.get("/", response_model=FileTreeNode)
-async def list_notes():
+async def list_notes(current_user: str = Depends(get_current_user)):
     """
     List all notes in a tree structure.
     
@@ -61,7 +62,7 @@ async def list_notes():
 
 
 @router.get("/{path:path}", response_model=NoteData)
-async def get_note(path: str):
+async def get_note(path: str, current_user: str = Depends(get_current_user)):
     """
     Get note content by path.
     
@@ -94,7 +95,7 @@ async def get_note(path: str):
 
 
 @router.put("/{path:path}", response_model=NoteResponse)
-async def update_note(path: str, note_content: NoteContent):
+async def update_note(path: str, note_content: NoteContent, current_user: str = Depends(get_current_user)):
     """
     Update an existing note.
     
@@ -161,7 +162,7 @@ async def delete_note(path: str):
 
 
 @router.post("/{path:path}/move", response_model=NoteResponse)
-async def move_note(path: str, move_request: NoteMoveRequest):
+async def move_note(path: str, move_request: NoteMoveRequest, current_user: str = Depends(get_current_user)):
     """
     Move a note to a new location.
     
@@ -200,7 +201,7 @@ async def move_note(path: str, move_request: NoteMoveRequest):
 
 
 @router.post("/{path:path}/copy", response_model=NoteResponse)
-async def copy_note(path: str, copy_request: NoteMoveRequest):
+async def copy_note(path: str, copy_request: NoteMoveRequest, current_user: str = Depends(get_current_user)):
     """
     Copy a note to a new location.
     
@@ -239,7 +240,7 @@ async def copy_note(path: str, copy_request: NoteMoveRequest):
 
 
 @router.post("/{path:path}", response_model=NoteResponse)
-async def create_note(path: str, note_content: NoteContent):
+async def create_note(path: str, note_content: NoteContent, current_user: str = Depends(get_current_user)):
     """
     Create a new note.
     

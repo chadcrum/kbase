@@ -37,13 +37,71 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
    cd backend
    uv sync  # Install main dependencies
    uv pip install -e ".[dev]"  # Install dev dependencies
-   VAULT_PATH=~/kbase-vault uv run python -m app.main
+   
+   # Set up authentication (required)
+   cp env.example .env
+   # Edit .env and add your SECRET_KEY and PASSWORD
+   
+   # Generate a secret key (optional - you can use any string)
+   openssl rand -hex 32
+   
+   # Run with all required environment variables
+   VAULT_PATH=~/kbase-vault SECRET_KEY=your-secret-key-here PASSWORD=your-password-here uv run python -m app.main
    ```
 
 4. **Access the API**:
    - API Documentation: http://localhost:8000/docs
    - Alternative Docs: http://localhost:8000/redoc
    - Health Check: http://localhost:8000/health
+   - **Note**: All API endpoints except `/`, `/health`, `/docs`, `/redoc` require authentication
+
+## Complete Setup Example
+
+Here's a complete example from start to finish:
+
+```bash
+# 1. Clone repository
+git clone <repository-url>
+cd kbase
+
+# 2. Create vault directory
+mkdir -p ~/kbase-vault
+echo "# Welcome to KBase" > ~/kbase-vault/welcome.md
+
+# 3. Set up backend
+cd backend
+uv sync
+uv pip install -e ".[dev]"
+
+# 4. Generate secret key
+SECRET_KEY=$(openssl rand -hex 32)
+echo "Generated SECRET_KEY: $SECRET_KEY"
+
+# 5. Set up environment
+cp env.example .env
+# Edit .env and set:
+# VAULT_PATH=/home/user/kbase-vault
+# SECRET_KEY=<the generated key>
+# PASSWORD=my-secure-password
+
+# 6. Run the server
+uv run python -m app.main
+```
+
+## Authentication Example
+
+Once the server is running, authenticate and use the API:
+
+```bash
+# Login to get JWT token
+TOKEN=$(curl -s -X POST "http://localhost:8000/api/v1/auth/login" \
+     -H "Content-Type: application/json" \
+     -d '{"password": "my-secure-password"}' | jq -r '.access_token')
+
+# Use the token to access protected endpoints
+curl -X GET "http://localhost:8000/api/v1/notes/" \
+     -H "Authorization: Bearer $TOKEN"
+```
 
 ### Using Environment Variables
 
@@ -52,7 +110,14 @@ Create a `.env` file in the `backend/` directory:
 ```bash
 cd backend
 cp env.example .env
-# Edit .env and set your VAULT_PATH
+# Edit .env and set your VAULT_PATH, SECRET_KEY, and PASSWORD
+```
+
+Example `.env` file:
+```bash
+VAULT_PATH=/home/user/kbase-vault
+SECRET_KEY=your-secret-key-here
+PASSWORD=your-password-here
 ```
 
 Then run:
@@ -62,20 +127,32 @@ uv run python -m app.main
 
 ## API Endpoints
 
-### Notes
+### Authentication
+- `POST /api/v1/auth/login` - Authenticate and get JWT token
+- `GET /api/v1/auth/verify` - Verify token validity
+
+### Notes (Protected)
 - `GET /api/v1/notes/` - List all notes (tree structure)
 - `GET /api/v1/notes/{path}` - Get note content
 - `POST /api/v1/notes/{path}` - Create note
 - `PUT /api/v1/notes/{path}` - Update note
 - `DELETE /api/v1/notes/{path}` - Delete note
+- `POST /api/v1/notes/{path}/move` - Move note
+- `POST /api/v1/notes/{path}/copy` - Copy note
 
-### Directories
+### Directories (Protected)
 - `POST /api/v1/directories/{path}` - Create directory
 - `GET /api/v1/directories/{path}` - Get directory metadata
 - `PUT /api/v1/directories/{path}` - Rename directory
 - `DELETE /api/v1/directories/{path}` - Delete directory
 - `POST /api/v1/directories/{path}/move` - Move directory
 - `POST /api/v1/directories/{path}/copy` - Copy directory
+
+### Public Endpoints
+- `GET /` - Root endpoint with basic information
+- `GET /health` - Health check
+- `GET /docs` - OpenAPI documentation
+- `GET /redoc` - Alternative API documentation
 
 ## Development
 
@@ -116,11 +193,16 @@ kbase/
 The backend uses environment variables for configuration:
 
 - `VAULT_PATH` (required): Path to the note vault directory
+- `SECRET_KEY` (required): Secret key for JWT token signing
+- `PASSWORD` (required): Plain text password for authentication
+- `ACCESS_TOKEN_EXPIRE_MINUTES` (optional): Token expiration time (default: 30)
 - `HOST` (optional): Server host (default: 0.0.0.0)
 - `PORT` (optional): Server port (default: 8000)
 
 ## Security Features
 
+- JWT Authentication for all API endpoints (except public ones)
+- Plain text password storage (suitable for personal use)
 - Path traversal protection
 - File type validation (markdown only)
 - Input sanitization

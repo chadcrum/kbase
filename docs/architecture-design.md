@@ -55,8 +55,8 @@ vault/                           # Mounted Docker volume
 
 **REST Endpoints** (`/api/v1/`):
 
-- `POST /auth/login` - Authenticate user
-- `POST /auth/refresh` - Refresh JWT token
+- `POST /auth/login` - Authenticate user and get JWT token
+- `GET /auth/verify` - Verify JWT token validity
 - `GET /notes` - List all notes (returns tree structure)
 - `GET /notes/{path}` - Get note content
 - `POST /notes/{path}` - Create note
@@ -77,8 +77,24 @@ vault/                           # Mounted Docker volume
 
 - Pushes file change events: `{type: 'file_changed|created|deleted', path: '...'}`
 - Client subscribes after authentication
+- **Note**: All endpoints except `/`, `/health`, `/docs`, `/redoc` require JWT authentication
 
-### 3. Core Backend Services
+### 3. Authentication System
+
+**AuthService** (`backend/app/core/auth.py`):
+
+- JWT token creation and verification
+- Plain text password verification (suitable for personal use)
+- Bearer token authentication scheme
+- FastAPI dependency injection for route protection
+
+**Auth Endpoints** (`backend/app/api/v1/endpoints/auth.py`):
+
+- `POST /api/v1/auth/login` - Authenticate with password, return JWT token
+- `GET /api/v1/auth/verify` - Verify token validity
+- All other endpoints require valid JWT token in Authorization header
+
+### 4. Core Backend Services
 
 **DatabaseService** (`backend/app/services/db_service.py`):
 
@@ -224,9 +240,11 @@ services:
 ## Security Considerations
 
 1. **Path Traversal**: Validate all file paths to prevent `../` attacks
-2. **JWT Security**: httpOnly cookies, short expiry, refresh tokens
-3. **File Upload**: Validate image types, size limits, sanitize filenames
-4. **CORS**: Configure properly for frontend-backend communication
+2. **JWT Security**: Bearer tokens stored in localStorage, 30-minute expiry
+3. **Password Security**: Plain text storage in environment variables (suitable for personal use)
+4. **File Upload**: Validate image types, size limits, sanitize filenames
+5. **CORS**: Configure properly for frontend-backend communication
+6. **Token Validation**: All protected endpoints validate JWT tokens
 
 ## PWA Features
 

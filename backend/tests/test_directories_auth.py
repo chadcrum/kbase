@@ -128,13 +128,11 @@ def test_move_directory(auth_client: TestClient, auth_token: str):
         json=move_data,
         headers={"Authorization": f"Bearer {auth_token}"}
     )
-    # Directory move might require destination directory to exist or other validation
-    assert response.status_code in [200, 400]  # Accept either success or validation error
+    assert response.status_code == 200
     
-    if response.status_code == 200:
-        data = response.json()
-        assert data["message"] == "Directory moved successfully"
-        assert data["path"] == "/moved_dir"
+    data = response.json()
+    assert data["message"] == "Directory moved successfully"
+    assert data["path"] == "/moved_dir"
 
 
 def test_copy_directory(auth_client: TestClient, auth_token: str):
@@ -152,13 +150,11 @@ def test_copy_directory(auth_client: TestClient, auth_token: str):
         json=copy_data,
         headers={"Authorization": f"Bearer {auth_token}"}
     )
-    # Directory copy might require destination directory to exist or other validation
-    assert response.status_code in [200, 400]  # Accept either success or validation error
+    assert response.status_code == 200
     
-    if response.status_code == 200:
-        data = response.json()
-        assert data["message"] == "Directory copied successfully"
-        assert data["path"] == "/copied_dir"
+    data = response.json()
+    assert data["message"] == "Directory copied successfully"
+    assert data["path"] == "/copied_dir"
 
 
 def test_directories_without_auth_fail(auth_client: TestClient):

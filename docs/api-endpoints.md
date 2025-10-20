@@ -261,9 +261,10 @@ All endpoints return consistent error responses:
 ## Path Validation
 
 All endpoints validate file paths to prevent directory traversal attacks:
-- Paths containing `../` are rejected
-- Paths starting with `/` are normalized
+- Paths containing `../` or `..\\` patterns are rejected
+- Paths starting with `/` are allowed and normalized (representing absolute paths within vault)
 - All paths must be within the configured vault directory
+- Path traversal protection uses `os.path.commonpath()` to verify vault boundaries
 - Invalid characters are handled appropriately
 
 ## File Extensions

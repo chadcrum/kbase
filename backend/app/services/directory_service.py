@@ -28,7 +28,7 @@ class DirectoryService:
             ValueError: If the path is invalid or outside vault directory
         """
         # Check for obvious path traversal patterns
-        if '..' in path or path.startswith('/') or '\\' in path:
+        if '../' in path or '..\\' in path:
             raise ValueError(f"Path traversal detected: {path}")
         
         # Normalize the path
@@ -121,7 +121,7 @@ class DirectoryService:
         
         return {
             "message": "Directory created successfully",
-            "path": f"/{path}"
+            "path": f"/{path}" if not path.startswith('/') else path
         }
     
     def get_directory(self, path: str) -> Dict[str, Union[str, int, List]]:
@@ -152,7 +152,7 @@ class DirectoryService:
             
             return {
                 "name": dir_path.name,
-                "path": f"/{path}",
+                "path": f"/{path}" if not path.startswith('/') else path,
                 "type": "directory",
                 "size": stat.st_size,
                 "modified": int(stat.st_mtime),
@@ -200,7 +200,7 @@ class DirectoryService:
         
         return {
             "message": "Directory renamed successfully",
-            "path": f"/{new_path}"
+            "path": f"/{new_path}" if not new_path.startswith('/') else new_path
         }
     
     def move_directory(self, source_path: str, dest_path: str) -> Dict[str, str]:
@@ -214,7 +214,10 @@ class DirectoryService:
         Returns:
             Dict: Success message and new path
         """
-        return self.rename_directory(source_path, dest_path)
+        result = self.rename_directory(source_path, dest_path)
+        # Update the message to reflect it's a move operation
+        result["message"] = "Directory moved successfully"
+        return result
     
     def copy_directory(self, source_path: str, dest_path: str) -> Dict[str, str]:
         """
@@ -254,7 +257,7 @@ class DirectoryService:
         
         return {
             "message": "Directory copied successfully",
-            "path": f"/{dest_path}"
+            "path": f"/{dest_path}" if not dest_path.startswith('/') else dest_path
         }
     
     def delete_directory(self, path: str, recursive: bool = False) -> Dict[str, str]:
@@ -292,7 +295,7 @@ class DirectoryService:
             
             return {
                 "message": "Directory deleted successfully",
-                "path": f"/{path}"
+                "path": f"/{path}" if not path.startswith('/') else path
             }
         except OSError as e:
             raise ValueError(f"Cannot delete directory: {str(e)}")

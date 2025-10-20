@@ -153,6 +153,7 @@ The system includes automatic database maintenance:
 2. **Lazy Loading**: Use "Show More" button to load additional files as needed
 3. **Directory Organization**: Organize files in logical directory structures
 4. **Regular Maintenance**: The system auto-maintains the database index
+5. **Path Validation**: Use absolute paths (starting with `/`) for better performance and clarity
 
 ### For Development
 

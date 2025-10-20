@@ -240,6 +240,10 @@ services:
 ## Security Considerations
 
 1. **Path Traversal**: Validate all file paths to prevent `../` attacks
+   - DirectoryService validates paths to ensure they stay within vault directory
+   - Checks for `../` and `..\\` patterns to prevent directory traversal
+   - Allows absolute paths starting with `/` within the vault scope
+   - Uses `os.path.commonpath()` to verify paths remain within vault boundaries
 2. **JWT Security**: Bearer tokens stored in localStorage, 30-minute expiry
 3. **Password Security**: Plain text storage in environment variables (suitable for personal use)
 4. **File Upload**: Validate image types, size limits, sanitize filenames

@@ -129,13 +129,16 @@ class FileService:
         if not self._is_markdown_file(file_path):
             raise ValueError(f"File is not a markdown file: {path}")
         
+        # Get the normalized path (relative to vault)
+        normalized_path = file_path.relative_to(self.vault_path.resolve())
+        
         try:
             content = file_path.read_text(encoding='utf-8')
             stat = file_path.stat()
             
             return {
                 "content": content,
-                "path": f"/{path}",
+                "path": f"/{normalized_path}",
                 "size": stat.st_size,
                 "modified": int(stat.st_mtime)
             }
@@ -171,9 +174,12 @@ class FileService:
         # Write the file
         file_path.write_text(content, encoding='utf-8')
         
+        # Get the normalized path (relative to vault)
+        normalized_path = file_path.relative_to(self.vault_path.resolve())
+        
         return {
             "message": "Note created successfully",
-            "path": f"/{path}"
+            "path": f"/{normalized_path}"
         }
     
     def update_note(self, path: str, content: str) -> Dict[str, str]:
@@ -202,9 +208,12 @@ class FileService:
         # Write the updated content
         file_path.write_text(content, encoding='utf-8')
         
+        # Get the normalized path (relative to vault)
+        normalized_path = file_path.relative_to(self.vault_path.resolve())
+        
         return {
             "message": "Note updated successfully",
-            "path": f"/{path}"
+            "path": f"/{normalized_path}"
         }
     
     def delete_note(self, path: str) -> Dict[str, str]:
@@ -229,12 +238,15 @@ class FileService:
         if not file_path.is_file():
             raise ValueError(f"Path is not a file: {path}")
         
+        # Get the normalized path before deleting (relative to vault)
+        normalized_path = file_path.relative_to(self.vault_path.resolve())
+        
         # Delete the file
         file_path.unlink()
         
         return {
             "message": "Note deleted successfully",
-            "path": f"/{path}"
+            "path": f"/{normalized_path}"
         }
     
     def rename_note(self, old_path: str, new_path: str) -> Dict[str, str]:
@@ -274,9 +286,12 @@ class FileService:
         # Move the file
         source_path.rename(dest_path)
         
+        # Get the normalized path (relative to vault)
+        normalized_path = dest_path.relative_to(self.vault_path.resolve())
+        
         return {
             "message": "Note renamed successfully",
-            "path": f"/{new_path}"
+            "path": f"/{normalized_path}"
         }
     
     def move_note(self, source_path: str, dest_path: str) -> Dict[str, str]:
@@ -329,7 +344,10 @@ class FileService:
         # Copy the file (preserving metadata)
         shutil.copy2(source_file, dest_file)
         
+        # Get the normalized path (relative to vault)
+        normalized_path = dest_file.relative_to(self.vault_path.resolve())
+        
         return {
             "message": "Note copied successfully",
-            "path": f"/{dest_path}"
+            "path": f"/{normalized_path}"
         }

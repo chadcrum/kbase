@@ -9,7 +9,7 @@ import { FullConfig } from '@playwright/test';
  * 3. Resets environment variables
  */
 
-async function globalTeardown(config: FullConfig) {
+async function globalTeardown(_config: FullConfig) {
   console.log('🧹 Starting global e2e test teardown...');
 
   try {

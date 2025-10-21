@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
 import { HomePage } from '../pages/HomePage';
-import { createAuthHelper, quickLogin, quickLogout } from '../helpers/auth';
+import { createAuthHelper, quickLogin } from '../helpers/auth';
 
 /**
  * Authentication E2E Test Suite
@@ -213,7 +213,7 @@ test.describe('Authentication Flow', () => {
       // Login and get initial token
       await quickLogin(page);
       const authHelper = createAuthHelper(page);
-      const initialToken = await authHelper.getStoredToken();
+      const _initialToken = await authHelper.getStoredToken();
       
       // Reload page
       await page.reload();

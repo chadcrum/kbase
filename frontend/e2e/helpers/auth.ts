@@ -58,7 +58,7 @@ export class AuthHelper {
       
       // Login successful, get token
       const token = await this.getStoredToken();
-      return { success: true, token };
+      return { success: true, token: token || undefined };
       
     } catch (error) {
       return { 
@@ -138,7 +138,7 @@ export class AuthHelper {
   /**
    * Create an expired JWT token for testing
    */
-  createExpiredToken(secret: string = 'test-secret'): string {
+  createExpiredToken(_secret: string = 'test-secret'): string {
     // Simple expired token creation without jwt library
     const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const payload = btoa(JSON.stringify({

@@ -11,7 +11,7 @@ import { createTestVaultManager } from './fixtures/index.js';
  * 3. Stores configuration for tests to use
  */
 
-async function globalSetup(config: FullConfig) {
+async function globalSetup(_config: FullConfig) {
   console.log('🚀 Starting global e2e test setup...');
 
   try {

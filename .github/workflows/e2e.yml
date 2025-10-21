@@ -5,12 +5,14 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 jobs:
   e2e-tests:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false || github.event_name != 'pull_request'
     
     strategy:
       matrix:
@@ -126,6 +128,7 @@ jobs:
   e2e-tests-mobile:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false || github.event_name != 'pull_request'
     
     steps:
     - name: Checkout code

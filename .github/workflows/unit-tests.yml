@@ -1,0 +1,113 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  backend-tests:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        python-version: '3.11'
+        enable-cache: true
+        
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        uv sync
+        uv pip install -e ".[dev]"
+        
+    - name: Create test vault
+      run: |
+        mkdir -p /tmp/kbase-test-vault
+        echo "# Welcome to KBase" > /tmp/kbase-test-vault/welcome.md
+        echo "# Test Note" > /tmp/kbase-test-vault/test.md
+        echo "# Note 1" > /tmp/kbase-test-vault/note1.md
+        echo "# Note 2" > /tmp/kbase-test-vault/note2.md
+        mkdir -p /tmp/kbase-test-vault/subdir
+        echo "# Subdir Note" > /tmp/kbase-test-vault/subdir/subnote.md
+        
+    - name: Run backend tests
+      run: |
+        cd backend
+        uv run pytest -v --tb=short
+      env:
+        VAULT_PATH: /tmp/kbase-test-vault
+        SECRET_KEY: test-secret-key-for-jwt-signing-in-backend-tests
+        PASSWORD: test-password
+        
+    - name: Upload backend test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-test-results
+        path: backend/test-results/
+        retention-days: 30
+
+  frontend-tests:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+        
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm ci
+        
+    - name: Run frontend unit tests
+      run: |
+        cd frontend
+        npm run test:run -- --reporter=verbose --coverage
+      env:
+        CI: true
+        
+    - name: Upload frontend test coverage
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: frontend-coverage
+        path: frontend/coverage/
+        retention-days: 30
+
+  test-summary:
+    needs: [backend-tests, frontend-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      
+    - name: Create test summary
+      run: |
+        echo "# Unit Tests Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Backend API Tests" >> $GITHUB_STEP_SUMMARY
+        echo "- Status: ${{ needs.backend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Frontend Unit Tests" >> $GITHUB_STEP_SUMMARY
+        echo "- Status: ${{ needs.frontend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "Test results and coverage reports have been uploaded as artifacts." >> $GITHUB_STEP_SUMMARY

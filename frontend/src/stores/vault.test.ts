@@ -9,7 +9,9 @@ vi.mock('@/api/client', () => ({
   apiClient: {
     getNotes: vi.fn(),
     getNote: vi.fn(),
-    updateNote: vi.fn()
+    updateNote: vi.fn(),
+    createNote: vi.fn(),
+    createDirectory: vi.fn()
   }
 }))
 
@@ -371,6 +373,138 @@ describe('VaultStore', () => {
       vaultStore.clearSaveError()
       
       expect(vaultStore.saveError).toBeNull()
+    })
+  })
+
+  describe('createDirectory', () => {
+    it('should create directory successfully', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          {
+            name: 'new-folder',
+            path: '/new-folder',
+            type: 'directory',
+            children: []
+          }
+        ]
+      }
+
+      mockedApiClient.createDirectory.mockResolvedValue(undefined)
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+
+      const result = await vaultStore.createDirectory('new-folder')
+
+      expect(mockedApiClient.createDirectory).toHaveBeenCalledWith('new-folder')
+      expect(mockedApiClient.getNotes).toHaveBeenCalled()
+      expect(result).toBe(true)
+      expect(vaultStore.fileTree).toEqual(mockTree)
+      expect(vaultStore.error).toBeNull()
+    })
+
+    it('should handle directory creation failure', async () => {
+      const error = { response: { data: { detail: 'Directory already exists' } } }
+      mockedApiClient.createDirectory.mockRejectedValue(error)
+
+      const result = await vaultStore.createDirectory('existing-folder')
+
+      expect(result).toBe(false)
+      expect(vaultStore.error).toBe('Directory already exists')
+    })
+
+    it('should handle directory creation failure without response data', async () => {
+      const error = new Error('Network error')
+      mockedApiClient.createDirectory.mockRejectedValue(error)
+
+      const result = await vaultStore.createDirectory('new-folder')
+
+      expect(result).toBe(false)
+      expect(vaultStore.error).toBe('Failed to create directory')
+    })
+  })
+
+  describe('createNote', () => {
+    it('should create note successfully and load it', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          {
+            name: 'new-note.md',
+            path: '/new-note.md',
+            type: 'file'
+          }
+        ]
+      }
+
+      const mockNote: NoteData = {
+        path: '/new-note.md',
+        content: '',
+        size: 0,
+        modified: Date.now()
+      }
+
+      mockedApiClient.createNote.mockResolvedValue(undefined)
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      const result = await vaultStore.createNote('new-note.md', '')
+
+      expect(mockedApiClient.createNote).toHaveBeenCalledWith('new-note.md', '')
+      expect(mockedApiClient.getNotes).toHaveBeenCalled()
+      expect(mockedApiClient.getNote).toHaveBeenCalledWith('new-note.md')
+      expect(result).toBe(true)
+      expect(vaultStore.fileTree).toEqual(mockTree)
+      expect(vaultStore.selectedNote).toEqual(mockNote)
+      expect(vaultStore.error).toBeNull()
+    })
+
+    it('should create note with custom content', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: []
+      }
+
+      const mockNote: NoteData = {
+        path: '/note.md',
+        content: '# New Note',
+        size: 10,
+        modified: Date.now()
+      }
+
+      mockedApiClient.createNote.mockResolvedValue(undefined)
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      const result = await vaultStore.createNote('note.md', '# New Note')
+
+      expect(mockedApiClient.createNote).toHaveBeenCalledWith('note.md', '# New Note')
+      expect(result).toBe(true)
+    })
+
+    it('should handle note creation failure', async () => {
+      const error = { response: { data: { detail: 'File already exists' } } }
+      mockedApiClient.createNote.mockRejectedValue(error)
+
+      const result = await vaultStore.createNote('existing.md', '')
+
+      expect(result).toBe(false)
+      expect(vaultStore.error).toBe('File already exists')
+    })
+
+    it('should handle note creation failure without response data', async () => {
+      const error = new Error('Network error')
+      mockedApiClient.createNote.mockRejectedValue(error)
+
+      const result = await vaultStore.createNote('note.md', '')
+
+      expect(result).toBe(false)
+      expect(vaultStore.error).toBe('Failed to create note')
     })
   })
 })

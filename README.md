@@ -14,11 +14,16 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 
 ### File Management
 - **Full CRUD Operations**: Create, read, update, delete files and directories
+- **File Explorer Toolbar**: Quick access buttons above the file tree
+  - **New File**: Create new markdown files with validated input
+  - **New Folder**: Create new folders with validated input
+  - Input validation prevents path traversal and invalid characters
 - **Drag & Drop**: Drag files and directories into other directories to move them
 - **Context Menus**: Right-click on any file or directory for quick actions
 - **Inline Rename**: Double-click any file/directory name to rename it
 - **Move to Root**: Quickly move items to the vault root directory
 - **Delete Confirmation**: Safety dialogs for all delete operations with warnings for recursive deletion
+- **Input Validation**: Security-focused validation for all file and folder names
 
 ### Editor
 - **Monaco Editor**: Full-featured code editor with VS Code experience

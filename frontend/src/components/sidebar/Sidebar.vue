@@ -7,6 +7,8 @@
       </button>
     </div>
     
+    <FileExplorerToolbar />
+    
     <div class="sidebar-content">
       <FileTree
         :file-tree="fileTree"
@@ -20,6 +22,7 @@
 import { computed, onMounted } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import FileTree from './FileTree.vue'
+import FileExplorerToolbar from './FileExplorerToolbar.vue'
 // import type { FileTreeNode } from '@/types' // Not used in this component
 
 // Store

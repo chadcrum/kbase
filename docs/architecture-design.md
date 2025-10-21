@@ -134,11 +134,16 @@ frontend/src/
 ├── api/
 │   └── client.ts                   # Axios HTTP client with JWT auth
 ├── components/
+│   ├── common/
+│   │   ├── ConfirmDialog.vue       # Reusable confirmation dialog
+│   │   └── InputDialog.vue         # Reusable input dialog for user input
 │   ├── editor/
 │   │   └── MonacoEditor.vue        # Monaco code editor wrapper
 │   ├── layout/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
+│   │   ├── ContextMenu.vue         # Context menu for file operations
+│   │   ├── FileExplorerToolbar.vue # Toolbar with New File/Folder buttons
 │   │   ├── FileTree.vue            # Recursive tree component
 │   │   ├── FileTreeNode.vue        # Individual tree node
 │   │   └── Sidebar.vue             # Sidebar container
@@ -168,26 +173,34 @@ frontend/src/
   - `NoteViewer.vue`: Orchestrates editor and preview views
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
-  - `Sidebar.vue`: File tree sidebar
+  - `Sidebar.vue`: File tree sidebar with integrated toolbar
   - `FileTree.vue`: Hierarchical file tree display
   - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
+  - `FileExplorerToolbar.vue`: Toolbar positioned above file tree with create actions
 - **Common Components**:
   - `ConfirmDialog.vue`: Reusable confirmation modal for destructive actions
+  - `InputDialog.vue`: Reusable input dialog with validation for user text input
   - `ContextMenu.vue`: Right-click context menu with customizable items
 
 **State Management (Pinia)**:
 
 - `authStore`: User session, JWT token management, login/logout
 - `vaultStore`: File tree state, selected note, loading states, expanded paths, note updates, save state
-  - **File Operations**: `deleteFile()`, `renameFile()`, `moveFile()`
+  - **File Operations**: `deleteFile()`, `renameFile()`, `moveFile()`, `createNote()`
   - **Directory Operations**: `deleteDirectory()`, `renameDirectory()`, `moveDirectory()`, `createDirectory()`
   - All CRUD operations automatically refresh the file tree and handle selection updates
+  - `createNote()` automatically opens newly created files in the editor
 
 **Key Features** (Current MVP):
 
 - **Authentication**: JWT-based login with password protection
 - **File Explorer**: Advanced file management with full CRUD operations
   - Hierarchical tree view with expand/collapse functionality
+  - **File Explorer Toolbar**: Quick access toolbar above the file tree
+    - **New File Button**: Create new markdown files at root level with input validation
+    - **New Folder Button**: Create new folders at root level with input validation
+    - Input validation prevents path traversal attacks and invalid characters
+    - Auto-appends `.md` extension for new files
   - **Drag & Drop**: Drag files and directories into other directories to move them
   - **Context Menus**: Right-click on files/directories for operations
     - Delete (with confirmation)
@@ -196,6 +209,10 @@ frontend/src/
   - **Inline Rename**: Double-click file/directory names to rename
   - **Delete Confirmation**: Safety dialogs for all delete operations
   - **Recursive Directory Deletion**: Delete directories with all contents (with confirmation)
+  - **Input Validation**: All file and folder names validated for security
+    - Prevents path traversal (no `../` or absolute paths)
+    - Blocks reserved system names (CON, PRN, AUX, etc.)
+    - Validates against invalid characters
 - **Monaco Editor**: Full-featured code editor with syntax highlighting for all text-based files
   - Auto-save functionality (1 second debounce)
   - Syntax highlighting for 30+ languages

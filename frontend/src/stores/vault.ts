@@ -252,6 +252,25 @@ export const useVaultStore = defineStore('vault', () => {
     }
   }
 
+  const createNote = async (path: string, content: string = ''): Promise<boolean> => {
+    try {
+      await apiClient.createNote(path, content)
+      
+      // Refresh file tree
+      await loadFileTree()
+      
+      // Optionally open the newly created note
+      if (path) {
+        await loadNote(path)
+      }
+      
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || 'Failed to create note'
+      return false
+    }
+  }
+
   return {
     // State
     fileTree,
@@ -284,7 +303,8 @@ export const useVaultStore = defineStore('vault', () => {
     deleteDirectory,
     renameDirectory,
     moveDirectory,
-    createDirectory
+    createDirectory,
+    createNote
   }
 })
 

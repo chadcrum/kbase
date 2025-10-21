@@ -29,7 +29,7 @@ A minimal FastAPI backend for the KBase note-taking application.
    cp env.example .env
    
    # Edit .env with your values:
-   # VAULT_PATH=/path/to/your/vault
+   # VAULT_PATH=~/kbase-vault
    # SECRET_KEY=your-secret-key-here
    # PASSWORD=your-password-here
    ```
@@ -100,12 +100,15 @@ uv run pytest -v
 
 The application uses environment variables for configuration:
 
-- `VAULT_PATH` (required): Path to the note vault directory
+- `VAULT_PATH` (required): Path to the note vault directory (supports tilde expansion, e.g., `~/kbase-vault`)
 - `SECRET_KEY` (required): Secret key for JWT token signing
 - `PASSWORD` (required): Plain text password for authentication
 - `ACCESS_TOKEN_EXPIRE_MINUTES` (optional): Token expiration time (default: 30)
 - `HOST` (optional): Server host (default: 0.0.0.0)
 - `PORT` (optional): Server port (default: 8000)
+- `APP_NAME` (optional): Application name (default: KBase)
+- `APP_VERSION` (optional): Application version (default: 0.1.0)
+- `ALGORITHM` (optional): JWT signing algorithm (default: HS256)
 
 ## Security
 
@@ -132,7 +135,7 @@ uv pip install -e ".[dev]"
 cp env.example .env
 
 # 4. Edit .env file with your values:
-# VAULT_PATH=/home/user/kbase-vault
+# VAULT_PATH=~/kbase-vault
 # SECRET_KEY=a1b2c3d4e5f6...  # Generate with: openssl rand -hex 32
 # PASSWORD=my-secure-password
 

@@ -19,6 +19,39 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - [uv](https://docs.astral.sh/uv/) package manager
 - A directory for your note vault
 
+### Quick Start (Single Command)
+
+For the fastest way to get started, you can run both frontend and backend together:
+
+1. **Install all dependencies**:
+   ```bash
+   npm run install:all
+   ```
+
+2. **Set up your environment**:
+   ```bash
+   # Create vault directory
+   mkdir -p ~/kbase-vault
+   echo "# Welcome to KBase" > ~/kbase-vault/welcome.md
+   
+   # Configure backend
+   cd backend
+   cp env.example .env
+   # Edit .env and set VAULT_PATH, SECRET_KEY, and PASSWORD
+   cd ..
+   ```
+
+3. **Start both frontend and backend**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Access the application**:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:8000/docs
+
+**Note**: The backend requires a `.env` file with `VAULT_PATH`, `SECRET_KEY`, and `PASSWORD` configured.
+
 ### Backend Setup
 
 1. **Clone and navigate to the repository**:
@@ -224,6 +257,19 @@ uv run python -m app.main
 
 ### Full Stack Development
 
+**Option 1: Single Command (Recommended)**
+
+Start both frontend and backend together:
+```bash
+npm run dev
+```
+
+This will run both services concurrently with colored output to distinguish between them.
+
+**Option 2: Separate Terminals**
+
+If you prefer to run them separately:
+
 1. **Start backend** (terminal 1):
    ```bash
    cd backend
@@ -236,9 +282,21 @@ uv run python -m app.main
    npm run dev
    ```
 
-3. **Access application**:
-   - Frontend: http://localhost:5173
-   - Backend API: http://localhost:8000/docs
+**Access application**:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000/docs
+
+### Available NPM Scripts
+
+The root `package.json` provides convenient scripts for development:
+
+- `npm run dev` - Start both frontend and backend in parallel
+- `npm run dev:backend` - Start only the backend server
+- `npm run dev:frontend` - Start only the frontend dev server
+- `npm run install:all` - Install dependencies for both frontend and backend
+- `npm run test` - Run all tests (backend and frontend)
+- `npm run test:backend` - Run backend tests only
+- `npm run test:frontend` - Run frontend tests only
 
 ### Project Structure
 
@@ -255,6 +313,7 @@ kbase/
 │   ├── package.json       # Node.js dependencies
 │   └── README.md          # Frontend documentation
 ├── docs/                   # Architecture documentation
+├── package.json           # Root-level scripts for full-stack development
 └── README.md              # This file
 ```
 

@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     def validate_vault_path(cls, v):
         """Validate that vault path exists and is a directory."""
         if isinstance(v, str):
-            v = Path(v)
+            v = Path(v).expanduser()
         
         if not v.exists():
             raise ValueError(f"Vault path does not exist: {v}")

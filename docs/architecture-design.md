@@ -175,27 +175,37 @@ frontend/src/
 - **Image Paste**: Intercept paste events, upload to backend, insert markdown
 - **PWA**: Offline viewing of cached notes, background sync
 
-### 5. Configuration (config.yaml)
+### 5. Configuration System
 
-```yaml
-vault:
-  path: /path/to/vault          # Required
-  
-server:
-  host: 0.0.0.0
-  port: 8000
-  
-auth:
-  secret_key: ${SECRET_KEY}     # From env var
-  password: ${PASSWORD} # Single user password (plain text)
-  session_duration_hours: 720   # 30 days
-  
-search:
-  ripgrep_path: /usr/bin/rg     # Path to ripgrep binary
-  
-app:
-  name: KBase
-  version: 0.1.0
+**Configuration Management** (`backend/app/config.py`):
+
+The application uses Pydantic Settings for type-safe configuration management with environment variables loaded from a `.env` file.
+
+**Required Environment Variables**:
+- `VAULT_PATH` - Path to the note vault directory (supports tilde expansion, e.g., `~/kbase-vault`)
+- `SECRET_KEY` - Secret key for JWT token signing (generate with: `openssl rand -hex 32`)
+- `PASSWORD` - Plain text password for authentication
+
+**Optional Environment Variables**:
+- `HOST` - Server host (default: `0.0.0.0`)
+- `PORT` - Server port (default: `8000`)
+- `ACCESS_TOKEN_EXPIRE_MINUTES` - Token expiration time (default: `30`)
+- `ALGORITHM` - JWT signing algorithm (default: `HS256`)
+- `APP_NAME` - Application name (default: `KBase`)
+- `APP_VERSION` - Application version (default: `0.1.0`)
+
+**Configuration Features**:
+- **Path Validation**: Vault path is validated at startup to ensure it exists and is a directory
+- **Path Expansion**: Supports tilde (`~`) expansion for home directory paths
+- **Type Safety**: All configuration values are type-checked using Pydantic
+- **Auto-loading**: `.env` file is automatically loaded from the backend directory
+
+**Example `.env` file**:
+```bash
+VAULT_PATH=~/kbase-vault
+SECRET_KEY=your-generated-secret-key-here
+PASSWORD=your-secure-password
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
 ### 6. Podman Compose Setup

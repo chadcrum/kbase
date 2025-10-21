@@ -74,8 +74,8 @@ class FileService:
                 if item.is_dir():
                     # Recursively build directory tree
                     dir_tree = self._build_file_tree(item, item_relative_path)
-                    if dir_tree["children"]:  # Only include non-empty directories
-                        children.append(dir_tree)
+                    # Include all directories, even if empty
+                    children.append(dir_tree)
                 elif self._is_markdown_file(item):
                     # Add markdown files
                     children.append({

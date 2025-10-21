@@ -215,3 +215,47 @@ def test_notes_without_auth_fail(auth_client: TestClient):
     # Test create note without auth
     response = auth_client.post("/api/v1/notes/test.md", json={"content": "test"})
     assert response.status_code == 403
+
+
+def test_list_notes_includes_empty_directories(auth_client: TestClient, auth_token: str, temp_vault):
+    """Test that list_notes includes empty directories in the file tree.
+    
+    This is a regression test to ensure empty directories are not filtered out.
+    Previously, only directories with files were included in the tree.
+    """
+    # Create an empty directory
+    empty_dir = temp_vault / "empty_folder"
+    empty_dir.mkdir()
+    
+    # Create another directory with a subdirectory but no files
+    nested_empty = temp_vault / "parent_folder"
+    nested_empty.mkdir()
+    (nested_empty / "child_folder").mkdir()
+    
+    # Get the file tree
+    response = auth_client.get(
+        "/api/v1/notes/",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 200
+    
+    data = response.json()
+    children_names = [child["name"] for child in data["children"]]
+    
+    # Verify empty directories are included
+    assert "empty_folder" in children_names, "Empty directory should be included in file tree"
+    assert "parent_folder" in children_names, "Parent directory should be included even if it only has subdirectories"
+    
+    # Check the empty folder structure
+    empty_folder = next((child for child in data["children"] if child["name"] == "empty_folder"), None)
+    assert empty_folder is not None
+    assert empty_folder["type"] == "directory"
+    assert empty_folder["children"] == [], "Empty directory should have empty children list"
+    
+    # Check the parent folder structure
+    parent_folder = next((child for child in data["children"] if child["name"] == "parent_folder"), None)
+    assert parent_folder is not None
+    assert parent_folder["type"] == "directory"
+    assert len(parent_folder["children"]) == 1, "Parent folder should have one child directory"
+    assert parent_folder["children"][0]["name"] == "child_folder"
+    assert parent_folder["children"][0]["type"] == "directory"

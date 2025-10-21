@@ -38,7 +38,7 @@ vi.mock('axios', () => ({
 
 // Import after mocking
 import { ApiClient } from './client'
-import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteData } from '@/types'
+import type { LoginRequest, LoginResponse, VerifyResponse } from '@/types'
 
 describe('ApiClient', () => {
   let apiClient: ApiClient

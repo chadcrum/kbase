@@ -27,7 +27,7 @@ const router = createRouter({
 })
 
 // Auth guard
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   
   // Initialize auth state on first navigation

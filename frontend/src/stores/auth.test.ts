@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuthStore } from './auth'
 import { apiClient } from '@/api/client'
-import type { LoginRequest } from '@/types'
+import type { LoginRequest, LoginResponse } from '@/types'
 
 // Mock the API client
 vi.mock('@/api/client', () => ({
@@ -89,7 +89,7 @@ describe('AuthStore', () => {
       
       // Create a promise that we can control
       let resolveLogin: (value: any) => void
-      const loginPromise = new Promise(resolve => {
+      const loginPromise = new Promise<LoginResponse>(resolve => {
         resolveLogin = resolve
       })
       mockedApiClient.login.mockReturnValue(loginPromise)

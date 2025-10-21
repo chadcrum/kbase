@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import AppLayout from './AppLayout.vue'
-import Sidebar from '@/components/sidebar/Sidebar.vue'
+// import Sidebar from '@/components/sidebar/Sidebar.vue' // Mocked below
 
 // Mock the Sidebar component
 vi.mock('@/components/sidebar/Sidebar.vue', () => ({

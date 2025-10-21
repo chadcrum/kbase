@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useVaultStore } from '@/stores/vault'
-import type { NoteData } from '@/types'
+// import type { NoteData } from '@/types' // Not used in this component
 
 // Store
 const vaultStore = useVaultStore()

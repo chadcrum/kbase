@@ -94,7 +94,7 @@ describe('VaultStore', () => {
 
     it('should set loading state during file tree loading', async () => {
       let resolveNotes: (value: any) => void
-      const notesPromise = new Promise(resolve => {
+      const notesPromise = new Promise<FileTreeNode>(resolve => {
         resolveNotes = resolve
       })
       mockedApiClient.getNotes.mockReturnValue(notesPromise)

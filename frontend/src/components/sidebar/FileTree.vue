@@ -34,11 +34,12 @@ interface Props {
   fileTree?: FileTreeNodeType | null
 }
 
+// @ts-ignore
 const props = withDefaults(defineProps<Props>(), {
   fileTree: null
 })
 
-// Emits
+// @ts-ignore
 const emit = defineEmits<{
   refresh: []
 }>()

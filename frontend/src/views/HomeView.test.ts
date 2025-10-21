@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import HomeView from './HomeView.vue'
-import AppLayout from '@/components/layout/AppLayout.vue'
-import NoteViewer from '@/components/viewer/NoteViewer.vue'
+// import AppLayout from '@/components/layout/AppLayout.vue' // Mocked below
+// import NoteViewer from '@/components/viewer/NoteViewer.vue' // Mocked below
 
 // Mock the child components
 vi.mock('@/components/layout/AppLayout.vue', () => ({

@@ -167,6 +167,41 @@ def test_delete_note(auth_client: TestClient, auth_token: str):
     assert get_response.status_code == 404
 
 
+def test_update_note_with_leading_slash(auth_client: TestClient, auth_token: str):
+    """Test that paths with leading slashes are normalized correctly.
+    
+    This test validates the fix for the double-slash bug where paths like
+    "/welcome.md" were being returned as "//welcome.md" in responses.
+    """
+    # Update note using path with leading slash (URL-encoded as %2F)
+    new_content = "# Updated with leading slash\n\nThis tests path normalization."
+    note_data = {"content": new_content}
+    
+    response = auth_client.put(
+        "/api/v1/notes/%2Fnote1.md",  # URL-encoded /note1.md
+        json=note_data,
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["message"] == "Note updated successfully"
+    # Critical: path should have single leading slash, not double
+    assert data["path"] == "/note1.md"
+    assert data["path"] != "//note1.md", "Path should not have double slashes"
+    
+    # Verify by reading the note back
+    get_response = auth_client.get(
+        "/api/v1/notes/%2Fnote1.md",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert get_response.status_code == 200
+    get_data = get_response.json()
+    assert get_data["path"] == "/note1.md"
+    assert get_data["path"] != "//note1.md", "Retrieved path should not have double slashes"
+    assert get_data["content"] == new_content
+
+
 def test_notes_without_auth_fail(auth_client: TestClient):
     """Test that notes endpoints fail without authentication."""
     # Test list notes without auth

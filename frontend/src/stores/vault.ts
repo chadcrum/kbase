@@ -121,6 +121,137 @@ export const useVaultStore = defineStore('vault', () => {
     saveError.value = null
   }
 
+  // File operations
+  const deleteFile = async (path: string): Promise<boolean> => {
+    try {
+      await apiClient.deleteNote(path)
+      
+      // If the deleted file was selected, clear selection
+      if (selectedNotePath.value === path) {
+        clearSelection()
+      }
+      
+      // Refresh file tree
+      await loadFileTree()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || 'Failed to delete file'
+      return false
+    }
+  }
+
+  const renameFile = async (oldPath: string, newName: string): Promise<boolean> => {
+    try {
+      await apiClient.renameNote(oldPath, newName)
+      
+      // Build new path
+      const pathParts = oldPath.split('/')
+      pathParts[pathParts.length - 1] = newName
+      const newPath = pathParts.join('/')
+      
+      // If the renamed file was selected, update selection
+      if (selectedNotePath.value === oldPath) {
+        await loadNote(newPath)
+      }
+      
+      // Refresh file tree
+      await loadFileTree()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || 'Failed to rename file'
+      return false
+    }
+  }
+
+  const moveFile = async (path: string, destinationDir: string): Promise<boolean> => {
+    try {
+      // Build destination path
+      const fileName = path.split('/').pop() || ''
+      const destination = destinationDir === '/' ? `/${fileName}` : `${destinationDir}/${fileName}`
+      
+      await apiClient.moveNote(path, destination)
+      
+      // If the moved file was selected, clear selection
+      if (selectedNotePath.value === path) {
+        clearSelection()
+      }
+      
+      // Refresh file tree
+      await loadFileTree()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || 'Failed to move file'
+      return false
+    }
+  }
+
+  // Directory operations
+  const deleteDirectory = async (path: string, recursive: boolean = true): Promise<boolean> => {
+    try {
+      await apiClient.deleteDirectory(path, recursive)
+      
+      // Clear selection if it was inside the deleted directory
+      if (selectedNotePath.value?.startsWith(path)) {
+        clearSelection()
+      }
+      
+      // Refresh file tree
+      await loadFileTree()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || 'Failed to delete directory'
+      return false
+    }
+  }
+
+  const renameDirectory = async (oldPath: string, newName: string): Promise<boolean> => {
+    try {
+      await apiClient.renameDirectory(oldPath, newName)
+      
+      // Refresh file tree
+      await loadFileTree()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || 'Failed to rename directory'
+      return false
+    }
+  }
+
+  const moveDirectory = async (path: string, destinationDir: string): Promise<boolean> => {
+    try {
+      // Build destination path
+      const dirName = path.split('/').filter(Boolean).pop() || ''
+      const destination = destinationDir === '/' ? `/${dirName}` : `${destinationDir}/${dirName}`
+      
+      await apiClient.moveDirectory(path, destination)
+      
+      // Clear selection if it was inside the moved directory
+      if (selectedNotePath.value?.startsWith(path)) {
+        clearSelection()
+      }
+      
+      // Refresh file tree
+      await loadFileTree()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || 'Failed to move directory'
+      return false
+    }
+  }
+
+  const createDirectory = async (path: string): Promise<boolean> => {
+    try {
+      await apiClient.createDirectory(path)
+      
+      // Refresh file tree
+      await loadFileTree()
+      return true
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || 'Failed to create directory'
+      return false
+    }
+  }
+
   return {
     // State
     fileTree,
@@ -144,7 +275,16 @@ export const useVaultStore = defineStore('vault', () => {
     clearError,
     refresh,
     updateNote,
-    clearSaveError
+    clearSaveError,
+    // File operations
+    deleteFile,
+    renameFile,
+    moveFile,
+    // Directory operations
+    deleteDirectory,
+    renameDirectory,
+    moveDirectory,
+    createDirectory
   }
 })
 

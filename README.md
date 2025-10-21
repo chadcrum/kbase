@@ -10,6 +10,29 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Authentication**: JWT-based security
 - **Real-time**: WebSocket-based synchronization (planned)
 
+## Features
+
+### File Management
+- **Full CRUD Operations**: Create, read, update, delete files and directories
+- **Drag & Drop**: Drag files and directories into other directories to move them
+- **Context Menus**: Right-click on any file or directory for quick actions
+- **Inline Rename**: Double-click any file/directory name to rename it
+- **Move to Root**: Quickly move items to the vault root directory
+- **Delete Confirmation**: Safety dialogs for all delete operations with warnings for recursive deletion
+
+### Editor
+- **Monaco Editor**: Full-featured code editor with VS Code experience
+- **Syntax Highlighting**: Support for 30+ programming languages
+- **Auto-Save**: Automatic saving with 1-second debounce
+- **Dual View Modes**: Toggle between editor and preview modes
+- **Save Status**: Visual feedback for saving/saved/error states
+
+### Security & Performance
+- **JWT Authentication**: Secure token-based authentication
+- **Path Security**: Protection against directory traversal attacks
+- **Performance Optimized**: Handles large vaults (4000+ files) efficiently with database caching
+- **Lazy Loading**: Initial display of 100 files with "Show More" option
+
 ## Quick Start
 
 ### Prerequisites

@@ -5,8 +5,13 @@ A Vue 3 frontend for the KBase note-taking application, providing a clean interf
 ## Features
 
 - **Authentication**: Secure JWT-based login system
-- **File Tree Navigation**: Hierarchical view of your note vault
-- **Read-Only Note Viewer**: Clean display of markdown content
+- **File Tree Navigation**: Hierarchical view of your note vault with full CRUD operations
+  - Drag & Drop files and directories
+  - Right-click context menus (Delete, Rename, Move to Root)
+  - Inline rename (double-click)
+  - Delete confirmation dialogs
+- **Monaco Editor**: Full-featured code editor with auto-save and syntax highlighting
+- **Dual View Modes**: Toggle between editor and preview modes
 - **Responsive Design**: Works on desktop and mobile devices
 - **Comprehensive Testing**: 92+ tests with 87% coverage
 

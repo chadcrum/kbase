@@ -170,17 +170,32 @@ frontend/src/
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar
   - `FileTree.vue`: Hierarchical file tree display
-  - `FileTreeNode.vue`: Individual tree node rendering
+  - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
+- **Common Components**:
+  - `ConfirmDialog.vue`: Reusable confirmation modal for destructive actions
+  - `ContextMenu.vue`: Right-click context menu with customizable items
 
 **State Management (Pinia)**:
 
 - `authStore`: User session, JWT token management, login/logout
 - `vaultStore`: File tree state, selected note, loading states, expanded paths, note updates, save state
+  - **File Operations**: `deleteFile()`, `renameFile()`, `moveFile()`
+  - **Directory Operations**: `deleteDirectory()`, `renameDirectory()`, `moveDirectory()`, `createDirectory()`
+  - All CRUD operations automatically refresh the file tree and handle selection updates
 
 **Key Features** (Current MVP):
 
 - **Authentication**: JWT-based login with password protection
-- **File Explorer**: Hierarchical tree view with expand/collapse functionality
+- **File Explorer**: Advanced file management with full CRUD operations
+  - Hierarchical tree view with expand/collapse functionality
+  - **Drag & Drop**: Drag files and directories into other directories to move them
+  - **Context Menus**: Right-click on files/directories for operations
+    - Delete (with confirmation)
+    - Rename (inline editing)
+    - Move to Root
+  - **Inline Rename**: Double-click file/directory names to rename
+  - **Delete Confirmation**: Safety dialogs for all delete operations
+  - **Recursive Directory Deletion**: Delete directories with all contents (with confirmation)
 - **Monaco Editor**: Full-featured code editor with syntax highlighting for all text-based files
   - Auto-save functionality (1 second debounce)
   - Syntax highlighting for 30+ languages
@@ -321,6 +336,61 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - Editor instance reused when switching files
    - ResizeObserver for efficient layout updates
    - Automatic cleanup on component unmount
+
+**File Explorer CRUD Operations**:
+
+The file explorer provides comprehensive file and directory management through an intuitive user interface.
+
+1. **Drag & Drop Implementation**:
+   - Native HTML5 drag-and-drop API
+   - Visual feedback during drag operations (opacity change on dragging item, border highlight on drop target)
+   - Drag any file or directory onto a target directory to move it
+   - Prevents invalid operations (dropping on self, dropping parent into child)
+   - Automatically refreshes file tree after successful drop
+   - Uses JSON data transfer for cross-browser compatibility
+   
+2. **Context Menu System**:
+   - Right-click on any file or directory to open context menu
+   - Context menu positioned at cursor with automatic viewport boundary detection
+   - Click-outside or ESC key to close
+   - Menu items:
+     - **Rename**: Activates inline rename mode
+     - **Move to Root**: Moves item to vault root directory
+     - **Delete**: Shows confirmation dialog (styled as dangerous action)
+   - Menu items styled with icons for better UX
+   
+3. **Inline Rename**:
+   - Double-click any file/directory name to activate rename mode
+   - Input field replaces name with current value pre-filled
+   - Smart text selection (excludes file extension for files)
+   - Confirm with Enter key, cancel with ESC key or blur
+   - Validates new name before submission
+   - Automatically refreshes file tree and updates selection after rename
+   
+4. **Delete Confirmation**:
+   - Reusable `ConfirmDialog` component for all delete operations
+   - Different messages for files vs directories
+   - Directories: Warns about recursive deletion of all contents
+   - Styled as dangerous action (red button)
+   - Keyboard shortcuts: ESC to cancel, Enter to confirm
+   - Prevents accidental deletions with clear messaging
+   
+5. **API Client Integration**:
+   - Dedicated methods for all CRUD operations
+   - `deleteFile()`, `renameFile()`, `moveFile()` for file operations
+   - `deleteDirectory()`, `renameDirectory()`, `moveDirectory()`, `createDirectory()` for directory operations
+   - Proper error handling with user-friendly error messages
+   - Automatic path encoding for URL safety
+   
+6. **Vault Store CRUD Actions**:
+   - All operations integrated into vault store for centralized state management
+   - Automatic file tree refresh after any CRUD operation
+   - Smart selection handling:
+     - Clear selection if deleted file was selected
+     - Update selection if renamed file was selected
+     - Clear selection if it was inside a moved/deleted directory
+   - Error state management with descriptive error messages
+   - Loading state management for better UX
 
 ## Security Considerations
 

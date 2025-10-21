@@ -263,9 +263,38 @@ services:
 
 - **Backend**: pytest with test vault fixtures (comprehensive coverage)
 - **Frontend**: Vitest + Vue Test Utils (92+ tests passing, 87% coverage)
+- **E2E Tests**: Playwright with comprehensive authentication flow coverage
 - **Unit Tests**: All stores, components, and API client
 - **Component Tests**: User interactions, error states, conditional rendering
-- **Future**: E2E tests with Playwright for critical flows
+- **Integration Tests**: Full user workflows with real backend integration
+
+### E2E Testing Infrastructure
+
+**Playwright Configuration**:
+- Multiple browser support (Chromium, Firefox, WebKit)
+- Mobile testing (Mobile Chrome, Mobile Safari)
+- Parallel execution with isolated test contexts
+- Screenshot/video capture on failure
+- CI/CD integration with GitHub Actions
+
+**Test Coverage**:
+- **Authentication Flows**: Login success/failure, logout, token persistence
+- **Route Guards**: Protected route access, redirects
+- **Security Testing**: SQL injection, XSS prevention, input validation
+- **Edge Cases**: Network failures, concurrent requests, storage disabled
+- **UI/UX Validation**: Loading states, form validation, accessibility
+
+**Test Architecture**:
+- **Page Object Model**: Maintainable, reusable test patterns
+- **Isolated Test Environment**: Dedicated test vault with fixtures
+- **Backend Management**: Automated server startup/teardown
+- **Helper Utilities**: Auth helpers, vault management, backend control
+
+**Test Execution**:
+- **Local Development**: `npm run test:e2e` with UI mode for debugging
+- **CI/CD**: Automated testing on push/PR with artifact upload
+- **Parallel Execution**: 3-4x faster test execution
+- **Cross-browser**: Ensures compatibility across all supported browsers
 
 ## Performance Optimizations
 

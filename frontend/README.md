@@ -95,6 +95,9 @@ The frontend includes comprehensive testing with:
 - **Unit Tests**: Store logic, API client, utility functions
 - **Component Tests**: User interactions, props, events
 - **Integration Tests**: Component communication and state flow
+- **E2E Tests**: Full user workflows with Playwright
+
+### Unit & Component Tests
 
 Run tests with:
 ```bash
@@ -102,6 +105,47 @@ npm run test              # Run all tests
 npm run test:run          # Run tests once (CI mode)
 npm run test:coverage     # Run with coverage report
 npm run test:ui           # Run with UI interface
+```
+
+### E2E Tests
+
+The frontend includes comprehensive end-to-end testing with Playwright:
+
+- **Authentication Flows**: Login, logout, token persistence, route guards
+- **Security Testing**: SQL injection, XSS prevention, input validation
+- **Cross-browser Testing**: Chromium, Firefox, WebKit, Mobile browsers
+- **CI/CD Integration**: Automated testing on GitHub Actions
+
+Run E2E tests with:
+```bash
+# Install Playwright browsers (one-time)
+npx playwright install
+
+# Run all E2E tests
+npm run test:e2e
+
+# Run with UI (debug mode)
+npm run test:e2e:ui
+
+# Run specific browser
+npm run test:e2e:chromium
+
+# Run in headed mode (see browser)
+npm run test:e2e:headed
+
+# Debug mode (step through tests)
+npm run test:e2e:debug
+```
+
+**E2E Test Structure**:
+```
+e2e/
+├── fixtures/           # Test vault with sample markdown files
+├── helpers/            # Test utilities (auth, backend, vault)
+├── pages/              # Page Object Models (LoginPage, HomePage)
+├── specs/              # Test specifications (auth.spec.ts)
+├── global-setup.ts     # Backend server startup
+└── global-teardown.ts  # Backend server cleanup
 ```
 
 ## Development Guidelines

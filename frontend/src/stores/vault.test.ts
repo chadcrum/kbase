@@ -8,7 +8,8 @@ import type { FileTreeNode, NoteData } from '@/types'
 vi.mock('@/api/client', () => ({
   apiClient: {
     getNotes: vi.fn(),
-    getNote: vi.fn()
+    getNote: vi.fn(),
+    updateNote: vi.fn()
   }
 }))
 
@@ -37,6 +38,8 @@ describe('VaultStore', () => {
       expect(vaultStore.isLoading).toBe(false)
       expect(vaultStore.error).toBeNull()
       expect(vaultStore.expandedPaths.size).toBe(0)
+      expect(vaultStore.isSaving).toBe(false)
+      expect(vaultStore.saveError).toBeNull()
       expect(vaultStore.hasError).toBe(false)
       expect(vaultStore.isNoteSelected).toBe(false)
       expect(vaultStore.selectedNotePath).toBeNull()
@@ -289,6 +292,85 @@ describe('VaultStore', () => {
       expect(result).toBe(true)
       expect(mockedApiClient.getNotes).toHaveBeenCalled()
       expect(mockedApiClient.getNote).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('updateNote', () => {
+    it('should update note successfully', async () => {
+      const mockNote: NoteData = {
+        content: 'Original content',
+        path: '/test.md',
+        size: 16,
+        modified: 1234567890
+      }
+
+      vaultStore.selectedNote = mockNote
+      mockedApiClient.updateNote.mockResolvedValue(undefined)
+
+      const result = await vaultStore.updateNote('/test.md', 'Updated content')
+
+      expect(result).toBe(true)
+      expect(mockedApiClient.updateNote).toHaveBeenCalledWith('/test.md', 'Updated content')
+      expect(vaultStore.selectedNote.content).toBe('Updated content')
+      expect(vaultStore.saveError).toBeNull()
+      expect(vaultStore.isSaving).toBe(false)
+    })
+
+    it('should handle update note failure', async () => {
+      const error = { response: { data: { detail: 'Failed to save' } } }
+      mockedApiClient.updateNote.mockRejectedValue(error)
+
+      const result = await vaultStore.updateNote('/test.md', 'New content')
+
+      expect(result).toBe(false)
+      expect(vaultStore.saveError).toBe('Failed to save')
+      expect(vaultStore.isSaving).toBe(false)
+    })
+
+    it('should handle update note failure without response data', async () => {
+      const error = new Error('Network error')
+      mockedApiClient.updateNote.mockRejectedValue(error)
+
+      const result = await vaultStore.updateNote('/test.md', 'New content')
+
+      expect(result).toBe(false)
+      expect(vaultStore.saveError).toBe('Failed to save note')
+      expect(vaultStore.isSaving).toBe(false)
+    })
+
+    it('should return false for empty path', async () => {
+      const result = await vaultStore.updateNote('', 'Content')
+
+      expect(result).toBe(false)
+      expect(mockedApiClient.updateNote).not.toHaveBeenCalled()
+    })
+
+    it('should set saving state during update', async () => {
+      let resolveUpdate: () => void
+      const updatePromise = new Promise<void>(resolve => {
+        resolveUpdate = resolve
+      })
+      mockedApiClient.updateNote.mockReturnValue(updatePromise)
+
+      const updateNotePromise = vaultStore.updateNote('/test.md', 'Content')
+      
+      expect(vaultStore.isSaving).toBe(true)
+      
+      resolveUpdate!()
+      
+      await updateNotePromise
+      
+      expect(vaultStore.isSaving).toBe(false)
+    })
+  })
+
+  describe('clearSaveError', () => {
+    it('should clear save error state', () => {
+      vaultStore.saveError = 'Some error'
+      
+      vaultStore.clearSaveError()
+      
+      expect(vaultStore.saveError).toBeNull()
     })
   })
 })

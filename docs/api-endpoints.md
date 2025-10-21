@@ -78,6 +78,10 @@ All endpoints (except login) require authentication via JWT token in cookies.
 ```
 - **Response**: Success message and path
 - **Status Codes**: 200 (updated), 404 (not found), 400 (invalid path)
+- **Notes**:
+  - Frontend Monaco editor implements auto-save with 1 second debounce
+  - Changes are automatically saved after user stops typing
+  - Save status feedback provided in UI (saving/saved/error states)
 
 ### Delete Note
 - **DELETE** `/{path}`

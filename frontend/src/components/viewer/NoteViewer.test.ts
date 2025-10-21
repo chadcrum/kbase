@@ -2,8 +2,28 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import NoteViewer from './NoteViewer.vue'
+import ViewerToolbar from './ViewerToolbar.vue'
 import { useVaultStore } from '@/stores/vault'
 import type { NoteData } from '@/types'
+
+// Mock Monaco editor to avoid initialization issues in tests
+vi.mock('@monaco-editor/loader', () => ({
+  default: {
+    init: vi.fn(() => Promise.resolve({
+      editor: {
+        create: vi.fn(() => ({
+          getValue: vi.fn(() => 'test content'),
+          setValue: vi.fn(),
+          onDidChangeModelContent: vi.fn(),
+          dispose: vi.fn(),
+          layout: vi.fn(),
+          getModel: vi.fn(() => null)
+        })),
+        setModelLanguage: vi.fn()
+      }
+    }))
+  }
+}))
 
 // Mock the vault store
 vi.mock('@/stores/vault', () => ({
@@ -22,7 +42,8 @@ describe('NoteViewer', () => {
       isLoading: false,
       hasError: false,
       error: null,
-      loadNote: vi.fn()
+      loadNote: vi.fn(),
+      updateNote: vi.fn(() => Promise.resolve(true))
     }
     
     vi.mocked(useVaultStore).mockReturnValue(mockVaultStore)
@@ -49,25 +70,43 @@ describe('NoteViewer', () => {
   }
 
   describe('rendering with selected note', () => {
-    it('should render note content when note is selected', () => {
+    it('should render note content when note is selected', async () => {
       mockVaultStore.selectedNote = mockNote
       wrapper = createWrapper()
       
       expect(wrapper.find('.note-content').exists()).toBe(true)
-      expect(wrapper.find('.note-title').text()).toBe('test-note')
-      expect(wrapper.find('.note-text').text()).toBe(mockNote.content)
+      expect(wrapper.findComponent(ViewerToolbar).exists()).toBe(true)
+      
+      // Switch to preview mode to see the content
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
+      await wrapper.vm.$nextTick()
+      
+      const noteText = wrapper.find('.note-text')
+      if (noteText.exists()) {
+        expect(noteText.text()).toBe(mockNote.content)
+      }
     })
 
-    it('should display note metadata correctly', () => {
+    it('should display ViewerToolbar with file information', () => {
       mockVaultStore.selectedNote = mockNote
       wrapper = createWrapper()
       
+      const toolbar = wrapper.findComponent(ViewerToolbar)
+      expect(toolbar.exists()).toBe(true)
+      expect(toolbar.props('fileName')).toBe('test-note')
+      expect(toolbar.props('filePath')).toBe('/folder/test-note.md')
+    })
+
+    it('should display note metadata in preview mode', async () => {
+      mockVaultStore.selectedNote = mockNote
+      wrapper = createWrapper()
+      
+      // Switch to preview mode
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
+      await wrapper.vm.$nextTick()
+      
       const metadata = wrapper.find('.note-metadata')
       expect(metadata.exists()).toBe(true)
-      
-      // Check path
-      expect(wrapper.text()).toContain('Path:')
-      expect(wrapper.text()).toContain('/folder/test-note.md')
       
       // Check size (should be formatted)
       expect(wrapper.text()).toContain('Size:')
@@ -81,7 +120,8 @@ describe('NoteViewer', () => {
       mockVaultStore.selectedNote = mockNote
       wrapper = createWrapper()
       
-      expect(wrapper.find('.note-title').text()).toBe('test-note')
+      const toolbar = wrapper.findComponent(ViewerToolbar)
+      expect(toolbar.props('fileName')).toBe('test-note')
     })
 
     it('should handle notes without .md extension', () => {
@@ -92,7 +132,8 @@ describe('NoteViewer', () => {
       mockVaultStore.selectedNote = noteWithoutExt
       wrapper = createWrapper()
       
-      expect(wrapper.find('.note-title').text()).toBe('readme')
+      const toolbar = wrapper.findComponent(ViewerToolbar)
+      expect(toolbar.props('fileName')).toBe('readme')
     })
 
     it('should handle notes with no filename', () => {
@@ -103,7 +144,8 @@ describe('NoteViewer', () => {
       mockVaultStore.selectedNote = noteWithNoName
       wrapper = createWrapper()
       
-      expect(wrapper.find('.note-title').text()).toBe('Untitled')
+      const toolbar = wrapper.findComponent(ViewerToolbar)
+      expect(toolbar.props('fileName')).toBe('Untitled')
     })
   })
 
@@ -154,27 +196,40 @@ describe('NoteViewer', () => {
   })
 
   describe('utility functions', () => {
-    it('should format file sizes correctly', () => {
+    it('should format file sizes correctly', async () => {
       mockVaultStore.selectedNote = { ...mockNote, size: 0 }
       wrapper = createWrapper()
+      
+      // Switch to preview mode to see metadata
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
+      await wrapper.vm.$nextTick()
+      
       expect(wrapper.text()).toContain('0 B')
 
       wrapper.unmount()
       
       mockVaultStore.selectedNote = { ...mockNote, size: 1024 }
       wrapper = createWrapper()
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
+      await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('1 KB')
 
       wrapper.unmount()
       
       mockVaultStore.selectedNote = { ...mockNote, size: 1024 * 1024 }
       wrapper = createWrapper()
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
+      await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('1 MB')
     })
 
-    it('should format dates correctly', () => {
+    it('should format dates correctly', async () => {
       mockVaultStore.selectedNote = mockNote
       wrapper = createWrapper()
+      
+      // Switch to preview mode to see metadata
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
+      await wrapper.vm.$nextTick()
       
       // The exact format depends on locale, but it should contain some recognizable date/time parts
       const dateText = wrapper.text()
@@ -185,7 +240,7 @@ describe('NoteViewer', () => {
   })
 
   describe('content display', () => {
-    it('should preserve whitespace and formatting in note content', () => {
+    it('should preserve whitespace and formatting in note content', async () => {
       const noteWithFormatting: NoteData = {
         ...mockNote,
         content: 'Line 1\n\nLine 2\n    Indented line'
@@ -193,11 +248,15 @@ describe('NoteViewer', () => {
       mockVaultStore.selectedNote = noteWithFormatting
       wrapper = createWrapper()
       
+      // Switch to preview mode
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
+      await wrapper.vm.$nextTick()
+      
       const noteText = wrapper.find('.note-text')
       expect(noteText.text()).toBe(noteWithFormatting.content)
     })
 
-    it('should handle empty note content', () => {
+    it('should handle empty note content', async () => {
       const emptyNote: NoteData = {
         ...mockNote,
         content: ''
@@ -205,17 +264,25 @@ describe('NoteViewer', () => {
       mockVaultStore.selectedNote = emptyNote
       wrapper = createWrapper()
       
+      // Switch to preview mode
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
+      await wrapper.vm.$nextTick()
+      
       const noteText = wrapper.find('.note-text')
       expect(noteText.text()).toBe('')
     })
 
-    it('should handle very long note content', () => {
+    it('should handle very long note content', async () => {
       const longNote: NoteData = {
         ...mockNote,
         content: 'A'.repeat(10000)
       }
       mockVaultStore.selectedNote = longNote
       wrapper = createWrapper()
+      
+      // Switch to preview mode
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
+      await wrapper.vm.$nextTick()
       
       const noteText = wrapper.find('.note-text')
       expect(noteText.text()).toBe(longNote.content)

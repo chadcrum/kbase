@@ -10,6 +10,8 @@ export const useVaultStore = defineStore('vault', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const expandedPaths = ref<Set<string>>(new Set())
+  const isSaving = ref(false)
+  const saveError = ref<string | null>(null)
 
   // Getters
   const hasError = computed(() => error.value !== null)
@@ -92,6 +94,33 @@ export const useVaultStore = defineStore('vault', () => {
     return success
   }
 
+  const updateNote = async (path: string, content: string): Promise<boolean> => {
+    if (!path) return false
+
+    isSaving.value = true
+    saveError.value = null
+
+    try {
+      await apiClient.updateNote(path, content)
+      
+      // Update the local note content if it's the currently selected note
+      if (selectedNote.value && selectedNote.value.path === path) {
+        selectedNote.value.content = content
+      }
+      
+      return true
+    } catch (err: any) {
+      saveError.value = err.response?.data?.detail || 'Failed to save note'
+      return false
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const clearSaveError = () => {
+    saveError.value = null
+  }
+
   return {
     // State
     fileTree,
@@ -99,6 +128,8 @@ export const useVaultStore = defineStore('vault', () => {
     isLoading,
     error,
     expandedPaths,
+    isSaving,
+    saveError,
     // Getters
     hasError,
     isNoteSelected,
@@ -111,7 +142,9 @@ export const useVaultStore = defineStore('vault', () => {
     toggleExpanded,
     isExpanded,
     clearError,
-    refresh
+    refresh,
+    updateNote,
+    clearSaveError
   }
 })
 

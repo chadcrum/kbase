@@ -22,7 +22,8 @@
 - **Build Tool**: Vite
 - **HTTP Client**: Axios
 - **UI**: Custom CSS (no component library initially)
-- **Future**: WYSIWYG Editor (Milkdown), Code Editor (Monaco), WebSocket Client, PWA features
+- **Code Editor**: Monaco Editor (VS Code editor)
+- **Future**: WYSIWYG Editor (Milkdown), WebSocket Client, PWA features
 
 ### Infrastructure
 
@@ -133,6 +134,8 @@ frontend/src/
 ├── api/
 │   └── client.ts                   # Axios HTTP client with JWT auth
 ├── components/
+│   ├── editor/
+│   │   └── MonacoEditor.vue        # Monaco code editor wrapper
 │   ├── layout/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
@@ -140,30 +143,53 @@ frontend/src/
 │   │   ├── FileTreeNode.vue        # Individual tree node
 │   │   └── Sidebar.vue             # Sidebar container
 │   └── viewer/
-│       └── NoteViewer.vue          # Read-only note display
+│       ├── NoteViewer.vue          # Note viewer with editor/preview toggle
+│       └── ViewerToolbar.vue       # Toolbar with view mode toggle
 ├── stores/
 │   ├── auth.ts                     # JWT & login state
-│   └── vault.ts                    # File tree state
+│   └── vault.ts                    # File tree & note update state
 ├── router/
 │   ├── index.ts                    # Route definitions
 │   └── guards.ts                   # Auth guards
 ├── types/
 │   └── index.ts                    # TypeScript type definitions
+├── utils/
+│   └── languageDetection.ts        # File extension to language mapping
 └── views/
     ├── LoginView.vue               # Login page
     └── HomeView.vue                # Main app view
 ```
 
+**Component Structure**:
+
+- **Editor Components**:
+  - `MonacoEditor.vue`: Monaco editor wrapper with auto-save
+  - `ViewerToolbar.vue`: Toolbar with view mode toggle and save status
+  - `NoteViewer.vue`: Orchestrates editor and preview views
+- **Layout Components**:
+  - `AppLayout.vue`: Main application layout
+  - `Sidebar.vue`: File tree sidebar
+  - `FileTree.vue`: Hierarchical file tree display
+  - `FileTreeNode.vue`: Individual tree node rendering
+
 **State Management (Pinia)**:
 
 - `authStore`: User session, JWT token management, login/logout
-- `vaultStore`: File tree state, selected note, loading states, expanded paths
+- `vaultStore`: File tree state, selected note, loading states, expanded paths, note updates, save state
 
 **Key Features** (Current MVP):
 
 - **Authentication**: JWT-based login with password protection
 - **File Explorer**: Hierarchical tree view with expand/collapse functionality
-- **Note Viewer**: Read-only display of markdown content with metadata
+- **Monaco Editor**: Full-featured code editor with syntax highlighting for all text-based files
+  - Auto-save functionality (1 second debounce)
+  - Syntax highlighting for 30+ languages
+  - Dark theme matching VS Code
+  - Language detection from file extensions
+- **Dual View Modes**: Toggle between editor and preview modes
+  - **Editor Mode**: Monaco editor for editing files
+  - **Preview Mode**: Formatted text display with metadata
+- **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
 - **Responsive Design**: Clean, modern interface with mobile support
 - **Error Handling**: Comprehensive error states and user feedback
 
@@ -248,6 +274,53 @@ services:
 4. If not open, updates file tree
 5. If open, shows notification (external change detected)
 
+**Monaco Editor Integration**:
+
+The Monaco editor provides a professional code editing experience with syntax highlighting and auto-save.
+
+1. **Component Architecture**:
+   - `MonacoEditor.vue`: Wraps Monaco editor with Vue lifecycle
+   - Lazy-loads Monaco library on component mount
+   - Handles editor initialization, content synchronization, and cleanup
+   
+2. **Auto-Save Implementation**:
+   - Debounced save (1000ms delay after last keystroke)
+   - Emits `save` event with content to parent component
+   - Parent (NoteViewer) calls vault store's `updateNote` action
+   - Visual feedback via ViewerToolbar (saving/saved/error states)
+   
+3. **Language Detection**:
+   - Utility function `detectLanguage(filename)` maps extensions to Monaco language IDs
+   - Supports 30+ file types (markdown, javascript, python, json, etc.)
+   - Falls back to 'plaintext' for unknown extensions
+   - Updates language when file path changes
+   
+4. **Editor Configuration**:
+   - Theme: VS Code dark theme (`vs-dark`)
+   - Auto-layout enabled for responsive resize
+   - Minimap enabled for navigation
+   - Word wrap enabled for better readability
+   - Tab size: 2 spaces
+   
+5. **View Mode Toggle**:
+   - ViewerToolbar provides toggle between "Editor" and "Preview" modes
+   - Editor mode: Full Monaco editor for editing
+   - Preview mode: Formatted text with metadata display
+   - Mode state managed in NoteViewer component
+   
+6. **Save Status Flow**:
+   ```
+   User types → Debounce (1s) → Emit 'save' event → 
+   NoteViewer sets status='saving' → Call updateNote API →
+   Success: status='saved' (2s) → Clear status
+   Error: status='error' (5s) → Clear status
+   ```
+
+7. **Performance Optimizations**:
+   - Monaco library loaded only once and cached
+   - Editor instance reused when switching files
+   - ResizeObserver for efficient layout updates
+   - Automatic cleanup on component unmount
 
 ## Security Considerations
 

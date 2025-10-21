@@ -15,9 +15,9 @@ export default defineConfig({
   // Test directory
   testDir: './e2e/specs',
   
-  // Global setup and teardown
-  globalSetup: './e2e/global-setup.ts',
-  globalTeardown: './e2e/global-teardown.ts',
+  // Global setup and teardown (disabled in CI)
+  globalSetup: process.env.CI ? undefined : './e2e/global-setup.ts',
+  globalTeardown: process.env.CI ? undefined : './e2e/global-teardown.ts',
   
   // Test timeout
   timeout: 30 * 1000, // 30 seconds per test
@@ -82,8 +82,8 @@ export default defineConfig({
     },
   ],
   
-  // Web server configuration for local development
-  webServer: {
+  // Web server configuration for local development (disabled in CI)
+  webServer: process.env.CI ? undefined : {
     command: 'npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,

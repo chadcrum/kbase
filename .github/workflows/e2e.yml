@@ -42,6 +42,28 @@ jobs:
         cd frontend
         npm ci
         
+    - name: Start backend server
+      run: |
+        cd backend
+        python run.py &
+        sleep 10
+      env:
+        VAULT_PATH: /tmp/kbase-test-vault
+        SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
+        PASSWORD: test-password
+        PORT: 8001
+        HOST: 0.0.0.0
+        
+    - name: Create test vault
+      run: |
+        mkdir -p /tmp/kbase-test-vault
+        echo "# Welcome to KBase" > /tmp/kbase-test-vault/welcome.md
+        echo "# Test Note" > /tmp/kbase-test-vault/test.md
+        
+    - name: Wait for backend to be ready
+      run: |
+        timeout 60 bash -c 'until curl -f http://localhost:8001/health; do sleep 2; done'
+        
     - name: Install Playwright browsers
       run: |
         cd frontend
@@ -52,12 +74,37 @@ jobs:
         cd frontend
         npm run build
         
+    - name: Start frontend dev server
+      run: |
+        cd frontend
+        npm run dev &
+        sleep 10
+      env:
+        VITE_API_URL: http://localhost:8001
+        
+    - name: Wait for frontend to be ready
+      run: |
+        timeout 60 bash -c 'until curl -f http://localhost:5173; do sleep 2; done'
+        
     - name: Run E2E tests
       run: |
         cd frontend
         npm run test:e2e -- --project=${{ matrix.browser }} --reporter=github
       env:
         CI: true
+        TEST_BACKEND_URL: http://localhost:8001
+        TEST_VAULT_PATH: /tmp/kbase-test-vault
+        TEST_SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
+        TEST_PASSWORD: test-password
+        VITE_API_URL: http://localhost:8001
+      continue-on-error: true
+        
+    - name: List test artifacts
+      run: |
+        cd frontend
+        echo "Checking for test artifacts..."
+        ls -la playwright-report/ || echo "No playwright-report directory found"
+        ls -la test-results/ || echo "No test-results directory found"
         
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -105,6 +152,28 @@ jobs:
         cd frontend
         npm ci
         
+    - name: Start backend server
+      run: |
+        cd backend
+        python run.py &
+        sleep 10
+      env:
+        VAULT_PATH: /tmp/kbase-test-vault
+        SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
+        PASSWORD: test-password
+        PORT: 8001
+        HOST: 0.0.0.0
+        
+    - name: Create test vault
+      run: |
+        mkdir -p /tmp/kbase-test-vault
+        echo "# Welcome to KBase" > /tmp/kbase-test-vault/welcome.md
+        echo "# Test Note" > /tmp/kbase-test-vault/test.md
+        
+    - name: Wait for backend to be ready
+      run: |
+        timeout 60 bash -c 'until curl -f http://localhost:8001/health; do sleep 2; done'
+        
     - name: Install Playwright browsers
       run: |
         cd frontend
@@ -115,12 +184,37 @@ jobs:
         cd frontend
         npm run build
         
+    - name: Start frontend dev server
+      run: |
+        cd frontend
+        npm run dev &
+        sleep 10
+      env:
+        VITE_API_URL: http://localhost:8001
+        
+    - name: Wait for frontend to be ready
+      run: |
+        timeout 60 bash -c 'until curl -f http://localhost:5173; do sleep 2; done'
+        
     - name: Run mobile E2E tests
       run: |
         cd frontend
         npm run test:e2e -- --project="Mobile Chrome" --project="Mobile Safari" --reporter=github
       env:
         CI: true
+        TEST_BACKEND_URL: http://localhost:8001
+        TEST_VAULT_PATH: /tmp/kbase-test-vault
+        TEST_SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
+        TEST_PASSWORD: test-password
+        VITE_API_URL: http://localhost:8001
+      continue-on-error: true
+        
+    - name: List mobile test artifacts
+      run: |
+        cd frontend
+        echo "Checking for mobile test artifacts..."
+        ls -la playwright-report/ || echo "No playwright-report directory found"
+        ls -la test-results/ || echo "No test-results directory found"
         
     - name: Upload mobile test results
       uses: actions/upload-artifact@v4

@@ -32,7 +32,7 @@ test.describe('E2E Test Setup', () => {
     expect(currentUrl).toMatch(/.*\/(login)?$/);
   });
 
-  test('should have test vault configured', async ({ page }) => {
+  test('should have test vault configured', async () => {
     const vaultPath = process.env.TEST_VAULT_PATH;
     expect(vaultPath).toBeTruthy();
     
@@ -40,7 +40,7 @@ test.describe('E2E Test Setup', () => {
     expect(vaultPath).toContain('kbase-test-vault');
   });
 
-  test('should have test environment variables set', async ({ page }) => {
+  test('should have test environment variables set', async () => {
     expect(process.env.TEST_BACKEND_URL).toBeTruthy();
     expect(process.env.TEST_VAULT_PATH).toBeTruthy();
     expect(process.env.TEST_SECRET_KEY).toBeTruthy();

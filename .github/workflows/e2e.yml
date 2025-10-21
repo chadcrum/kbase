@@ -32,27 +32,19 @@ jobs:
       with:
         python-version: '3.11'
         
+    - name: Install uv
+      run: |
+        pip install uv
+        
     - name: Install Python dependencies
       run: |
         cd backend
-        pip install -r requirements.txt
+        uv sync
         
     - name: Install frontend dependencies
       run: |
         cd frontend
         npm ci
-        
-    - name: Start backend server
-      run: |
-        cd backend
-        python run.py &
-        sleep 10
-      env:
-        VAULT_PATH: /tmp/kbase-test-vault
-        SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
-        PASSWORD: test-password
-        PORT: 8001
-        HOST: 0.0.0.0
         
     - name: Create test vault
       run: |
@@ -60,9 +52,21 @@ jobs:
         echo "# Welcome to KBase" > /tmp/kbase-test-vault/welcome.md
         echo "# Test Note" > /tmp/kbase-test-vault/test.md
         
+    - name: Start backend server
+      run: |
+        cd backend
+        uv run python run.py &
+        sleep 10
+      env:
+        VAULT_PATH: /tmp/kbase-test-vault
+        SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
+        PASSWORD: test-password
+        PORT: 8000
+        HOST: 0.0.0.0
+        
     - name: Wait for backend to be ready
       run: |
-        timeout 60 bash -c 'until curl -f http://localhost:8001/health; do sleep 2; done'
+        timeout 60 bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
         
     - name: Install Playwright browsers
       run: |
@@ -80,7 +84,7 @@ jobs:
         npm run dev &
         sleep 10
       env:
-        VITE_API_URL: http://localhost:8001
+        VITE_API_URL: http://localhost:8000
         
     - name: Wait for frontend to be ready
       run: |
@@ -92,11 +96,11 @@ jobs:
         npm run test:e2e -- --project=${{ matrix.browser }} --reporter=github
       env:
         CI: true
-        TEST_BACKEND_URL: http://localhost:8001
+        TEST_BACKEND_URL: http://localhost:8000
         TEST_VAULT_PATH: /tmp/kbase-test-vault
         TEST_SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
         TEST_PASSWORD: test-password
-        VITE_API_URL: http://localhost:8001
+        VITE_API_URL: http://localhost:8000
       continue-on-error: true
         
     - name: List test artifacts
@@ -142,27 +146,19 @@ jobs:
       with:
         python-version: '3.11'
         
+    - name: Install uv
+      run: |
+        pip install uv
+        
     - name: Install Python dependencies
       run: |
         cd backend
-        pip install -r requirements.txt
+        uv sync
         
     - name: Install frontend dependencies
       run: |
         cd frontend
         npm ci
-        
-    - name: Start backend server
-      run: |
-        cd backend
-        python run.py &
-        sleep 10
-      env:
-        VAULT_PATH: /tmp/kbase-test-vault
-        SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
-        PASSWORD: test-password
-        PORT: 8001
-        HOST: 0.0.0.0
         
     - name: Create test vault
       run: |
@@ -170,9 +166,21 @@ jobs:
         echo "# Welcome to KBase" > /tmp/kbase-test-vault/welcome.md
         echo "# Test Note" > /tmp/kbase-test-vault/test.md
         
+    - name: Start backend server
+      run: |
+        cd backend
+        uv run python run.py &
+        sleep 10
+      env:
+        VAULT_PATH: /tmp/kbase-test-vault
+        SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
+        PASSWORD: test-password
+        PORT: 8000
+        HOST: 0.0.0.0
+        
     - name: Wait for backend to be ready
       run: |
-        timeout 60 bash -c 'until curl -f http://localhost:8001/health; do sleep 2; done'
+        timeout 60 bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
         
     - name: Install Playwright browsers
       run: |
@@ -190,7 +198,7 @@ jobs:
         npm run dev &
         sleep 10
       env:
-        VITE_API_URL: http://localhost:8001
+        VITE_API_URL: http://localhost:8000
         
     - name: Wait for frontend to be ready
       run: |
@@ -202,11 +210,11 @@ jobs:
         npm run test:e2e -- --project="Mobile Chrome" --project="Mobile Safari" --reporter=github
       env:
         CI: true
-        TEST_BACKEND_URL: http://localhost:8001
+        TEST_BACKEND_URL: http://localhost:8000
         TEST_VAULT_PATH: /tmp/kbase-test-vault
         TEST_SECRET_KEY: test-secret-key-for-jwt-signing-in-e2e-tests
         TEST_PASSWORD: test-password
-        VITE_API_URL: http://localhost:8001
+        VITE_API_URL: http://localhost:8000
       continue-on-error: true
         
     - name: List mobile test artifacts

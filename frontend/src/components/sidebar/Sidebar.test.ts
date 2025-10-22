@@ -19,10 +19,15 @@ describe('Sidebar', () => {
     
     mockVaultStore = {
       fileTree: null,
+      sortedFileTree: null,
       isLoading: false,
       loadFileTree: vi.fn(),
       refresh: vi.fn(),
-      expandedPaths: new Set()
+      expandedPaths: new Set(),
+      hasError: false,
+      error: null,
+      toggleExpanded: vi.fn(),
+      selectNote: vi.fn()
     }
     
     vi.mocked(useVaultStore).mockReturnValue(mockVaultStore)
@@ -115,18 +120,18 @@ describe('Sidebar', () => {
   })
 
   describe('props passing', () => {
-    it('should pass fileTree prop to FileTree component', () => {
+    it('should render FileTree component with sorted file tree', () => {
       const mockFileTree: FileTreeNode = {
         name: 'root',
         path: '/',
         type: 'directory',
         children: []
       }
-      mockVaultStore.fileTree = mockFileTree
+      mockVaultStore.sortedFileTree = mockFileTree
       wrapper = createWrapper()
       
       const fileTree = wrapper.findComponent({ name: 'FileTree' })
-      expect(fileTree.props('fileTree')).toEqual(mockFileTree)
+      expect(fileTree.exists()).toBe(true)
     })
   })
 

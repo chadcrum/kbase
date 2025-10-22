@@ -1,8 +1,8 @@
 <template>
   <div class="file-tree">
     <FileTreeNode
-      v-if="fileTree"
-      :node="fileTree"
+      v-if="sortedFileTree"
+      :node="sortedFileTree"
       :level="0"
       :expanded-paths="expandedPaths"
       @toggle-expand="handleToggleExpand"
@@ -27,17 +27,6 @@
 import { computed } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import FileTreeNode from './FileTreeNode.vue'
-import type { FileTreeNode as FileTreeNodeType } from '@/types'
-
-// Props
-interface Props {
-  fileTree?: FileTreeNodeType | null
-}
-
-// @ts-ignore
-const props = withDefaults(defineProps<Props>(), {
-  fileTree: null
-})
 
 // @ts-ignore
 const emit = defineEmits<{
@@ -52,6 +41,7 @@ const isLoading = computed(() => vaultStore.isLoading)
 const hasError = computed(() => vaultStore.hasError)
 const error = computed(() => vaultStore.error)
 const expandedPaths = computed(() => vaultStore.expandedPaths)
+const sortedFileTree = computed(() => vaultStore.sortedFileTree)
 
 // Methods
 const handleToggleExpand = (path: string) => {

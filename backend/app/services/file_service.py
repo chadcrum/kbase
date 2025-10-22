@@ -77,22 +77,36 @@ class FileService:
                     # Include all directories, even if empty
                     children.append(dir_tree)
                 elif self._is_markdown_file(item):
-                    # Add markdown files
+                    # Add markdown files with timestamps
+                    stat = item.stat()
                     children.append({
                         "name": item.name,
                         "path": f"/{item_relative_path}",
-                        "type": "file"
+                        "type": "file",
+                        "created": int(stat.st_ctime),
+                        "modified": int(stat.st_mtime)
                     })
         
         except PermissionError:
             # Skip directories we can't read
             pass
         
+        # Get directory timestamps
+        try:
+            stat = directory.stat()
+            created = int(stat.st_ctime)
+            modified = int(stat.st_mtime)
+        except (OSError, PermissionError):
+            created = None
+            modified = None
+        
         return {
             "name": directory.name if relative_path else "vault",
             "path": f"/{relative_path}" if relative_path else "/",
             "type": "directory",
-            "children": children
+            "children": children,
+            "created": created,
+            "modified": modified
         }
     
     def list_notes(self) -> Dict:

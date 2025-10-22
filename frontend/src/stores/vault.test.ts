@@ -507,5 +507,202 @@ describe('VaultStore', () => {
       expect(vaultStore.error).toBe('Failed to create note')
     })
   })
+
+  describe('sorting', () => {
+    beforeEach(() => {
+      // Clear localStorage before each test
+      localStorage.clear()
+      // Create a fresh store instance
+      setActivePinia(createPinia())
+      vaultStore = useVaultStore()
+    })
+
+    it('should have default sort settings', () => {
+      expect(vaultStore.sortBy).toBe('name')
+      expect(vaultStore.sortOrder).toBe('asc')
+    })
+
+    it('should load sort settings from localStorage', () => {
+      localStorage.setItem('kbase_sort_by', 'modified')
+      localStorage.setItem('kbase_sort_order', 'desc')
+      
+      // Create new store instance to test initialization
+      setActivePinia(createPinia())
+      const newStore = useVaultStore()
+      
+      expect(newStore.sortBy).toBe('modified')
+      expect(newStore.sortOrder).toBe('desc')
+    })
+
+    it('should update sortBy and save to localStorage', () => {
+      vaultStore.setSortBy('created')
+      
+      expect(vaultStore.sortBy).toBe('created')
+      expect(localStorage.getItem('kbase_sort_by')).toBe('created')
+    })
+
+    it('should update sortOrder and save to localStorage', () => {
+      vaultStore.setSortOrder('desc')
+      
+      expect(vaultStore.sortOrder).toBe('desc')
+      expect(localStorage.getItem('kbase_sort_order')).toBe('desc')
+    })
+
+    it('should toggle sortOrder', () => {
+      expect(vaultStore.sortOrder).toBe('asc')
+      
+      vaultStore.toggleSortOrder()
+      expect(vaultStore.sortOrder).toBe('desc')
+      
+      vaultStore.toggleSortOrder()
+      expect(vaultStore.sortOrder).toBe('asc')
+    })
+
+    it('should sort files by name ascending', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          { name: 'zebra.md', path: '/zebra.md', type: 'file', created: 1000, modified: 2000 },
+          { name: 'alpha.md', path: '/alpha.md', type: 'file', created: 3000, modified: 4000 },
+          { name: 'beta.md', path: '/beta.md', type: 'file', created: 2000, modified: 3000 }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      vaultStore.setSortBy('name')
+      vaultStore.setSortOrder('asc')
+
+      const sorted = vaultStore.sortedFileTree
+      expect(sorted?.children?.map(c => c.name)).toEqual(['alpha.md', 'beta.md', 'zebra.md'])
+    })
+
+    it('should sort files by name descending', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          { name: 'zebra.md', path: '/zebra.md', type: 'file', created: 1000, modified: 2000 },
+          { name: 'alpha.md', path: '/alpha.md', type: 'file', created: 3000, modified: 4000 },
+          { name: 'beta.md', path: '/beta.md', type: 'file', created: 2000, modified: 3000 }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      vaultStore.setSortBy('name')
+      vaultStore.setSortOrder('desc')
+
+      const sorted = vaultStore.sortedFileTree
+      expect(sorted?.children?.map(c => c.name)).toEqual(['zebra.md', 'beta.md', 'alpha.md'])
+    })
+
+    it('should sort files by created date ascending', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          { name: 'zebra.md', path: '/zebra.md', type: 'file', created: 3000, modified: 2000 },
+          { name: 'alpha.md', path: '/alpha.md', type: 'file', created: 1000, modified: 4000 },
+          { name: 'beta.md', path: '/beta.md', type: 'file', created: 2000, modified: 3000 }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      vaultStore.setSortBy('created')
+      vaultStore.setSortOrder('asc')
+
+      const sorted = vaultStore.sortedFileTree
+      expect(sorted?.children?.map(c => c.name)).toEqual(['alpha.md', 'beta.md', 'zebra.md'])
+    })
+
+    it('should sort files by modified date descending', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          { name: 'zebra.md', path: '/zebra.md', type: 'file', created: 1000, modified: 2000 },
+          { name: 'alpha.md', path: '/alpha.md', type: 'file', created: 3000, modified: 4000 },
+          { name: 'beta.md', path: '/beta.md', type: 'file', created: 2000, modified: 3000 }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      vaultStore.setSortBy('modified')
+      vaultStore.setSortOrder('desc')
+
+      const sorted = vaultStore.sortedFileTree
+      expect(sorted?.children?.map(c => c.name)).toEqual(['alpha.md', 'beta.md', 'zebra.md'])
+    })
+
+    it('should place folders before files in sorted results', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          { name: 'zebra.md', path: '/zebra.md', type: 'file', created: 1000, modified: 2000 },
+          { name: 'folder-b', path: '/folder-b', type: 'directory', created: 3000, modified: 4000, children: [] },
+          { name: 'alpha.md', path: '/alpha.md', type: 'file', created: 2000, modified: 3000 },
+          { name: 'folder-a', path: '/folder-a', type: 'directory', created: 2000, modified: 3000, children: [] }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      vaultStore.setSortBy('name')
+      vaultStore.setSortOrder('asc')
+
+      const sorted = vaultStore.sortedFileTree
+      const names = sorted?.children?.map(c => c.name)
+      
+      // Folders should be first
+      expect(names).toEqual(['folder-a', 'folder-b', 'alpha.md', 'zebra.md'])
+    })
+
+    it('should recursively sort nested folders', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          {
+            name: 'folder-a',
+            path: '/folder-a',
+            type: 'directory',
+            created: 1000,
+            modified: 2000,
+            children: [
+              { name: 'z-nested.md', path: '/folder-a/z-nested.md', type: 'file', created: 1000, modified: 2000 },
+              { name: 'a-nested.md', path: '/folder-a/a-nested.md', type: 'file', created: 2000, modified: 3000 }
+            ]
+          }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      vaultStore.setSortBy('name')
+      vaultStore.setSortOrder('asc')
+
+      const sorted = vaultStore.sortedFileTree
+      const folderChildren = sorted?.children?.[0]?.children?.map(c => c.name)
+      
+      expect(folderChildren).toEqual(['a-nested.md', 'z-nested.md'])
+    })
+  })
 })
 

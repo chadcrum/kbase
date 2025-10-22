@@ -18,7 +18,12 @@ describe('FileExplorerToolbar', () => {
     
     mockVaultStore = {
       createDirectory: vi.fn().mockResolvedValue(true),
-      createNote: vi.fn().mockResolvedValue(true)
+      createNote: vi.fn().mockResolvedValue(true),
+      sortBy: 'name',
+      sortOrder: 'asc',
+      setSortBy: vi.fn(),
+      setSortOrder: vi.fn(),
+      toggleSortOrder: vi.fn()
     }
     
     vi.mocked(useVaultStore).mockReturnValue(mockVaultStore)
@@ -32,12 +37,14 @@ describe('FileExplorerToolbar', () => {
     })
 
     const buttons = wrapper.findAll('.toolbar-button')
-    expect(buttons).toHaveLength(3)
+    expect(buttons).toHaveLength(5) // 3 original + 2 sort buttons
     
     // All buttons are icon-only, verify by checking titles
     expect(buttons[0].attributes('title')).toBe('New Folder')
     expect(buttons[1].attributes('title')).toBe('New File')
     expect(buttons[2].attributes('title')).toBe('Refresh')
+    expect(buttons[3].attributes('title')).toBe('Sort Ascending')
+    expect(buttons[4].attributes('title')).toBe('Sort by')
     
     // Third button is refresh button
     expect(buttons[2].classes()).toContain('refresh-button')
@@ -361,6 +368,98 @@ describe('FileExplorerToolbar', () => {
     await wrapper.vm.$nextTick()
 
     expect(fileDialog.props('isOpen')).toBe(true)
+  })
+
+  describe('sort controls', () => {
+    it('should render sort order button with correct icon', () => {
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const sortButton = wrapper.findAll('.toolbar-button')[3]
+      expect(sortButton.text()).toContain('⬆️') // Ascending icon
+    })
+
+    it('should render sort dropdown button', () => {
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const sortButton = wrapper.findAll('.toolbar-button')[4]
+      expect(sortButton.attributes('title')).toBe('Sort by')
+    })
+
+    it('should toggle sort order when clicked', async () => {
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const sortOrderButton = wrapper.findAll('.toolbar-button')[3]
+      await sortOrderButton.trigger('click')
+
+      expect(mockVaultStore.toggleSortOrder).toHaveBeenCalled()
+    })
+
+    it('should show dropdown when sort criteria button is clicked', async () => {
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const sortCriteriaButton = wrapper.findAll('.toolbar-button')[4]
+      await sortCriteriaButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      const dropdown = wrapper.find('.sort-dropdown')
+      expect(dropdown.exists()).toBe(true)
+    })
+
+    it('should display sort options in dropdown', async () => {
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const sortCriteriaButton = wrapper.findAll('.toolbar-button')[4]
+      await sortCriteriaButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      const options = wrapper.findAll('.sort-option')
+      expect(options).toHaveLength(3)
+      expect(options[0].text()).toContain('Name')
+      expect(options[1].text()).toContain('Created Date')
+      expect(options[2].text()).toContain('Modified Date')
+    })
+
+    it('should call setSortBy when option is clicked', async () => {
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const sortCriteriaButton = wrapper.findAll('.toolbar-button')[4]
+      await sortCriteriaButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      const options = wrapper.findAll('.sort-option')
+      await options[1].trigger('click') // Created Date
+
+      expect(mockVaultStore.setSortBy).toHaveBeenCalledWith('created')
+    })
+
+    it('should close dropdown after selecting option', async () => {
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const sortCriteriaButton = wrapper.findAll('.toolbar-button')[4]
+      await sortCriteriaButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      const option = wrapper.find('.sort-option')
+      await option.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      const dropdown = wrapper.find('.sort-dropdown')
+      expect(dropdown.exists()).toBe(false)
+    })
   })
 })
 

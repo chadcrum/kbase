@@ -3,6 +3,12 @@ import { ref, computed } from 'vue'
 import { apiClient } from '@/api/client'
 import type { FileTreeNode, NoteData } from '@/types'
 
+export type SortBy = 'name' | 'created' | 'modified'
+export type SortOrder = 'asc' | 'desc'
+
+const SORT_BY_KEY = 'kbase_sort_by'
+const SORT_ORDER_KEY = 'kbase_sort_order'
+
 export const useVaultStore = defineStore('vault', () => {
   // State
   const fileTree = ref<FileTreeNode | null>(null)
@@ -12,11 +18,67 @@ export const useVaultStore = defineStore('vault', () => {
   const expandedPaths = ref<Set<string>>(new Set())
   const isSaving = ref(false)
   const saveError = ref<string | null>(null)
+  
+  // Sort state - load from localStorage
+  const sortBy = ref<SortBy>((localStorage.getItem(SORT_BY_KEY) as SortBy) || 'name')
+  const sortOrder = ref<SortOrder>((localStorage.getItem(SORT_ORDER_KEY) as SortOrder) || 'asc')
 
   // Getters
   const hasError = computed(() => error.value !== null)
   const isNoteSelected = computed(() => selectedNote.value !== null)
   const selectedNotePath = computed(() => selectedNote.value?.path || null)
+  
+  // Helper function to sort nodes
+  const sortNodes = (nodes: FileTreeNode[]): FileTreeNode[] => {
+    if (!nodes || nodes.length === 0) return nodes
+    
+    // Separate folders and files
+    const folders = nodes.filter(node => node.type === 'directory')
+    const files = nodes.filter(node => node.type === 'file')
+    
+    // Sort function based on current sort criteria
+    const compare = (a: FileTreeNode, b: FileTreeNode): number => {
+      let result = 0
+      
+      if (sortBy.value === 'name') {
+        result = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+      } else if (sortBy.value === 'created') {
+        const aCreated = a.created || 0
+        const bCreated = b.created || 0
+        result = aCreated - bCreated
+      } else if (sortBy.value === 'modified') {
+        const aModified = a.modified || 0
+        const bModified = b.modified || 0
+        result = aModified - bModified
+      }
+      
+      // Apply sort order
+      return sortOrder.value === 'asc' ? result : -result
+    }
+    
+    // Sort each group
+    const sortedFolders = [...folders].sort(compare)
+    const sortedFiles = [...files].sort(compare)
+    
+    // Recursively sort children in folders
+    const foldersWithSortedChildren = sortedFolders.map(folder => ({
+      ...folder,
+      children: folder.children ? sortNodes(folder.children) : []
+    }))
+    
+    // Folders first, then files
+    return [...foldersWithSortedChildren, ...sortedFiles]
+  }
+  
+  // Sorted file tree
+  const sortedFileTree = computed((): FileTreeNode | null => {
+    if (!fileTree.value) return null
+    
+    return {
+      ...fileTree.value,
+      children: fileTree.value.children ? sortNodes(fileTree.value.children) : []
+    }
+  })
 
   // Actions
   const loadFileTree = async (): Promise<boolean> => {
@@ -271,6 +333,22 @@ export const useVaultStore = defineStore('vault', () => {
     }
   }
 
+  // Sort actions
+  const setSortBy = (newSortBy: SortBy) => {
+    sortBy.value = newSortBy
+    localStorage.setItem(SORT_BY_KEY, newSortBy)
+  }
+
+  const setSortOrder = (newSortOrder: SortOrder) => {
+    sortOrder.value = newSortOrder
+    localStorage.setItem(SORT_ORDER_KEY, newSortOrder)
+  }
+
+  const toggleSortOrder = () => {
+    const newOrder = sortOrder.value === 'asc' ? 'desc' : 'asc'
+    setSortOrder(newOrder)
+  }
+
   return {
     // State
     fileTree,
@@ -280,10 +358,13 @@ export const useVaultStore = defineStore('vault', () => {
     expandedPaths,
     isSaving,
     saveError,
+    sortBy,
+    sortOrder,
     // Getters
     hasError,
     isNoteSelected,
     selectedNotePath,
+    sortedFileTree,
     // Actions
     loadFileTree,
     loadNote,
@@ -304,7 +385,11 @@ export const useVaultStore = defineStore('vault', () => {
     renameDirectory,
     moveDirectory,
     createDirectory,
-    createNote
+    createNote,
+    // Sort actions
+    setSortBy,
+    setSortOrder,
+    toggleSortOrder
   }
 })
 

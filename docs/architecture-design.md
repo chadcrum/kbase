@@ -185,9 +185,13 @@ frontend/src/
 **State Management (Pinia)**:
 
 - `authStore`: User session, JWT token management, login/logout
-- `vaultStore`: File tree state, selected note, loading states, expanded paths, note updates, save state
+- `vaultStore`: File tree state, selected note, loading states, expanded paths, note updates, save state, sorting preferences
   - **File Operations**: `deleteFile()`, `renameFile()`, `moveFile()`, `createNote()`
   - **Directory Operations**: `deleteDirectory()`, `renameDirectory()`, `moveDirectory()`, `createDirectory()`
+  - **Sorting**: `setSortBy()`, `setSortOrder()`, `toggleSortOrder()`, `sortedFileTree` (computed)
+    - Supports sorting by name, created date, and modified date
+    - Maintains folder-first ordering in all sort modes
+    - Sort preferences persisted to localStorage
   - All CRUD operations automatically refresh the file tree and handle selection updates
   - `createNote()` automatically opens newly created files in the editor
 
@@ -200,6 +204,12 @@ frontend/src/
     - **New Folder Button**: Create new folders at root level with input validation
     - **New File Button**: Create new markdown files at root level with input validation
     - **Refresh Button**: Manually refresh the file tree (disabled during loading)
+    - **Sort Controls**: 
+      - **Sort Order Toggle**: Switch between ascending/descending sort order
+      - **Sort Criteria Dropdown**: Choose sort method (Name, Created Date, Modified Date)
+      - Sort preferences persist in localStorage across sessions
+      - Folders always appear before files in sorted results
+      - Sorting applies recursively to all nested folders
     - Input validation prevents path traversal attacks and invalid characters
     - Auto-appends `.md` extension for new files
   - **Drag & Drop**: Drag files and directories into other directories to move them

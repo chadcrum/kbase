@@ -1,6 +1,6 @@
 """Notes API endpoints."""
 
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -42,6 +42,8 @@ class FileTreeNode(BaseModel):
     path: str
     type: str
     children: list = []
+    created: Optional[int] = None
+    modified: Optional[int] = None
 
 
 @router.get("/", response_model=FileTreeNode)

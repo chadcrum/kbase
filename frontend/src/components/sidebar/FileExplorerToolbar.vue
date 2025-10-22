@@ -10,6 +10,30 @@
       <button @click="handleRefresh" class="toolbar-button refresh-button" :disabled="isLoading" title="Refresh">
         <span class="icon refresh-icon">🔄</span>
       </button>
+      
+      <!-- Sort buttons -->
+      <div class="sort-buttons">
+        <button @click="handleToggleSortOrder" class="toolbar-button sort-button" :title="sortOrderTitle">
+          <span class="icon">{{ sortOrder === 'asc' ? '⬆️' : '⬇️' }}</span>
+        </button>
+        <div class="sort-dropdown-wrapper">
+          <button @click="toggleSortDropdown" class="toolbar-button sort-button" title="Sort by">
+            <span class="icon">⚙️</span>
+          </button>
+          <div v-if="showSortDropdown" class="sort-dropdown" @click.stop>
+            <div 
+              v-for="option in sortOptions" 
+              :key="option.value"
+              class="sort-option"
+              :class="{ 'active': sortBy === option.value }"
+              @click="handleSortByChange(option.value)"
+            >
+              <span class="sort-option-icon">{{ sortBy === option.value ? '✓' : '' }}</span>
+              <span class="sort-option-label">{{ option.label }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Error Display -->
@@ -46,9 +70,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import InputDialog from '@/components/common/InputDialog.vue'
+import type { SortBy } from '@/stores/vault'
 
 // Props
 defineProps<{
@@ -63,6 +88,23 @@ const emit = defineEmits<{
 const vaultStore = useVaultStore()
 const showFolderDialog = ref(false)
 const showFileDialog = ref(false)
+const showSortDropdown = ref(false)
+
+// Sort state from store
+const sortBy = computed(() => vaultStore.sortBy)
+const sortOrder = computed(() => vaultStore.sortOrder)
+
+// Sort options
+const sortOptions = [
+  { label: 'Name', value: 'name' as SortBy },
+  { label: 'Created Date', value: 'created' as SortBy },
+  { label: 'Modified Date', value: 'modified' as SortBy }
+]
+
+// Computed title for sort order button
+const sortOrderTitle = computed(() => {
+  return sortOrder.value === 'asc' ? 'Sort Ascending' : 'Sort Descending'
+})
 
 /**
  * Validates folder name to prevent path traversal and invalid characters
@@ -179,6 +221,47 @@ const createFile = async (fileName: string) => {
   }
   // Error handling is done by the store (sets error state)
 }
+
+/**
+ * Toggles the sort order between ascending and descending
+ */
+const handleToggleSortOrder = () => {
+  vaultStore.toggleSortOrder()
+}
+
+/**
+ * Toggles the visibility of the sort dropdown
+ */
+const toggleSortDropdown = () => {
+  showSortDropdown.value = !showSortDropdown.value
+}
+
+/**
+ * Changes the sort criteria
+ */
+const handleSortByChange = (newSortBy: SortBy) => {
+  vaultStore.setSortBy(newSortBy)
+  showSortDropdown.value = false
+}
+
+/**
+ * Close dropdown when clicking outside
+ */
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.sort-dropdown-wrapper')) {
+    showSortDropdown.value = false
+  }
+}
+
+// Setup click outside listener
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
@@ -266,6 +349,63 @@ const createFile = async (fileName: string) => {
 
 .refresh-button:hover:not(:disabled) .refresh-icon {
   transform: rotate(180deg);
+}
+
+/* Sort buttons */
+.sort-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.sort-button {
+  min-width: auto;
+}
+
+.sort-dropdown-wrapper {
+  position: relative;
+}
+
+.sort-dropdown {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  min-width: 160px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.sort-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.sort-option:hover {
+  background-color: #f3f4f6;
+}
+
+.sort-option.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.sort-option-icon {
+  width: 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.sort-option-label {
+  flex: 1;
 }
 </style>
 

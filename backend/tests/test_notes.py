@@ -259,3 +259,77 @@ def test_list_notes_includes_empty_directories(auth_client: TestClient, auth_tok
     assert len(parent_folder["children"]) == 1, "Parent folder should have one child directory"
     assert parent_folder["children"][0]["name"] == "child_folder"
     assert parent_folder["children"][0]["type"] == "directory"
+
+
+def test_file_tree_includes_timestamps(auth_client: TestClient, auth_token: str):
+    """Test that file tree includes created and modified timestamps."""
+    response = auth_client.get(
+        "/api/v1/notes/",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 200
+    
+    data = response.json()
+    
+    # Check root directory has timestamps
+    assert "created" in data
+    assert "modified" in data
+    assert isinstance(data["created"], int) or data["created"] is None
+    assert isinstance(data["modified"], int) or data["modified"] is None
+    
+    # Check that files have timestamps
+    files = [child for child in data["children"] if child["type"] == "file"]
+    assert len(files) > 0, "Should have at least one file in test data"
+    
+    for file_node in files:
+        assert "created" in file_node, f"File {file_node['name']} should have 'created' field"
+        assert "modified" in file_node, f"File {file_node['name']} should have 'modified' field"
+        assert isinstance(file_node["created"], int), f"File {file_node['name']} created timestamp should be an integer"
+        assert isinstance(file_node["modified"], int), f"File {file_node['name']} modified timestamp should be an integer"
+        assert file_node["created"] > 0, f"File {file_node['name']} created timestamp should be positive"
+        assert file_node["modified"] > 0, f"File {file_node['name']} modified timestamp should be positive"
+    
+    # Check that directories have timestamps
+    directories = [child for child in data["children"] if child["type"] == "directory"]
+    assert len(directories) > 0, "Should have at least one directory in test data"
+    
+    for dir_node in directories:
+        assert "created" in dir_node, f"Directory {dir_node['name']} should have 'created' field"
+        assert "modified" in dir_node, f"Directory {dir_node['name']} should have 'modified' field"
+        # Timestamps can be None or integers
+        if dir_node["created"] is not None:
+            assert isinstance(dir_node["created"], int), f"Directory {dir_node['name']} created timestamp should be an integer"
+            assert dir_node["created"] > 0, f"Directory {dir_node['name']} created timestamp should be positive"
+        if dir_node["modified"] is not None:
+            assert isinstance(dir_node["modified"], int), f"Directory {dir_node['name']} modified timestamp should be an integer"
+            assert dir_node["modified"] > 0, f"Directory {dir_node['name']} modified timestamp should be positive"
+
+
+def test_nested_file_tree_timestamps(auth_client: TestClient, auth_token: str):
+    """Test that nested files and directories also have timestamps."""
+    response = auth_client.get(
+        "/api/v1/notes/",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 200
+    
+    data = response.json()
+    
+    # Find the subdir directory
+    subdir = next((child for child in data["children"] if child["name"] == "subdir"), None)
+    assert subdir is not None, "Should have subdir in test data"
+    
+    # Check that the subdirectory has timestamps
+    assert "created" in subdir
+    assert "modified" in subdir
+    
+    # Check that files in the subdirectory have timestamps
+    assert len(subdir["children"]) > 0, "Subdir should have children"
+    for child in subdir["children"]:
+        assert "created" in child
+        assert "modified" in child
+        if child["type"] == "file":
+            assert isinstance(child["created"], int)
+            assert isinstance(child["modified"], int)
+            assert child["created"] > 0
+            assert child["modified"] > 0

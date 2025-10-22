@@ -174,7 +174,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
-      const validator = folderDialog.props('validator')
+      const validator = folderDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('')).toBe('Folder name cannot be empty')
       expect(validator('   ')).toBe('Folder name cannot be empty')
@@ -185,7 +185,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
-      const validator = folderDialog.props('validator')
+      const validator = folderDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('folder/name')).toBe('Folder name cannot contain path separators or ..')
       expect(validator('folder\\name')).toBe('Folder name cannot contain path separators or ..')
@@ -197,7 +197,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
-      const validator = folderDialog.props('validator')
+      const validator = folderDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('folder<name')).toBe('Folder name contains invalid characters')
       expect(validator('folder>name')).toBe('Folder name contains invalid characters')
@@ -210,7 +210,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
-      const validator = folderDialog.props('validator')
+      const validator = folderDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('CON')).toBe('This is a reserved folder name')
       expect(validator('PRN')).toBe('This is a reserved folder name')
@@ -222,7 +222,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
-      const validator = folderDialog.props('validator')
+      const validator = folderDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('my-folder')).toBeNull()
       expect(validator('folder_name')).toBeNull()
@@ -236,7 +236,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
-      const validator = fileDialog.props('validator')
+      const validator = fileDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('')).toBe('File name cannot be empty')
       expect(validator('   ')).toBe('File name cannot be empty')
@@ -247,7 +247,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
-      const validator = fileDialog.props('validator')
+      const validator = fileDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('file/name.md')).toBe('File name cannot contain path separators or ..')
       expect(validator('file\\name.md')).toBe('File name cannot contain path separators or ..')
@@ -259,7 +259,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
-      const validator = fileDialog.props('validator')
+      const validator = fileDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('file<name.md')).toBe('File name contains invalid characters')
       expect(validator('file>name.md')).toBe('File name contains invalid characters')
@@ -271,7 +271,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
-      const validator = fileDialog.props('validator')
+      const validator = fileDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('file.txt')).toBe('File name must end with .md extension')
       expect(validator('filename')).toBe('File name must end with .md extension')
@@ -282,7 +282,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
-      const validator = fileDialog.props('validator')
+      const validator = fileDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('CON.md')).toBe('This is a reserved file name')
       expect(validator('PRN.md')).toBe('This is a reserved file name')
@@ -293,7 +293,7 @@ describe('FileExplorerToolbar', () => {
         props: { isLoading: false }
       })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
-      const validator = fileDialog.props('validator')
+      const validator = fileDialog.props('validator') as ((value: string) => string | null)
 
       expect(validator('my-file.md')).toBeNull()
       expect(validator('file_name.md')).toBeNull()

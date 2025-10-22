@@ -196,11 +196,45 @@ export function createVaultHelper(vaultPath: string): VaultHelper {
   return new VaultHelper(vaultPath);
 }
 
-  /**
-   * Utility function to create a temporary vault path
-   */
+/**
+ * Utility function to create a temporary vault path
+ */
 export function createTempVaultPath(): string {
   const os = require('node:os');
   const path = require('node:path');
   return path.join(os.tmpdir(), `kbase-test-vault-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+}
+
+// Global vault helper for e2e tests
+let globalVaultHelper: VaultHelper | null = null;
+
+/**
+ * Create a vault with test files
+ * Used in e2e tests to set up test data
+ */
+export async function createVault(files: VaultFile[]): Promise<void> {
+  const vaultPath = process.env.KBASE_VAULT_PATH || '/tmp/kbase-test-vault';
+  
+  if (!globalVaultHelper) {
+    globalVaultHelper = new VaultHelper(vaultPath);
+  }
+  
+  // Ensure vault exists
+  globalVaultHelper.ensureVaultExists();
+  
+  // Create all files
+  for (const file of files) {
+    globalVaultHelper.addNote(file.path, file.content);
+  }
+}
+
+/**
+ * Destroy the vault (clean up)
+ * Used in e2e tests to clean up after tests
+ */
+export async function destroyVault(): Promise<void> {
+  if (globalVaultHelper) {
+    globalVaultHelper.cleanVault();
+    globalVaultHelper = null;
+  }
 }

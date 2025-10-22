@@ -3,11 +3,9 @@
     <div class="toolbar-buttons">
       <button @click="handleNewFolder" class="toolbar-button" title="New Folder">
         <span class="icon">📁</span>
-        <span class="label">New Folder</span>
       </button>
       <button @click="handleNewFile" class="toolbar-button" title="New File">
         <span class="icon">📄</span>
-        <span class="label">New File</span>
       </button>
       <button @click="handleRefresh" class="toolbar-button refresh-button" :disabled="isLoading" title="Refresh">
         <span class="icon refresh-icon">🔄</span>
@@ -257,10 +255,6 @@ const createFile = async (fileName: string) => {
   font-size: 1rem;
 }
 
-.toolbar-button .label {
-  font-weight: 500;
-}
-
 .refresh-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -272,17 +266,6 @@ const createFile = async (fileName: string) => {
 
 .refresh-button:hover:not(:disabled) .refresh-icon {
   transform: rotate(180deg);
-}
-
-/* Responsive: hide labels on smaller screens */
-@media (max-width: 768px) {
-  .toolbar-button .label {
-    display: none;
-  }
-  
-  .toolbar-buttons {
-    padding: 0.5rem;
-  }
 }
 </style>
 

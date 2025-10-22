@@ -34,13 +34,13 @@ describe('FileExplorerToolbar', () => {
     const buttons = wrapper.findAll('.toolbar-button')
     expect(buttons).toHaveLength(3)
     
-    const labels = wrapper.findAll('.label')
-    expect(labels[0].text()).toBe('New Folder')
-    expect(labels[1].text()).toBe('New File')
+    // All buttons are icon-only, verify by checking titles
+    expect(buttons[0].attributes('title')).toBe('New Folder')
+    expect(buttons[1].attributes('title')).toBe('New File')
+    expect(buttons[2].attributes('title')).toBe('Refresh')
     
-    // Third button is refresh (no label, just icon)
-    const refreshButton = buttons[2]
-    expect(refreshButton.classes()).toContain('refresh-button')
+    // Third button is refresh button
+    expect(buttons[2].classes()).toContain('refresh-button')
   })
 
   it('should open folder dialog when New Folder button is clicked', async () => {

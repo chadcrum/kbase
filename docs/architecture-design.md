@@ -143,7 +143,7 @@ frontend/src/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
 │   │   ├── ContextMenu.vue         # Context menu for file operations
-│   │   ├── FileExplorerToolbar.vue # Toolbar with New File/Folder buttons
+│   │   ├── FileExplorerToolbar.vue # Toolbar with New File/Folder/Refresh buttons
 │   │   ├── FileTree.vue            # Recursive tree component
 │   │   ├── FileTreeNode.vue        # Individual tree node
 │   │   └── Sidebar.vue             # Sidebar container
@@ -173,10 +173,10 @@ frontend/src/
   - `NoteViewer.vue`: Orchestrates editor and preview views
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
-  - `Sidebar.vue`: File tree sidebar with integrated toolbar
+  - `Sidebar.vue`: File tree sidebar container
   - `FileTree.vue`: Hierarchical file tree display
   - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
-  - `FileExplorerToolbar.vue`: Toolbar positioned above file tree with create actions
+  - `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with create and refresh actions
 - **Common Components**:
   - `ConfirmDialog.vue`: Reusable confirmation modal for destructive actions
   - `InputDialog.vue`: Reusable input dialog with validation for user text input
@@ -196,9 +196,10 @@ frontend/src/
 - **Authentication**: JWT-based login with password protection
 - **File Explorer**: Advanced file management with full CRUD operations
   - Hierarchical tree view with expand/collapse functionality
-  - **File Explorer Toolbar**: Quick access toolbar above the file tree
-    - **New File Button**: Create new markdown files at root level with input validation
+  - **File Explorer Toolbar**: Quick access toolbar at the top of the sidebar
     - **New Folder Button**: Create new folders at root level with input validation
+    - **New File Button**: Create new markdown files at root level with input validation
+    - **Refresh Button**: Manually refresh the file tree (disabled during loading)
     - Input validation prevents path traversal attacks and invalid characters
     - Auto-appends `.md` extension for new files
   - **Drag & Drop**: Drag files and directories into other directories to move them

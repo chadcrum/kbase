@@ -24,19 +24,29 @@ describe('FileExplorerToolbar', () => {
     vi.mocked(useVaultStore).mockReturnValue(mockVaultStore)
   })
 
-  it('should render toolbar with New Folder and New File buttons', () => {
-    const wrapper = mount(FileExplorerToolbar)
+  it('should render toolbar with New Folder, New File, and Refresh buttons', () => {
+    const wrapper = mount(FileExplorerToolbar, {
+      props: {
+        isLoading: false
+      }
+    })
 
     const buttons = wrapper.findAll('.toolbar-button')
-    expect(buttons).toHaveLength(2)
+    expect(buttons).toHaveLength(3)
     
     const labels = wrapper.findAll('.label')
     expect(labels[0].text()).toBe('New Folder')
     expect(labels[1].text()).toBe('New File')
+    
+    // Third button is refresh (no label, just icon)
+    const refreshButton = buttons[2]
+    expect(refreshButton.classes()).toContain('refresh-button')
   })
 
   it('should open folder dialog when New Folder button is clicked', async () => {
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     const newFolderButton = wrapper.findAll('.toolbar-button')[0]
     await newFolderButton.trigger('click')
@@ -47,7 +57,9 @@ describe('FileExplorerToolbar', () => {
   })
 
   it('should open file dialog when New File button is clicked', async () => {
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     const newFileButton = wrapper.findAll('.toolbar-button')[1]
     await newFileButton.trigger('click')
@@ -57,8 +69,31 @@ describe('FileExplorerToolbar', () => {
     expect(fileDialog.props('title')).toBe('Create New File')
   })
 
+  it('should emit refresh event when refresh button is clicked', async () => {
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
+
+    const refreshButton = wrapper.findAll('.toolbar-button')[2]
+    await refreshButton.trigger('click')
+
+    expect(wrapper.emitted('refresh')).toBeTruthy()
+    expect(wrapper.emitted('refresh')).toHaveLength(1)
+  })
+
+  it('should disable refresh button when loading', () => {
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: true }
+    })
+
+    const refreshButton = wrapper.findAll('.toolbar-button')[2]
+    expect(refreshButton.attributes('disabled')).toBeDefined()
+  })
+
   it('should create folder when folder dialog confirms', async () => {
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     // Open folder dialog
     const newFolderButton = wrapper.findAll('.toolbar-button')[0]
@@ -72,7 +107,9 @@ describe('FileExplorerToolbar', () => {
   })
 
   it('should create file when file dialog confirms', async () => {
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     // Open file dialog
     const newFileButton = wrapper.findAll('.toolbar-button')[1]
@@ -86,7 +123,9 @@ describe('FileExplorerToolbar', () => {
   })
 
   it('should close folder dialog on cancel', async () => {
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     // Open folder dialog
     const newFolderButton = wrapper.findAll('.toolbar-button')[0]
@@ -102,7 +141,9 @@ describe('FileExplorerToolbar', () => {
   })
 
   it('should close file dialog on cancel', async () => {
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     // Open file dialog
     const newFileButton = wrapper.findAll('.toolbar-button')[1]
@@ -119,7 +160,9 @@ describe('FileExplorerToolbar', () => {
 
   describe('validateFolderName', () => {
     it('should reject empty folder name', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
       const validator = folderDialog.props('validator')
 
@@ -128,7 +171,9 @@ describe('FileExplorerToolbar', () => {
     })
 
     it('should reject folder name with path separators', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
       const validator = folderDialog.props('validator')
 
@@ -138,7 +183,9 @@ describe('FileExplorerToolbar', () => {
     })
 
     it('should reject folder name with invalid characters', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
       const validator = folderDialog.props('validator')
 
@@ -149,7 +196,9 @@ describe('FileExplorerToolbar', () => {
     })
 
     it('should reject reserved folder names', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
       const validator = folderDialog.props('validator')
 
@@ -159,7 +208,9 @@ describe('FileExplorerToolbar', () => {
     })
 
     it('should accept valid folder name', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const folderDialog = wrapper.findAllComponents(InputDialog)[0]
       const validator = folderDialog.props('validator')
 
@@ -171,7 +222,9 @@ describe('FileExplorerToolbar', () => {
 
   describe('validateFileName', () => {
     it('should reject empty file name', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
       const validator = fileDialog.props('validator')
 
@@ -180,7 +233,9 @@ describe('FileExplorerToolbar', () => {
     })
 
     it('should reject file name with path separators', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
       const validator = fileDialog.props('validator')
 
@@ -190,7 +245,9 @@ describe('FileExplorerToolbar', () => {
     })
 
     it('should reject file name with invalid characters', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
       const validator = fileDialog.props('validator')
 
@@ -200,7 +257,9 @@ describe('FileExplorerToolbar', () => {
     })
 
     it('should reject file name without .md extension', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
       const validator = fileDialog.props('validator')
 
@@ -209,7 +268,9 @@ describe('FileExplorerToolbar', () => {
     })
 
     it('should reject reserved file names', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
       const validator = fileDialog.props('validator')
 
@@ -218,7 +279,9 @@ describe('FileExplorerToolbar', () => {
     })
 
     it('should accept valid file name', () => {
-      const wrapper = mount(FileExplorerToolbar)
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
       const fileDialog = wrapper.findAllComponents(InputDialog)[1]
       const validator = fileDialog.props('validator')
 
@@ -230,7 +293,9 @@ describe('FileExplorerToolbar', () => {
 
   it('should close dialog on successful folder creation', async () => {
     mockVaultStore.createDirectory.mockResolvedValue(true)
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     // Open and confirm folder dialog
     const newFolderButton = wrapper.findAll('.toolbar-button')[0]
@@ -246,7 +311,9 @@ describe('FileExplorerToolbar', () => {
 
   it('should not close dialog on failed folder creation', async () => {
     mockVaultStore.createDirectory.mockResolvedValue(false)
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     // Open and confirm folder dialog
     const newFolderButton = wrapper.findAll('.toolbar-button')[0]
@@ -262,7 +329,9 @@ describe('FileExplorerToolbar', () => {
 
   it('should close dialog on successful file creation', async () => {
     mockVaultStore.createNote.mockResolvedValue(true)
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     // Open and confirm file dialog
     const newFileButton = wrapper.findAll('.toolbar-button')[1]
@@ -278,7 +347,9 @@ describe('FileExplorerToolbar', () => {
 
   it('should not close dialog on failed file creation', async () => {
     mockVaultStore.createNote.mockResolvedValue(false)
-    const wrapper = mount(FileExplorerToolbar)
+    const wrapper = mount(FileExplorerToolbar, {
+      props: { isLoading: false }
+    })
 
     // Open and confirm file dialog
     const newFileButton = wrapper.findAll('.toolbar-button')[1]

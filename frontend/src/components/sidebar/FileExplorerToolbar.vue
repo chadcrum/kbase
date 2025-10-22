@@ -9,6 +9,9 @@
         <span class="icon">📄</span>
         <span class="label">New File</span>
       </button>
+      <button @click="handleRefresh" class="toolbar-button refresh-button" :disabled="isLoading" title="Refresh">
+        <span class="icon refresh-icon">🔄</span>
+      </button>
     </div>
 
     <!-- Error Display -->
@@ -48,6 +51,16 @@
 import { ref } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import InputDialog from '@/components/common/InputDialog.vue'
+
+// Props
+defineProps<{
+  isLoading: boolean
+}>()
+
+// Emits
+const emit = defineEmits<{
+  refresh: []
+}>()
 
 const vaultStore = useVaultStore()
 const showFolderDialog = ref(false)
@@ -133,6 +146,13 @@ const handleNewFolder = () => {
  */
 const handleNewFile = () => {
   showFileDialog.value = true
+}
+
+/**
+ * Handles refresh button click
+ */
+const handleRefresh = () => {
+  emit('refresh')
 }
 
 /**
@@ -239,6 +259,19 @@ const createFile = async (fileName: string) => {
 
 .toolbar-button .label {
   font-weight: 500;
+}
+
+.refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refresh-icon {
+  transition: transform 0.2s ease;
+}
+
+.refresh-button:hover:not(:disabled) .refresh-icon {
+  transform: rotate(180deg);
 }
 
 /* Responsive: hide labels on smaller screens */

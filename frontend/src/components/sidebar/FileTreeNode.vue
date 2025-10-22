@@ -128,12 +128,24 @@ const isExpanded = computed(() => {
 
 const isDirectory = computed(() => props.node.type === 'directory')
 
+const isAtRoot = computed(() => {
+  // Check if the item is at root level (only one level deep)
+  const pathParts = props.node.path.split('/').filter(Boolean)
+  return pathParts.length === 1
+})
+
 const contextMenuItems = computed((): ContextMenuItem[] => {
   const items: ContextMenuItem[] = [
-    { label: 'Rename', icon: '✏️', action: 'rename' },
-    { label: 'Move to Root', icon: '↗️', action: 'move-to-root' },
-    { label: 'Delete', icon: '🗑️', action: 'delete', isDanger: true }
+    { label: 'Rename', icon: '✏️', action: 'rename' }
   ]
+  
+  // Only show "Move to Root" if not already at root
+  if (!isAtRoot.value) {
+    items.push({ label: 'Move to Root', icon: '↗️', action: 'move-to-root' })
+  }
+  
+  items.push({ label: 'Delete', icon: '🗑️', action: 'delete', isDanger: true })
+  
   return items
 })
 

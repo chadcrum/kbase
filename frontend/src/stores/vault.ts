@@ -349,6 +349,13 @@ export const useVaultStore = defineStore('vault', () => {
     setSortOrder(newOrder)
   }
 
+  // Collapse all action
+  const collapseAll = () => {
+    expandedPaths.value.clear()
+  }
+
+  const hasExpandedPaths = computed(() => expandedPaths.value.size > 0)
+
   return {
     // State
     fileTree,
@@ -365,6 +372,7 @@ export const useVaultStore = defineStore('vault', () => {
     isNoteSelected,
     selectedNotePath,
     sortedFileTree,
+    hasExpandedPaths,
     // Actions
     loadFileTree,
     loadNote,
@@ -389,7 +397,9 @@ export const useVaultStore = defineStore('vault', () => {
     // Sort actions
     setSortBy,
     setSortOrder,
-    toggleSortOrder
+    toggleSortOrder,
+    // Collapse all action
+    collapseAll
   }
 })
 

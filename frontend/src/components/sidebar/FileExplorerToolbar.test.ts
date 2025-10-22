@@ -23,7 +23,9 @@ describe('FileExplorerToolbar', () => {
       sortOrder: 'asc',
       setSortBy: vi.fn(),
       setSortOrder: vi.fn(),
-      toggleSortOrder: vi.fn()
+      toggleSortOrder: vi.fn(),
+      hasExpandedPaths: false,
+      collapseAll: vi.fn()
     }
     
     vi.mocked(useVaultStore).mockReturnValue(mockVaultStore)
@@ -37,7 +39,7 @@ describe('FileExplorerToolbar', () => {
     })
 
     const buttons = wrapper.findAll('.toolbar-button')
-    expect(buttons).toHaveLength(5) // 3 original + 2 sort buttons
+    expect(buttons).toHaveLength(6) // 3 original + 2 sort buttons + 1 collapse/expand button
     
     // All buttons are icon-only, verify by checking titles
     expect(buttons[0].attributes('title')).toBe('New Folder')
@@ -45,6 +47,7 @@ describe('FileExplorerToolbar', () => {
     expect(buttons[2].attributes('title')).toBe('Refresh')
     expect(buttons[3].attributes('title')).toBe('Sort Ascending')
     expect(buttons[4].attributes('title')).toBe('Sort by')
+    expect(buttons[5].attributes('title')).toBe('Collapse All')
     
     // Third button is refresh button
     expect(buttons[2].classes()).toContain('refresh-button')
@@ -459,6 +462,51 @@ describe('FileExplorerToolbar', () => {
 
       const dropdown = wrapper.find('.sort-dropdown')
       expect(dropdown.exists()).toBe(false)
+    })
+  })
+
+  describe('collapse all button', () => {
+    it('should render collapse all button', () => {
+      mockVaultStore.hasExpandedPaths = true
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const collapseButton = wrapper.findAll('.toolbar-button')[5]
+      expect(collapseButton.attributes('title')).toBe('Collapse All')
+      expect(collapseButton.text()).toContain('⬇️')
+    })
+
+    it('should be disabled when no paths are expanded', () => {
+      mockVaultStore.hasExpandedPaths = false
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const collapseButton = wrapper.findAll('.toolbar-button')[5]
+      expect(collapseButton.attributes('disabled')).toBeDefined()
+    })
+
+    it('should be enabled when paths are expanded', () => {
+      mockVaultStore.hasExpandedPaths = true
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const collapseButton = wrapper.findAll('.toolbar-button')[5]
+      expect(collapseButton.attributes('disabled')).toBeUndefined()
+    })
+
+    it('should call collapseAll when clicked', async () => {
+      mockVaultStore.hasExpandedPaths = true
+      const wrapper = mount(FileExplorerToolbar, {
+        props: { isLoading: false }
+      })
+
+      const collapseButton = wrapper.findAll('.toolbar-button')[5]
+      await collapseButton.trigger('click')
+
+      expect(mockVaultStore.collapseAll).toHaveBeenCalled()
     })
   })
 })

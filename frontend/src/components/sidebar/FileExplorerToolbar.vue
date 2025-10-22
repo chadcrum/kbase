@@ -33,6 +33,9 @@
             </div>
           </div>
         </div>
+        <button @click="handleCollapseAll" class="toolbar-button sort-button" title="Collapse All" :disabled="!hasExpandedPaths">
+          <span class="icon">⬇️</span>
+        </button>
       </div>
     </div>
 
@@ -93,6 +96,9 @@ const showSortDropdown = ref(false)
 // Sort state from store
 const sortBy = computed(() => vaultStore.sortBy)
 const sortOrder = computed(() => vaultStore.sortOrder)
+
+// Collapse/Expand all state
+const hasExpandedPaths = computed(() => vaultStore.hasExpandedPaths)
 
 // Sort options
 const sortOptions = [
@@ -242,6 +248,13 @@ const toggleSortDropdown = () => {
 const handleSortByChange = (newSortBy: SortBy) => {
   vaultStore.setSortBy(newSortBy)
   showSortDropdown.value = false
+}
+
+/**
+ * Collapses all expanded directories
+ */
+const handleCollapseAll = () => {
+  vaultStore.collapseAll()
 }
 
 /**

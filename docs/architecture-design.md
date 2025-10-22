@@ -192,6 +192,9 @@ frontend/src/
     - Supports sorting by name, created date, and modified date
     - Maintains folder-first ordering in all sort modes
     - Sort preferences persisted to localStorage
+  - **Tree Navigation**: `collapseAll()`, `hasExpandedPaths` (computed)
+    - Collapse all expanded directories with a single action
+    - Track expanded state for UI button disable/enable logic
   - All CRUD operations automatically refresh the file tree and handle selection updates
   - `createNote()` automatically opens newly created files in the editor
 
@@ -210,6 +213,10 @@ frontend/src/
       - Sort preferences persist in localStorage across sessions
       - Folders always appear before files in sorted results
       - Sorting applies recursively to all nested folders
+    - **Collapse All Button**: Quickly collapse all expanded directories
+      - Always visible in toolbar (disabled when no directories are expanded)
+      - Provides instant reset of tree view to collapsed state
+      - Useful for navigating large directory structures
     - Input validation prevents path traversal attacks and invalid characters
     - Auto-appends `.md` extension for new files
   - **Drag & Drop**: Drag files and directories into other directories to move them

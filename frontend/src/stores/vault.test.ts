@@ -704,5 +704,45 @@ describe('VaultStore', () => {
       expect(folderChildren).toEqual(['a-nested.md', 'z-nested.md'])
     })
   })
+
+  describe('collapse all', () => {
+    it('should have hasExpandedPaths as false initially', () => {
+      expect(vaultStore.hasExpandedPaths).toBe(false)
+    })
+
+    it('should collapse all expanded paths', () => {
+      vaultStore.expandedPaths.add('/folder1')
+      vaultStore.expandedPaths.add('/folder2')
+      vaultStore.expandedPaths.add('/folder1/subfolder')
+      
+      expect(vaultStore.expandedPaths.size).toBe(3)
+      expect(vaultStore.hasExpandedPaths).toBe(true)
+      
+      vaultStore.collapseAll()
+      
+      expect(vaultStore.expandedPaths.size).toBe(0)
+      expect(vaultStore.hasExpandedPaths).toBe(false)
+    })
+
+    it('should handle collapseAll when no paths are expanded', () => {
+      expect(vaultStore.expandedPaths.size).toBe(0)
+      expect(vaultStore.hasExpandedPaths).toBe(false)
+      
+      vaultStore.collapseAll()
+      
+      expect(vaultStore.expandedPaths.size).toBe(0)
+      expect(vaultStore.hasExpandedPaths).toBe(false)
+    })
+
+    it('should update hasExpandedPaths reactively', () => {
+      expect(vaultStore.hasExpandedPaths).toBe(false)
+      
+      vaultStore.expandedPaths.add('/folder1')
+      expect(vaultStore.hasExpandedPaths).toBe(true)
+      
+      vaultStore.collapseAll()
+      expect(vaultStore.hasExpandedPaths).toBe(false)
+    })
+  })
 })
 

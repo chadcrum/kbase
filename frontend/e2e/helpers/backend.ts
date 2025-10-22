@@ -215,3 +215,37 @@ export async function findAvailablePort(startPort: number = 8001): Promise<numbe
   
   throw new Error(`No available port found starting from ${startPort}`);
 }
+
+// Global backend manager for e2e tests
+let globalBackendManager: BackendManager | null = null;
+
+/**
+ * Start the backend server for e2e tests
+ * Uses the global backend manager to ensure only one instance runs
+ */
+export async function startBackend(config?: Partial<BackendConfig>): Promise<void> {
+  if (!globalBackendManager) {
+    globalBackendManager = new BackendManager();
+  }
+  
+  if (globalBackendManager.isRunning()) {
+    console.log('⚠️ Backend is already running');
+    return;
+  }
+  
+  const finalConfig = {
+    ...DEFAULT_BACKEND_CONFIG,
+    ...config,
+  };
+  
+  await globalBackendManager.startBackend(finalConfig);
+}
+
+/**
+ * Stop the backend server for e2e tests
+ */
+export async function stopBackend(): Promise<void> {
+  if (globalBackendManager) {
+    await globalBackendManager.stopBackend();
+  }
+}

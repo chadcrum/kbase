@@ -1,28 +1,44 @@
 <template>
   <div class="note-viewer">
     <div v-if="selectedNote" class="note-content">
-      <!-- Note header with metadata -->
-      <div class="note-header">
-        <h1 class="note-title">{{ getNoteTitle(selectedNote.path) }}</h1>
-        <div class="note-metadata">
-          <span class="metadata-item">
-            <span class="metadata-label">Path:</span>
-            <span class="metadata-value">{{ selectedNote.path }}</span>
-          </span>
-          <span class="metadata-item">
-            <span class="metadata-label">Size:</span>
-            <span class="metadata-value">{{ formatFileSize(selectedNote.size) }}</span>
-          </span>
-          <span class="metadata-item">
-            <span class="metadata-label">Modified:</span>
-            <span class="metadata-value">{{ formatDate(selectedNote.modified) }}</span>
-          </span>
-        </div>
+      <!-- Viewer Toolbar -->
+      <ViewerToolbar
+        :file-name="getNoteTitle(selectedNote.path)"
+        :file-path="selectedNote.path"
+        :view-mode="viewMode"
+        :save-status="saveStatus"
+        @update:view-mode="viewMode = $event"
+      />
+      
+      <!-- Monaco Editor View -->
+      <div v-if="viewMode === 'editor'" class="editor-view">
+        <MonacoEditor
+          v-model="editableContent"
+          :path="selectedNote.path"
+          @save="handleSave"
+        />
       </div>
       
-      <!-- Note content -->
-      <div class="note-body">
-        <pre class="note-text">{{ selectedNote.content }}</pre>
+      <!-- Preview View -->
+      <div v-else class="preview-view">
+        <!-- Note header with metadata -->
+        <div class="note-header">
+          <div class="note-metadata">
+            <span class="metadata-item">
+              <span class="metadata-label">Size:</span>
+              <span class="metadata-value">{{ formatFileSize(selectedNote.size) }}</span>
+            </span>
+            <span class="metadata-item">
+              <span class="metadata-label">Modified:</span>
+              <span class="metadata-value">{{ formatDate(selectedNote.modified) }}</span>
+            </span>
+          </div>
+        </div>
+        
+        <!-- Note content -->
+        <div class="note-body">
+          <pre class="note-text">{{ selectedNote.content }}</pre>
+        </div>
       </div>
     </div>
     
@@ -46,12 +62,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useVaultStore } from '@/stores/vault'
-// import type { NoteData } from '@/types' // Not used in this component
+import ViewerToolbar from './ViewerToolbar.vue'
+import MonacoEditor from '@/components/editor/MonacoEditor.vue'
 
 // Store
 const vaultStore = useVaultStore()
+
+// State
+const viewMode = ref<'editor' | 'preview'>('editor')
+const editableContent = ref('')
+const saveStatus = ref<'saving' | 'saved' | 'error' | null>(null)
+let saveStatusTimeout: ReturnType<typeof setTimeout> | null = null
 
 // Computed properties
 const selectedNote = computed(() => vaultStore.selectedNote)
@@ -59,7 +82,44 @@ const isLoading = computed(() => vaultStore.isLoading)
 const hasError = computed(() => vaultStore.hasError)
 const error = computed(() => vaultStore.error)
 
+// Watch for note changes to update editable content
+watch(selectedNote, (newNote) => {
+  if (newNote) {
+    editableContent.value = newNote.content
+  } else {
+    editableContent.value = ''
+  }
+}, { immediate: true })
+
 // Methods
+const handleSave = async (content: string) => {
+  if (!selectedNote.value) return
+
+  // Clear any existing timeout
+  if (saveStatusTimeout) {
+    clearTimeout(saveStatusTimeout)
+    saveStatusTimeout = null
+  }
+
+  saveStatus.value = 'saving'
+
+  const success = await vaultStore.updateNote(selectedNote.value.path, content)
+
+  if (success) {
+    saveStatus.value = 'saved'
+    // Clear the saved status after 2 seconds
+    saveStatusTimeout = setTimeout(() => {
+      saveStatus.value = null
+    }, 2000)
+  } else {
+    saveStatus.value = 'error'
+    // Clear the error status after 5 seconds
+    saveStatusTimeout = setTimeout(() => {
+      saveStatus.value = null
+    }, 5000)
+  }
+}
+
 const getNoteTitle = (path: string): string => {
   // Extract filename from path
   const parts = path.split('/')
@@ -111,17 +171,25 @@ const handleRetry = () => {
   overflow: hidden;
 }
 
-.note-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  background-color: #f8fafc;
+.editor-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #1e1e1e;
 }
 
-.note-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 1rem 0;
+.preview-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.note-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
 }
 
 .note-metadata {

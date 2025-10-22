@@ -5,10 +5,17 @@ A Vue 3 frontend for the KBase note-taking application, providing a clean interf
 ## Features
 
 - **Authentication**: Secure JWT-based login system
-- **File Tree Navigation**: Hierarchical view of your note vault
-- **Read-Only Note Viewer**: Clean display of markdown content
+- **File Tree Navigation**: Hierarchical view of your note vault with full CRUD operations
+  - File Explorer Toolbar with New File and New Folder buttons
+  - Input validation for file and folder creation (security-focused)
+  - Drag & Drop files and directories
+  - Right-click context menus (Delete, Rename, Move to Root)
+  - Inline rename (double-click)
+  - Delete confirmation dialogs
+- **Monaco Editor**: Full-featured code editor with auto-save and syntax highlighting
+- **Dual View Modes**: Toggle between editor and preview modes
 - **Responsive Design**: Works on desktop and mobile devices
-- **Comprehensive Testing**: 92+ tests with 87% coverage
+- **Comprehensive Testing**: 170+ tests with high coverage
 
 ## Technology Stack
 
@@ -64,8 +71,10 @@ VITE_API_URL=http://localhost:8000
 src/
 ├── api/                    # API client and HTTP utilities
 ├── components/             # Vue components
+│   ├── common/            # Reusable common components (dialogs, etc.)
+│   ├── editor/            # Monaco editor components
 │   ├── layout/            # Layout components
-│   ├── sidebar/           # File tree navigation
+│   ├── sidebar/           # File tree navigation and toolbar
 │   └── viewer/            # Note display components
 ├── stores/                # Pinia stores for state management
 ├── router/                # Vue Router configuration
@@ -80,9 +89,15 @@ src/
 - `auth.ts` store: JWT token management and authentication state
 
 ### Navigation
-- `Sidebar.vue`: Container for file tree
+- `Sidebar.vue`: Container for file tree and toolbar
+- `FileExplorerToolbar.vue`: Toolbar with New File and New Folder buttons
 - `FileTree.vue`: Hierarchical tree component
 - `FileTreeNode.vue`: Individual tree node with expand/collapse
+- `ContextMenu.vue`: Right-click context menu component
+
+### Common Components
+- `InputDialog.vue`: Reusable input dialog with validation
+- `ConfirmDialog.vue`: Reusable confirmation dialog
 
 ### Note Display
 - `NoteViewer.vue`: Read-only markdown content viewer

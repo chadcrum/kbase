@@ -17,6 +17,8 @@ export interface FileTreeNode {
   path: string
   type: 'file' | 'directory'
   children?: FileTreeNode[]
+  created?: number
+  modified?: number
 }
 
 export interface NoteData {

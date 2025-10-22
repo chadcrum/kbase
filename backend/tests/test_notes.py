@@ -167,6 +167,41 @@ def test_delete_note(auth_client: TestClient, auth_token: str):
     assert get_response.status_code == 404
 
 
+def test_update_note_with_leading_slash(auth_client: TestClient, auth_token: str):
+    """Test that paths with leading slashes are normalized correctly.
+    
+    This test validates the fix for the double-slash bug where paths like
+    "/welcome.md" were being returned as "//welcome.md" in responses.
+    """
+    # Update note using path with leading slash (URL-encoded as %2F)
+    new_content = "# Updated with leading slash\n\nThis tests path normalization."
+    note_data = {"content": new_content}
+    
+    response = auth_client.put(
+        "/api/v1/notes/%2Fnote1.md",  # URL-encoded /note1.md
+        json=note_data,
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["message"] == "Note updated successfully"
+    # Critical: path should have single leading slash, not double
+    assert data["path"] == "/note1.md"
+    assert data["path"] != "//note1.md", "Path should not have double slashes"
+    
+    # Verify by reading the note back
+    get_response = auth_client.get(
+        "/api/v1/notes/%2Fnote1.md",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert get_response.status_code == 200
+    get_data = get_response.json()
+    assert get_data["path"] == "/note1.md"
+    assert get_data["path"] != "//note1.md", "Retrieved path should not have double slashes"
+    assert get_data["content"] == new_content
+
+
 def test_notes_without_auth_fail(auth_client: TestClient):
     """Test that notes endpoints fail without authentication."""
     # Test list notes without auth
@@ -180,3 +215,121 @@ def test_notes_without_auth_fail(auth_client: TestClient):
     # Test create note without auth
     response = auth_client.post("/api/v1/notes/test.md", json={"content": "test"})
     assert response.status_code == 403
+
+
+def test_list_notes_includes_empty_directories(auth_client: TestClient, auth_token: str, temp_vault):
+    """Test that list_notes includes empty directories in the file tree.
+    
+    This is a regression test to ensure empty directories are not filtered out.
+    Previously, only directories with files were included in the tree.
+    """
+    # Create an empty directory
+    empty_dir = temp_vault / "empty_folder"
+    empty_dir.mkdir()
+    
+    # Create another directory with a subdirectory but no files
+    nested_empty = temp_vault / "parent_folder"
+    nested_empty.mkdir()
+    (nested_empty / "child_folder").mkdir()
+    
+    # Get the file tree
+    response = auth_client.get(
+        "/api/v1/notes/",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 200
+    
+    data = response.json()
+    children_names = [child["name"] for child in data["children"]]
+    
+    # Verify empty directories are included
+    assert "empty_folder" in children_names, "Empty directory should be included in file tree"
+    assert "parent_folder" in children_names, "Parent directory should be included even if it only has subdirectories"
+    
+    # Check the empty folder structure
+    empty_folder = next((child for child in data["children"] if child["name"] == "empty_folder"), None)
+    assert empty_folder is not None
+    assert empty_folder["type"] == "directory"
+    assert empty_folder["children"] == [], "Empty directory should have empty children list"
+    
+    # Check the parent folder structure
+    parent_folder = next((child for child in data["children"] if child["name"] == "parent_folder"), None)
+    assert parent_folder is not None
+    assert parent_folder["type"] == "directory"
+    assert len(parent_folder["children"]) == 1, "Parent folder should have one child directory"
+    assert parent_folder["children"][0]["name"] == "child_folder"
+    assert parent_folder["children"][0]["type"] == "directory"
+
+
+def test_file_tree_includes_timestamps(auth_client: TestClient, auth_token: str):
+    """Test that file tree includes created and modified timestamps."""
+    response = auth_client.get(
+        "/api/v1/notes/",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 200
+    
+    data = response.json()
+    
+    # Check root directory has timestamps
+    assert "created" in data
+    assert "modified" in data
+    assert isinstance(data["created"], int) or data["created"] is None
+    assert isinstance(data["modified"], int) or data["modified"] is None
+    
+    # Check that files have timestamps
+    files = [child for child in data["children"] if child["type"] == "file"]
+    assert len(files) > 0, "Should have at least one file in test data"
+    
+    for file_node in files:
+        assert "created" in file_node, f"File {file_node['name']} should have 'created' field"
+        assert "modified" in file_node, f"File {file_node['name']} should have 'modified' field"
+        assert isinstance(file_node["created"], int), f"File {file_node['name']} created timestamp should be an integer"
+        assert isinstance(file_node["modified"], int), f"File {file_node['name']} modified timestamp should be an integer"
+        assert file_node["created"] > 0, f"File {file_node['name']} created timestamp should be positive"
+        assert file_node["modified"] > 0, f"File {file_node['name']} modified timestamp should be positive"
+    
+    # Check that directories have timestamps
+    directories = [child for child in data["children"] if child["type"] == "directory"]
+    assert len(directories) > 0, "Should have at least one directory in test data"
+    
+    for dir_node in directories:
+        assert "created" in dir_node, f"Directory {dir_node['name']} should have 'created' field"
+        assert "modified" in dir_node, f"Directory {dir_node['name']} should have 'modified' field"
+        # Timestamps can be None or integers
+        if dir_node["created"] is not None:
+            assert isinstance(dir_node["created"], int), f"Directory {dir_node['name']} created timestamp should be an integer"
+            assert dir_node["created"] > 0, f"Directory {dir_node['name']} created timestamp should be positive"
+        if dir_node["modified"] is not None:
+            assert isinstance(dir_node["modified"], int), f"Directory {dir_node['name']} modified timestamp should be an integer"
+            assert dir_node["modified"] > 0, f"Directory {dir_node['name']} modified timestamp should be positive"
+
+
+def test_nested_file_tree_timestamps(auth_client: TestClient, auth_token: str):
+    """Test that nested files and directories also have timestamps."""
+    response = auth_client.get(
+        "/api/v1/notes/",
+        headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    assert response.status_code == 200
+    
+    data = response.json()
+    
+    # Find the subdir directory
+    subdir = next((child for child in data["children"] if child["name"] == "subdir"), None)
+    assert subdir is not None, "Should have subdir in test data"
+    
+    # Check that the subdirectory has timestamps
+    assert "created" in subdir
+    assert "modified" in subdir
+    
+    # Check that files in the subdirectory have timestamps
+    assert len(subdir["children"]) > 0, "Subdir should have children"
+    for child in subdir["children"]:
+        assert "created" in child
+        assert "modified" in child
+        if child["type"] == "file":
+            assert isinstance(child["created"], int)
+            assert isinstance(child["modified"], int)
+            assert child["created"] > 0
+            assert child["modified"] > 0

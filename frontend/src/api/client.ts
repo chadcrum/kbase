@@ -88,6 +88,35 @@ export class ApiClient {
   async deleteNote(path: string): Promise<void> {
     await this.client.delete(`/notes/${encodeURIComponent(path)}`)
   }
+
+  async moveNote(path: string, destination: string): Promise<void> {
+    await this.client.post(`/notes/${encodeURIComponent(path)}/move`, { destination })
+  }
+
+  async renameNote(path: string, newName: string): Promise<void> {
+    // Build new path by replacing the last part with new name
+    const pathParts = path.split('/')
+    pathParts[pathParts.length - 1] = newName
+    const destination = pathParts.join('/')
+    await this.moveNote(path, destination)
+  }
+
+  // Directory API
+  async deleteDirectory(path: string, recursive: boolean = true): Promise<void> {
+    await this.client.delete(`/directories/${encodeURIComponent(path)}?recursive=${recursive}`)
+  }
+
+  async moveDirectory(path: string, destination: string): Promise<void> {
+    await this.client.post(`/directories/${encodeURIComponent(path)}/move`, { destination })
+  }
+
+  async renameDirectory(path: string, newName: string): Promise<void> {
+    await this.client.put(`/directories/${encodeURIComponent(path)}`, { new_name: newName })
+  }
+
+  async createDirectory(path: string): Promise<void> {
+    await this.client.post(`/directories/${encodeURIComponent(path)}`)
+  }
 }
 
 // Export singleton instance

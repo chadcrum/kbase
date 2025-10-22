@@ -18,22 +18,33 @@ All endpoints (except login) require authentication via JWT token in cookies.
 ```json
 {
   "name": "vault",
+  "path": "/",
   "type": "directory",
+  "created": 1640995200,
+  "modified": 1640995200,
   "children": [
     {
       "name": "note1.md",
       "path": "/note1.md",
-      "type": "file"
+      "type": "file",
+      "created": 1640995200,
+      "modified": 1640995300
     },
     {
       "name": "folder1",
       "path": "/folder1",
       "type": "directory",
+      "created": 1640995100,
+      "modified": 1640995400,
       "children": [...]
     }
   ]
 }
 ```
+- **Notes**:
+  - `created` and `modified` are Unix timestamps (seconds since epoch)
+  - Timestamps are included for both files and directories
+  - Timestamps are optional and may be `null` if not available
 
 ### Get Note
 - **GET** `/{path}`
@@ -78,6 +89,10 @@ All endpoints (except login) require authentication via JWT token in cookies.
 ```
 - **Response**: Success message and path
 - **Status Codes**: 200 (updated), 404 (not found), 400 (invalid path)
+- **Notes**:
+  - Frontend Monaco editor implements auto-save with 1 second debounce
+  - Changes are automatically saved after user stops typing
+  - Save status feedback provided in UI (saving/saved/error states)
 
 ### Delete Note
 - **DELETE** `/{path}`

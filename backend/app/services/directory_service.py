@@ -35,12 +35,13 @@ class DirectoryService:
         if path.startswith('/'):
             path = path[1:]  # Remove leading slash
         
-        # Join with vault path and resolve
+        # Join with vault path and resolve both paths
+        vault_resolved = self.vault_path.resolve()
         full_path = (self.vault_path / path).resolve()
         
         # Check if path is within vault directory
         try:
-            full_path.relative_to(self.vault_path)
+            full_path.relative_to(vault_resolved)
         except ValueError:
             raise ValueError(f"Path traversal detected: {path}")
         

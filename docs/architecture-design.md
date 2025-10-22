@@ -22,7 +22,8 @@
 - **Build Tool**: Vite
 - **HTTP Client**: Axios
 - **UI**: Custom CSS (no component library initially)
-- **Future**: WYSIWYG Editor (Milkdown), Code Editor (Monaco), WebSocket Client, PWA features
+- **Code Editor**: Monaco Editor (VS Code editor)
+- **Future**: WYSIWYG Editor (Milkdown), WebSocket Client, PWA features
 
 ### Infrastructure
 
@@ -133,37 +134,118 @@ frontend/src/
 ├── api/
 │   └── client.ts                   # Axios HTTP client with JWT auth
 ├── components/
+│   ├── common/
+│   │   ├── ConfirmDialog.vue       # Reusable confirmation dialog
+│   │   └── InputDialog.vue         # Reusable input dialog for user input
+│   ├── editor/
+│   │   └── MonacoEditor.vue        # Monaco code editor wrapper
 │   ├── layout/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
+│   │   ├── ContextMenu.vue         # Context menu for file operations
+│   │   ├── FileExplorerToolbar.vue # Toolbar with New File/Folder/Refresh buttons
 │   │   ├── FileTree.vue            # Recursive tree component
 │   │   ├── FileTreeNode.vue        # Individual tree node
 │   │   └── Sidebar.vue             # Sidebar container
 │   └── viewer/
-│       └── NoteViewer.vue          # Read-only note display
+│       ├── NoteViewer.vue          # Note viewer with editor/preview toggle
+│       └── ViewerToolbar.vue       # Toolbar with view mode toggle
 ├── stores/
 │   ├── auth.ts                     # JWT & login state
-│   └── vault.ts                    # File tree state
+│   └── vault.ts                    # File tree & note update state
 ├── router/
 │   ├── index.ts                    # Route definitions
 │   └── guards.ts                   # Auth guards
 ├── types/
 │   └── index.ts                    # TypeScript type definitions
+├── utils/
+│   └── languageDetection.ts        # File extension to language mapping
 └── views/
     ├── LoginView.vue               # Login page
     └── HomeView.vue                # Main app view
 ```
 
+**Component Structure**:
+
+- **Editor Components**:
+  - `MonacoEditor.vue`: Monaco editor wrapper with auto-save
+  - `ViewerToolbar.vue`: Toolbar with view mode toggle and save status
+  - `NoteViewer.vue`: Orchestrates editor and preview views
+- **Layout Components**:
+  - `AppLayout.vue`: Main application layout
+  - `Sidebar.vue`: File tree sidebar container
+  - `FileTree.vue`: Hierarchical file tree display
+  - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
+  - `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with create and refresh actions
+- **Common Components**:
+  - `ConfirmDialog.vue`: Reusable confirmation modal for destructive actions
+  - `InputDialog.vue`: Reusable input dialog with validation for user text input
+  - `ContextMenu.vue`: Right-click context menu with customizable items
+
 **State Management (Pinia)**:
 
 - `authStore`: User session, JWT token management, login/logout
-- `vaultStore`: File tree state, selected note, loading states, expanded paths
+- `vaultStore`: File tree state, selected note, loading states, expanded paths, note updates, save state, sorting preferences
+  - **File Operations**: `deleteFile()`, `renameFile()`, `moveFile()`, `createNote()`
+  - **Directory Operations**: `deleteDirectory()`, `renameDirectory()`, `moveDirectory()`, `createDirectory()`
+  - **Sorting**: `setSortBy()`, `setSortOrder()`, `toggleSortOrder()`, `sortedFileTree` (computed)
+    - Supports sorting by name, created date, and modified date
+    - Maintains folder-first ordering in all sort modes
+    - Sort preferences persisted to localStorage
+  - **Tree Navigation**: `collapseAll()`, `hasExpandedPaths` (computed)
+    - **Auto-Expansion**: Vault root (`/`) is automatically expanded on initial load and after collapse operations
+      - Ensures first-level files and folders are always visible for better UX
+      - Improves discoverability of vault contents without requiring user interaction
+    - Collapse all expanded directories with a single action (preserves root expansion)
+    - Track expanded state for UI button disable/enable logic
+  - All CRUD operations automatically refresh the file tree and handle selection updates
+  - `createNote()` automatically opens newly created files in the editor
 
 **Key Features** (Current MVP):
 
 - **Authentication**: JWT-based login with password protection
-- **File Explorer**: Hierarchical tree view with expand/collapse functionality
-- **Note Viewer**: Read-only display of markdown content with metadata
+- **File Explorer**: Advanced file management with full CRUD operations
+  - Hierarchical tree view with expand/collapse functionality
+    - **Default Expansion**: Vault root is auto-expanded to show first-level items by default
+    - Provides immediate visibility of top-level files and folders on page load
+    - Collapse All action resets nested directories but preserves first-level visibility
+  - **File Explorer Toolbar**: Quick access toolbar at the top of the sidebar
+    - **New Folder Button**: Create new folders at root level with input validation
+    - **New File Button**: Create new markdown files at root level with input validation
+    - **Refresh Button**: Manually refresh the file tree (disabled during loading)
+    - **Sort Controls**: 
+      - **Sort Order Toggle**: Switch between ascending/descending sort order
+      - **Sort Criteria Dropdown**: Choose sort method (Name, Created Date, Modified Date)
+      - Sort preferences persist in localStorage across sessions
+      - Folders always appear before files in sorted results
+      - Sorting applies recursively to all nested folders
+    - **Collapse All Button**: Quickly collapse all expanded directories
+      - Always visible in toolbar (disabled when no directories are expanded)
+      - Provides instant reset of tree view to collapsed state
+      - Useful for navigating large directory structures
+    - Input validation prevents path traversal attacks and invalid characters
+    - Auto-appends `.md` extension for new files
+  - **Drag & Drop**: Drag files and directories into other directories to move them
+  - **Context Menus**: Right-click on files/directories for operations
+    - Delete (with confirmation)
+    - Rename (inline editing)
+    - Move to Root
+  - **Inline Rename**: Double-click file/directory names to rename
+  - **Delete Confirmation**: Safety dialogs for all delete operations
+  - **Recursive Directory Deletion**: Delete directories with all contents (with confirmation)
+  - **Input Validation**: All file and folder names validated for security
+    - Prevents path traversal (no `../` or absolute paths)
+    - Blocks reserved system names (CON, PRN, AUX, etc.)
+    - Validates against invalid characters
+- **Monaco Editor**: Full-featured code editor with syntax highlighting for all text-based files
+  - Auto-save functionality (1 second debounce)
+  - Syntax highlighting for 30+ languages
+  - Dark theme matching VS Code
+  - Language detection from file extensions
+- **Dual View Modes**: Toggle between editor and preview modes
+  - **Editor Mode**: Monaco editor for editing files
+  - **Preview Mode**: Formatted text display with metadata
+- **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
 - **Responsive Design**: Clean, modern interface with mobile support
 - **Error Handling**: Comprehensive error states and user feedback
 
@@ -248,6 +330,108 @@ services:
 4. If not open, updates file tree
 5. If open, shows notification (external change detected)
 
+**Monaco Editor Integration**:
+
+The Monaco editor provides a professional code editing experience with syntax highlighting and auto-save.
+
+1. **Component Architecture**:
+   - `MonacoEditor.vue`: Wraps Monaco editor with Vue lifecycle
+   - Lazy-loads Monaco library on component mount
+   - Handles editor initialization, content synchronization, and cleanup
+   
+2. **Auto-Save Implementation**:
+   - Debounced save (1000ms delay after last keystroke)
+   - Emits `save` event with content to parent component
+   - Parent (NoteViewer) calls vault store's `updateNote` action
+   - Visual feedback via ViewerToolbar (saving/saved/error states)
+   
+3. **Language Detection**:
+   - Utility function `detectLanguage(filename)` maps extensions to Monaco language IDs
+   - Supports 30+ file types (markdown, javascript, python, json, etc.)
+   - Falls back to 'plaintext' for unknown extensions
+   - Updates language when file path changes
+   
+4. **Editor Configuration**:
+   - Theme: VS Code dark theme (`vs-dark`)
+   - Auto-layout enabled for responsive resize
+   - Minimap enabled for navigation
+   - Word wrap enabled for better readability
+   - Tab size: 2 spaces
+   
+5. **View Mode Toggle**:
+   - ViewerToolbar provides toggle between "Editor" and "Preview" modes
+   - Editor mode: Full Monaco editor for editing
+   - Preview mode: Formatted text with metadata display
+   - Mode state managed in NoteViewer component
+   
+6. **Save Status Flow**:
+   ```
+   User types → Debounce (1s) → Emit 'save' event → 
+   NoteViewer sets status='saving' → Call updateNote API →
+   Success: status='saved' (2s) → Clear status
+   Error: status='error' (5s) → Clear status
+   ```
+
+7. **Performance Optimizations**:
+   - Monaco library loaded only once and cached
+   - Editor instance reused when switching files
+   - ResizeObserver for efficient layout updates
+   - Automatic cleanup on component unmount
+
+**File Explorer CRUD Operations**:
+
+The file explorer provides comprehensive file and directory management through an intuitive user interface.
+
+1. **Drag & Drop Implementation**:
+   - Native HTML5 drag-and-drop API
+   - Visual feedback during drag operations (opacity change on dragging item, border highlight on drop target)
+   - Drag any file or directory onto a target directory to move it
+   - Prevents invalid operations (dropping on self, dropping parent into child)
+   - Automatically refreshes file tree after successful drop
+   - Uses JSON data transfer for cross-browser compatibility
+   
+2. **Context Menu System**:
+   - Right-click on any file or directory to open context menu
+   - Context menu positioned at cursor with automatic viewport boundary detection
+   - Click-outside or ESC key to close
+   - Menu items:
+     - **Rename**: Activates inline rename mode
+     - **Move to Root**: Moves item to vault root directory
+     - **Delete**: Shows confirmation dialog (styled as dangerous action)
+   - Menu items styled with icons for better UX
+   
+3. **Inline Rename**:
+   - Double-click any file/directory name to activate rename mode
+   - Input field replaces name with current value pre-filled
+   - Smart text selection (excludes file extension for files)
+   - Confirm with Enter key, cancel with ESC key or blur
+   - Validates new name before submission
+   - Automatically refreshes file tree and updates selection after rename
+   
+4. **Delete Confirmation**:
+   - Reusable `ConfirmDialog` component for all delete operations
+   - Different messages for files vs directories
+   - Directories: Warns about recursive deletion of all contents
+   - Styled as dangerous action (red button)
+   - Keyboard shortcuts: ESC to cancel, Enter to confirm
+   - Prevents accidental deletions with clear messaging
+   
+5. **API Client Integration**:
+   - Dedicated methods for all CRUD operations
+   - `deleteFile()`, `renameFile()`, `moveFile()` for file operations
+   - `deleteDirectory()`, `renameDirectory()`, `moveDirectory()`, `createDirectory()` for directory operations
+   - Proper error handling with user-friendly error messages
+   - Automatic path encoding for URL safety
+   
+6. **Vault Store CRUD Actions**:
+   - All operations integrated into vault store for centralized state management
+   - Automatic file tree refresh after any CRUD operation
+   - Smart selection handling:
+     - Clear selection if deleted file was selected
+     - Update selection if renamed file was selected
+     - Clear selection if it was inside a moved/deleted directory
+   - Error state management with descriptive error messages
+   - Loading state management for better UX
 
 ## Security Considerations
 

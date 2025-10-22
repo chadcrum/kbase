@@ -31,12 +31,13 @@ class FileService:
         if path.startswith('/'):
             path = path[1:]  # Remove leading slash
         
-        # Join with vault path and resolve
+        # Join with vault path and resolve both paths
+        vault_resolved = self.vault_path.resolve()
         full_path = (self.vault_path / path).resolve()
         
         # Check if path is within vault directory
         try:
-            full_path.relative_to(self.vault_path)
+            full_path.relative_to(vault_resolved)
         except ValueError:
             raise ValueError(f"Path traversal detected: {path}")
         
@@ -73,25 +74,39 @@ class FileService:
                 if item.is_dir():
                     # Recursively build directory tree
                     dir_tree = self._build_file_tree(item, item_relative_path)
-                    if dir_tree["children"]:  # Only include non-empty directories
-                        children.append(dir_tree)
+                    # Include all directories, even if empty
+                    children.append(dir_tree)
                 elif self._is_markdown_file(item):
-                    # Add markdown files
+                    # Add markdown files with timestamps
+                    stat = item.stat()
                     children.append({
                         "name": item.name,
                         "path": f"/{item_relative_path}",
-                        "type": "file"
+                        "type": "file",
+                        "created": int(stat.st_ctime),
+                        "modified": int(stat.st_mtime)
                     })
         
         except PermissionError:
             # Skip directories we can't read
             pass
         
+        # Get directory timestamps
+        try:
+            stat = directory.stat()
+            created = int(stat.st_ctime)
+            modified = int(stat.st_mtime)
+        except (OSError, PermissionError):
+            created = None
+            modified = None
+        
         return {
             "name": directory.name if relative_path else "vault",
             "path": f"/{relative_path}" if relative_path else "/",
             "type": "directory",
-            "children": children
+            "children": children,
+            "created": created,
+            "modified": modified
         }
     
     def list_notes(self) -> Dict:
@@ -128,13 +143,16 @@ class FileService:
         if not self._is_markdown_file(file_path):
             raise ValueError(f"File is not a markdown file: {path}")
         
+        # Get the normalized path (relative to vault)
+        normalized_path = file_path.relative_to(self.vault_path.resolve())
+        
         try:
             content = file_path.read_text(encoding='utf-8')
             stat = file_path.stat()
             
             return {
                 "content": content,
-                "path": f"/{path}",
+                "path": f"/{normalized_path}",
                 "size": stat.st_size,
                 "modified": int(stat.st_mtime)
             }
@@ -170,9 +188,12 @@ class FileService:
         # Write the file
         file_path.write_text(content, encoding='utf-8')
         
+        # Get the normalized path (relative to vault)
+        normalized_path = file_path.relative_to(self.vault_path.resolve())
+        
         return {
             "message": "Note created successfully",
-            "path": f"/{path}"
+            "path": f"/{normalized_path}"
         }
     
     def update_note(self, path: str, content: str) -> Dict[str, str]:
@@ -201,9 +222,12 @@ class FileService:
         # Write the updated content
         file_path.write_text(content, encoding='utf-8')
         
+        # Get the normalized path (relative to vault)
+        normalized_path = file_path.relative_to(self.vault_path.resolve())
+        
         return {
             "message": "Note updated successfully",
-            "path": f"/{path}"
+            "path": f"/{normalized_path}"
         }
     
     def delete_note(self, path: str) -> Dict[str, str]:
@@ -228,12 +252,15 @@ class FileService:
         if not file_path.is_file():
             raise ValueError(f"Path is not a file: {path}")
         
+        # Get the normalized path before deleting (relative to vault)
+        normalized_path = file_path.relative_to(self.vault_path.resolve())
+        
         # Delete the file
         file_path.unlink()
         
         return {
             "message": "Note deleted successfully",
-            "path": f"/{path}"
+            "path": f"/{normalized_path}"
         }
     
     def rename_note(self, old_path: str, new_path: str) -> Dict[str, str]:
@@ -273,9 +300,12 @@ class FileService:
         # Move the file
         source_path.rename(dest_path)
         
+        # Get the normalized path (relative to vault)
+        normalized_path = dest_path.relative_to(self.vault_path.resolve())
+        
         return {
             "message": "Note renamed successfully",
-            "path": f"/{new_path}"
+            "path": f"/{normalized_path}"
         }
     
     def move_note(self, source_path: str, dest_path: str) -> Dict[str, str]:
@@ -328,7 +358,10 @@ class FileService:
         # Copy the file (preserving metadata)
         shutil.copy2(source_file, dest_file)
         
+        # Get the normalized path (relative to vault)
+        normalized_path = dest_file.relative_to(self.vault_path.resolve())
+        
         return {
             "message": "Note copied successfully",
-            "path": f"/{dest_path}"
+            "path": f"/{normalized_path}"
         }

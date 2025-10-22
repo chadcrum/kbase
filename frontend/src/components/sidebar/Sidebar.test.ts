@@ -19,10 +19,15 @@ describe('Sidebar', () => {
     
     mockVaultStore = {
       fileTree: null,
+      sortedFileTree: null,
       isLoading: false,
       loadFileTree: vi.fn(),
       refresh: vi.fn(),
-      expandedPaths: new Set()
+      expandedPaths: new Set(),
+      hasError: false,
+      error: null,
+      toggleExpanded: vi.fn(),
+      selectNote: vi.fn()
     }
     
     vi.mocked(useVaultStore).mockReturnValue(mockVaultStore)
@@ -46,9 +51,6 @@ describe('Sidebar', () => {
       wrapper = createWrapper()
       
       expect(wrapper.find('.sidebar').exists()).toBe(true)
-      expect(wrapper.find('.sidebar-header').exists()).toBe(true)
-      expect(wrapper.find('.sidebar-title').text()).toBe('Files')
-      expect(wrapper.find('.refresh-button').exists()).toBe(true)
       expect(wrapper.find('.sidebar-content').exists()).toBe(true)
     })
 
@@ -57,24 +59,31 @@ describe('Sidebar', () => {
       
       expect(wrapper.findComponent({ name: 'FileTree' }).exists()).toBe(true)
     })
+
+    it('should render FileExplorerToolbar component', () => {
+      wrapper = createWrapper()
+      
+      expect(wrapper.findComponent({ name: 'FileExplorerToolbar' }).exists()).toBe(true)
+    })
   })
 
   describe('refresh functionality', () => {
-    it('should call refresh when refresh button is clicked', async () => {
+    it('should pass refresh event from FileExplorerToolbar to vault store', async () => {
       wrapper = createWrapper()
       
-      const refreshButton = wrapper.find('.refresh-button')
-      await refreshButton.trigger('click')
+      // Simulate refresh event from FileExplorerToolbar
+      const toolbar = wrapper.findComponent({ name: 'FileExplorerToolbar' })
+      await toolbar.vm.$emit('refresh')
       
       expect(mockVaultStore.refresh).toHaveBeenCalled()
     })
 
-    it('should disable refresh button when loading', () => {
+    it('should pass isLoading prop to FileExplorerToolbar', () => {
       mockVaultStore.isLoading = true
       wrapper = createWrapper()
       
-      const refreshButton = wrapper.find('.refresh-button')
-      expect(refreshButton.attributes('disabled')).toBeDefined()
+      const toolbar = wrapper.findComponent({ name: 'FileExplorerToolbar' })
+      expect(toolbar.props('isLoading')).toBe(true)
     })
 
     it('should pass refresh event from FileTree to vault store', async () => {
@@ -111,18 +120,18 @@ describe('Sidebar', () => {
   })
 
   describe('props passing', () => {
-    it('should pass fileTree prop to FileTree component', () => {
+    it('should render FileTree component with sorted file tree', () => {
       const mockFileTree: FileTreeNode = {
         name: 'root',
         path: '/',
         type: 'directory',
         children: []
       }
-      mockVaultStore.fileTree = mockFileTree
+      mockVaultStore.sortedFileTree = mockFileTree
       wrapper = createWrapper()
       
       const fileTree = wrapper.findComponent({ name: 'FileTree' })
-      expect(fileTree.props('fileTree')).toEqual(mockFileTree)
+      expect(fileTree.exists()).toBe(true)
     })
   })
 
@@ -132,17 +141,6 @@ describe('Sidebar', () => {
       
       const sidebar = wrapper.find('.sidebar')
       expect(sidebar.classes()).toContain('sidebar')
-    })
-
-    it('should have proper header styling', () => {
-      wrapper = createWrapper()
-      
-      const header = wrapper.find('.sidebar-header')
-      const title = wrapper.find('.sidebar-title')
-      
-      expect(header.exists()).toBe(true)
-      expect(title.exists()).toBe(true)
-      expect(title.text()).toBe('Files')
     })
   })
 })

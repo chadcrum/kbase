@@ -249,3 +249,17 @@ export async function quickLogout(page: Page): Promise<void> {
   const authHelper = createAuthHelper(page);
   await authHelper.logout();
 }
+
+/**
+ * Simple login function for e2e tests
+ * Uses default password from environment or 'test-password'
+ */
+export async function login(page: Page): Promise<void> {
+  const password = process.env.KBASE_PASSWORD || 'test-password';
+  const authHelper = createAuthHelper(page);
+  const result = await authHelper.login({ password });
+  
+  if (!result.success) {
+    throw new Error(`Login failed: ${result.error}`);
+  }
+}

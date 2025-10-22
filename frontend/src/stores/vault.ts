@@ -88,6 +88,8 @@ export const useVaultStore = defineStore('vault', () => {
     try {
       const tree = await apiClient.getNotes()
       fileTree.value = tree
+      // Auto-expand root to show first-level items
+      expandedPaths.value.add('/')
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to load file tree'
@@ -352,6 +354,8 @@ export const useVaultStore = defineStore('vault', () => {
   // Collapse all action
   const collapseAll = () => {
     expandedPaths.value.clear()
+    // Keep root expanded to show first-level items
+    expandedPaths.value.add('/')
   }
 
   const hasExpandedPaths = computed(() => expandedPaths.value.size > 0)

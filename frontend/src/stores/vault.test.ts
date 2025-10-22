@@ -72,6 +72,8 @@ describe('VaultStore', () => {
       expect(vaultStore.fileTree).toEqual(mockTree)
       expect(vaultStore.error).toBeNull()
       expect(vaultStore.isLoading).toBe(false)
+      // Root should be auto-expanded to show first-level items
+      expect(vaultStore.isExpanded('/')).toBe(true)
     })
 
     it('should handle file tree loading failure', async () => {
@@ -710,7 +712,7 @@ describe('VaultStore', () => {
       expect(vaultStore.hasExpandedPaths).toBe(false)
     })
 
-    it('should collapse all expanded paths', () => {
+    it('should collapse all expanded paths but keep root expanded', () => {
       vaultStore.expandedPaths.add('/folder1')
       vaultStore.expandedPaths.add('/folder2')
       vaultStore.expandedPaths.add('/folder1/subfolder')
@@ -720,18 +722,22 @@ describe('VaultStore', () => {
       
       vaultStore.collapseAll()
       
-      expect(vaultStore.expandedPaths.size).toBe(0)
-      expect(vaultStore.hasExpandedPaths).toBe(false)
+      // Root should remain expanded to show first-level items
+      expect(vaultStore.expandedPaths.size).toBe(1)
+      expect(vaultStore.isExpanded('/')).toBe(true)
+      expect(vaultStore.hasExpandedPaths).toBe(true)
     })
 
-    it('should handle collapseAll when no paths are expanded', () => {
+    it('should keep root expanded when collapseAll is called with no other paths', () => {
       expect(vaultStore.expandedPaths.size).toBe(0)
       expect(vaultStore.hasExpandedPaths).toBe(false)
       
       vaultStore.collapseAll()
       
-      expect(vaultStore.expandedPaths.size).toBe(0)
-      expect(vaultStore.hasExpandedPaths).toBe(false)
+      // Root should be expanded to show first-level items
+      expect(vaultStore.expandedPaths.size).toBe(1)
+      expect(vaultStore.isExpanded('/')).toBe(true)
+      expect(vaultStore.hasExpandedPaths).toBe(true)
     })
 
     it('should update hasExpandedPaths reactively', () => {
@@ -741,7 +747,9 @@ describe('VaultStore', () => {
       expect(vaultStore.hasExpandedPaths).toBe(true)
       
       vaultStore.collapseAll()
-      expect(vaultStore.hasExpandedPaths).toBe(false)
+      // After collapseAll, root is still expanded
+      expect(vaultStore.hasExpandedPaths).toBe(true)
+      expect(vaultStore.isExpanded('/')).toBe(true)
     })
   })
 })

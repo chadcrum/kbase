@@ -193,7 +193,10 @@ frontend/src/
     - Maintains folder-first ordering in all sort modes
     - Sort preferences persisted to localStorage
   - **Tree Navigation**: `collapseAll()`, `hasExpandedPaths` (computed)
-    - Collapse all expanded directories with a single action
+    - **Auto-Expansion**: Vault root (`/`) is automatically expanded on initial load and after collapse operations
+      - Ensures first-level files and folders are always visible for better UX
+      - Improves discoverability of vault contents without requiring user interaction
+    - Collapse all expanded directories with a single action (preserves root expansion)
     - Track expanded state for UI button disable/enable logic
   - All CRUD operations automatically refresh the file tree and handle selection updates
   - `createNote()` automatically opens newly created files in the editor
@@ -203,6 +206,9 @@ frontend/src/
 - **Authentication**: JWT-based login with password protection
 - **File Explorer**: Advanced file management with full CRUD operations
   - Hierarchical tree view with expand/collapse functionality
+    - **Default Expansion**: Vault root is auto-expanded to show first-level items by default
+    - Provides immediate visibility of top-level files and folders on page load
+    - Collapse All action resets nested directories but preserves first-level visibility
   - **File Explorer Toolbar**: Quick access toolbar at the top of the sidebar
     - **New Folder Button**: Create new folders at root level with input validation
     - **New File Button**: Create new markdown files at root level with input validation

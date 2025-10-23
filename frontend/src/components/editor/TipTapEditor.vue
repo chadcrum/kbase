@@ -24,10 +24,12 @@ interface Props {
   modelValue: string
   path: string
   readonly?: boolean
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  readonly: false
+  readonly: false,
+  disabled: false
 })
 
 // Emits
@@ -37,9 +39,6 @@ const emit = defineEmits<{
 }>()
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
-let isUpdatingFromEditor = false
-let lastEmittedContent = ''
-let isSettingContent = false
 
 // Debounce delay for auto-save (1 second) - same as Monaco
 const AUTO_SAVE_DELAY = 1000
@@ -133,14 +132,6 @@ const markdownToHtml = async (markdown: string): Promise<string> => {
   return html
 }
 
-// Helper function to normalize markdown for comparison
-const normalizeMarkdown = (markdown: string): string => {
-  return markdown
-    .trim() // Remove leading/trailing whitespace
-    .replace(/\r\n/g, '\n') // Normalize line endings
-    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
-}
-
 // Helper function to convert TipTap content to markdown
 const editorToMarkdown = (node: ProseMirrorNode): string => {
   // Custom serialization for task lists
@@ -152,8 +143,17 @@ const editorToMarkdown = (node: ProseMirrorNode): string => {
         child.forEach((taskItem) => {
           const checked = taskItem.attrs.checked ? 'x' : ' '
           markdown += `- [${checked}] `
+          // Extract text from paragraph inside task item
           taskItem.forEach((content) => {
-            markdown += serialize(content)
+            if (content.type.name === 'paragraph') {
+              content.forEach((inline) => {
+                if (inline.isText) {
+                  markdown += inline.text
+                }
+              })
+            } else {
+              markdown += serialize(content).trim()
+            }
           })
           markdown += '\n'
         })
@@ -176,8 +176,17 @@ const editorToMarkdown = (node: ProseMirrorNode): string => {
       } else if (child.type.name === 'bulletList') {
         child.forEach((listItem) => {
           markdown += '- '
+          // Extract text from paragraph inside list item
           listItem.forEach((content) => {
-            markdown += serialize(content).trim()
+            if (content.type.name === 'paragraph') {
+              content.forEach((inline) => {
+                if (inline.isText) {
+                  markdown += inline.text
+                }
+              })
+            } else {
+              markdown += serialize(content).trim()
+            }
           })
           markdown += '\n'
         })
@@ -185,8 +194,17 @@ const editorToMarkdown = (node: ProseMirrorNode): string => {
         let index = 1
         child.forEach((listItem) => {
           markdown += `${index}. `
+          // Extract text from paragraph inside list item
           listItem.forEach((content) => {
-            markdown += serialize(content).trim()
+            if (content.type.name === 'paragraph') {
+              content.forEach((inline) => {
+                if (inline.isText) {
+                  markdown += inline.text
+                }
+              })
+            } else {
+              markdown += serialize(content).trim()
+            }
           })
           markdown += '\n'
           index++
@@ -238,32 +256,14 @@ const editor = useEditor({
     },
   },
   onUpdate: ({ editor }) => {
-    // Don't emit if we're programmatically setting content
-    if (isSettingContent) {
-      return
-    }
+    // Skip if disabled
+    if (props.disabled) return
     
     // Get markdown content from editor
     const markdown = editorToMarkdown(editor.state.doc)
     
-    // Normalize for comparison
-    const normalizedMarkdown = normalizeMarkdown(markdown)
-    const normalizedLast = normalizeMarkdown(lastEmittedContent)
-    
-    // Only emit if content actually changed
-    if (normalizedMarkdown === normalizedLast) {
-      return
-    }
-    
     // Emit update for v-model
-    isUpdatingFromEditor = true
-    lastEmittedContent = markdown
     emit('update:modelValue', markdown)
-    
-    // Reset flag after a short delay to allow watcher to process
-    setTimeout(() => {
-      isUpdatingFromEditor = false
-    }, 10) // Increased from 0 to 10ms for better async handling
     
     // Debounced auto-save
     if (saveTimeout) {
@@ -278,51 +278,25 @@ const editor = useEditor({
 
 // Watch for external content changes (from Monaco editor or parent component)
 watch(() => props.modelValue, async (newValue) => {
-  // Don't update if this change came from the editor itself
-  if (!editor.value || isUpdatingFromEditor || isSettingContent) {
-    return
-  }
+  // Skip if disabled or no editor
+  if (!editor.value || props.disabled) return
 
   // Get current editor content as markdown
   const currentMarkdown = editorToMarkdown(editor.value.state.doc)
   
-  // Normalize for comparison
-  const normalizedNew = normalizeMarkdown(newValue)
-  const normalizedCurrent = normalizeMarkdown(currentMarkdown)
-  const normalizedLast = normalizeMarkdown(lastEmittedContent)
-  
-  // Only update if content actually changed (using normalized comparison)
-  if (normalizedNew !== normalizedCurrent && normalizedNew !== normalizedLast) {
-    // Set flag to prevent onUpdate from firing
-    isSettingContent = true
-    
-    try {
-      // Convert markdown to HTML and set content
-      const html = await markdownToHtml(newValue)
-      lastEmittedContent = newValue // Update our tracking
-      editor.value.commands.setContent(html)
-    } finally {
-      // Reset flag after content is set
-      setTimeout(() => {
-        isSettingContent = false
-      }, 10)
-    }
+  // Only update if content actually changed
+  if (newValue !== currentMarkdown) {
+    // Convert markdown to HTML and set content
+    const html = await markdownToHtml(newValue)
+    editor.value.commands.setContent(html)
   }
 })
 
 // Initialize content from markdown on mount
 watch(editor, async (newEditor) => {
   if (newEditor && props.modelValue) {
-    isSettingContent = true
-    try {
-      const html = await markdownToHtml(props.modelValue)
-      lastEmittedContent = props.modelValue // Track initial content
-      newEditor.commands.setContent(html)
-    } finally {
-      setTimeout(() => {
-        isSettingContent = false
-      }, 10)
-    }
+    const html = await markdownToHtml(props.modelValue)
+    newEditor.commands.setContent(html)
   }
 }, { immediate: true })
 

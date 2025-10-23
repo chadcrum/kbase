@@ -447,20 +447,20 @@ The TipTap editor provides a rich WYSIWYG markdown editing experience with bidir
    - Parent (NoteViewer) calls vault store's `updateNote` action
    - Visual feedback via ViewerToolbar (saving/saved/error states)
    
-3. **Bidirectional Sync**:
-   - Both editors share the same `editableContent` ref in NoteViewer
-   - Changes in Monaco are reflected in TipTap when switching views
-   - Changes in TipTap are reflected in Monaco when switching views
-   - Advanced change tracking prevents data loss and infinite loops:
-     - `isUpdatingFromEditor` flag prevents watcher triggers during editor updates
-     - `isSettingContent` flag prevents update events during programmatic content setting
-     - `lastEmittedContent` tracking ensures round-trip safety
-     - Content comparisons prevent redundant updates
-     - Async-safe flag handling (10ms delays) prevents race conditions
-     - Markdown normalization handles formatting differences
-   - Component keys in NoteViewer force proper reinitialization on editor switch
-   - Markdown serialization/deserialization with normalization ensures content consistency
+3. **Bidirectional Sync** (Simplified Architecture):
+   - Both editors share the same `editableContent` ref in NoteViewer via v-model
+   - Uses `v-show` instead of `v-if` to keep both editors mounted simultaneously
+   - Hidden editor is disabled via `disabled` prop to prevent conflicting updates
+   - Eliminates lifecycle complexity - no mount/unmount when switching editors
+   - Simple, reliable sync with no complex flags or async timing issues:
+     - Disabled editor ignores all content changes (via `disabled` prop check)
+     - Active editor updates normally and emits to v-model
+     - Watchers only process updates when editor is not disabled
+     - Content comparison prevents redundant updates (simple `!==` check)
+   - Fixed markdown serialization bug: List items now correctly extract text from paragraph nodes
+   - Significantly reduced code complexity (~100 lines of flag management removed)
    - Seamless switching preserves all unsaved changes in both directions
+   - Faster editor switching since no remounting is needed
    
 4. **TipTap Extensions**:
    - **StarterKit**: Core functionality (headings, bold, italic, lists, code, blockquotes, etc.)

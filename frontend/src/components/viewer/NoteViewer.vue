@@ -12,21 +12,21 @@
       />
       
       <!-- Monaco Editor View -->
-      <div v-if="viewMode === 'editor'" class="editor-view">
+      <div v-show="viewMode === 'editor'" class="editor-view">
         <MonacoEditor
-          :key="`monaco-${selectedNote.path}`"
           v-model="editableContent"
           :path="selectedNote.path"
+          :disabled="viewMode !== 'editor'"
           @save="handleSave"
         />
       </div>
       
       <!-- TipTap WYSIWYG View -->
-      <div v-else class="wysiwyg-view">
+      <div v-show="viewMode === 'wysiwyg'" class="wysiwyg-view">
         <TipTapEditor
-          :key="`tiptap-${selectedNote.path}`"
           v-model="editableContent"
           :path="selectedNote.path"
+          :disabled="viewMode !== 'wysiwyg'"
           @save="handleSave"
         />
       </div>
@@ -263,6 +263,14 @@ const handleOpenSearch = () => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Hide inactive editors properly to prevent layout issues */
+.editor-view[style*="display: none"],
+.wysiwyg-view[style*="display: none"] {
+  visibility: hidden;
+  position: absolute;
+  pointer-events: none;
 }
 
 /* Responsive design */

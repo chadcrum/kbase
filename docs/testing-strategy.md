@@ -30,7 +30,7 @@ KBase implements a comprehensive multi-layered testing strategy that ensures rel
 
 ### 1. Unit Tests (Vitest + Vue Test Utils)
 
-**Coverage**: 87% (92+ tests)
+**Coverage**: 87% (99+ tests)
 
 **Scope**:
 - Store logic (`auth.ts`, `vault.ts`)
@@ -38,12 +38,14 @@ KBase implements a comprehensive multi-layered testing strategy that ensures rel
 - Utility functions
 - Component methods
 - Type definitions
+- Drag-and-drop interactions
 
 **Key Test Files**:
 - `stores/auth.test.ts` - Authentication state management
 - `stores/vault.test.ts` - File tree state management
 - `api/client.test.ts` - HTTP client functionality
 - `components/**/*.test.ts` - Component unit tests
+- `components/sidebar/FileTreeNode.test.ts` - File tree drag-and-drop with auto-expand
 
 **Test Patterns**:
 ```typescript
@@ -73,6 +75,7 @@ test('should render login form', () => {
 - Conditional rendering
 - Error state display
 - Loading states
+- Drag-and-drop interactions with timers
 
 **Test Patterns**:
 ```typescript
@@ -80,6 +83,15 @@ test('should show error on invalid login', async () => {
   const wrapper = mount(LoginView)
   await wrapper.find('form').trigger('submit')
   expect(wrapper.find('.error-message').exists()).toBe(true)
+})
+
+// Drag-and-drop testing with fake timers
+test('should auto-expand on drag hover', async () => {
+  vi.useFakeTimers()
+  await wrapper.find('.node-item').trigger('dragover')
+  vi.advanceTimersByTime(600)
+  expect(wrapper.emitted('toggleExpand')).toBeTruthy()
+  vi.restoreAllMocks()
 })
 ```
 
@@ -404,6 +416,8 @@ npx playwright show-trace trace.zip
    - Note viewing and editing
    - Search functionality
    - Settings management
+   - Drag-and-drop file operations ✅
+   - Directory auto-expand on drag ✅
 
 2. **Error Scenarios**:
    - Network failures

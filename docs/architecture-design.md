@@ -389,6 +389,12 @@ The file explorer provides comprehensive file and directory management through a
    - Prevents invalid operations (dropping on self, dropping parent into child)
    - Automatically refreshes file tree after successful drop
    - Uses JSON data transfer for cross-browser compatibility
+   - **Auto-Expand Feature**:
+     - Collapsed directories automatically expand after hovering for 600ms during drag
+     - Timer is cancelled if drag leaves the directory before 600ms
+     - Directories expand immediately upon successful drop if still collapsed
+     - Timer cleanup on drag end prevents memory leaks
+     - Only directories are auto-expanded; files are ignored
    
 2. **Context Menu System**:
    - Right-click on any file or directory to open context menu

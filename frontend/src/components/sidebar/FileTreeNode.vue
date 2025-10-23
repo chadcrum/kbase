@@ -114,6 +114,7 @@ const showDeleteConfirm = ref(false)
 const isRenaming = ref(false)
 const newName = ref('')
 const renameInput = ref<HTMLInputElement | null>(null)
+const dragHoverTimer = ref<number | null>(null)
 
 // Computed properties
 const hasChildren = computed(() => {
@@ -285,6 +286,12 @@ const handleDragStart = (event: DragEvent) => {
 
 const handleDragEnd = () => {
   isDragging.value = false
+  
+  // Clear hover timer to prevent memory leaks
+  if (dragHoverTimer.value) {
+    clearTimeout(dragHoverTimer.value)
+    dragHoverTimer.value = null
+  }
 }
 
 const handleDragOver = (event: DragEvent) => {
@@ -298,14 +305,34 @@ const handleDragOver = (event: DragEvent) => {
   }
   
   isDragOver.value = true
+  
+  // Auto-expand collapsed directories after hovering for 600ms
+  if (!isExpanded.value && !dragHoverTimer.value) {
+    dragHoverTimer.value = window.setTimeout(() => {
+      emit('toggleExpand', props.node.path)
+      dragHoverTimer.value = null
+    }, 600)
+  }
 }
 
 const handleDragLeave = () => {
   isDragOver.value = false
+  
+  // Clear hover timer to prevent unwanted expansion
+  if (dragHoverTimer.value) {
+    clearTimeout(dragHoverTimer.value)
+    dragHoverTimer.value = null
+  }
 }
 
 const handleDrop = async (event: DragEvent) => {
   isDragOver.value = false
+  
+  // Clear hover timer
+  if (dragHoverTimer.value) {
+    clearTimeout(dragHoverTimer.value)
+    dragHoverTimer.value = null
+  }
   
   // Only allow dropping on directories
   if (!isDirectory.value) return
@@ -330,6 +357,11 @@ const handleDrop = async (event: DragEvent) => {
       await vaultStore.moveDirectory(draggedPath, props.node.path)
     } else {
       await vaultStore.moveFile(draggedPath, props.node.path)
+    }
+    
+    // Expand the directory after successful drop if it's collapsed
+    if (!isExpanded.value) {
+      emit('toggleExpand', props.node.path)
     }
   } catch (error) {
     console.error('Failed to handle drop:', error)

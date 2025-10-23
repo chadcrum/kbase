@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FileTreeNode from './FileTreeNode.vue'
@@ -238,6 +238,199 @@ describe('FileTreeNode', () => {
       
       expect(wrapper.emitted('selectNote')).toBeTruthy()
       expect(wrapper.emitted('selectNote')[0]).toEqual(['/folder/note.md'])
+    })
+  })
+
+  describe('drag and drop auto-expand', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    const directoryNode: FileTreeNodeType = {
+      name: 'folder',
+      path: '/folder',
+      type: 'directory',
+      children: []
+    }
+
+    it('should auto-expand collapsed directory after hovering for 600ms', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      const dragEvent = new DragEvent('dragover', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+
+      await nodeItem.trigger('dragover', { dataTransfer: dragEvent.dataTransfer })
+      
+      // Should not emit immediately
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+
+      // Fast-forward time by 600ms
+      vi.advanceTimersByTime(600)
+
+      // Should now emit toggleExpand
+      expect(wrapper.emitted('toggleExpand')).toBeTruthy()
+      expect(wrapper.emitted('toggleExpand')[0]).toEqual(['/folder'])
+    })
+
+    it('should not auto-expand if drag leaves before 600ms', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      await nodeItem.trigger('dragover')
+      
+      // Fast-forward by 300ms (half the timeout)
+      vi.advanceTimersByTime(300)
+      
+      // Trigger dragleave
+      await nodeItem.trigger('dragleave')
+      
+      // Fast-forward past the original timeout
+      vi.advanceTimersByTime(400)
+      
+      // Should not have emitted toggleExpand
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+    })
+
+    it('should not auto-expand already expanded directories', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set(['/folder'])
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      await nodeItem.trigger('dragover')
+      
+      // Fast-forward time by 600ms
+      vi.advanceTimersByTime(600)
+      
+      // Should not emit toggleExpand for already expanded directory
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+    })
+
+    it('should not auto-expand files', async () => {
+      const fileNode: FileTreeNodeType = {
+        name: 'note.md',
+        path: '/note.md',
+        type: 'file'
+      }
+
+      wrapper = createWrapper({
+        node: fileNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      // Dragover should not be prevented on files
+      const dragEvent = await nodeItem.trigger('dragover')
+      
+      // Fast-forward time by 600ms
+      vi.advanceTimersByTime(600)
+      
+      // Should never emit toggleExpand for files
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+    })
+
+    it('should clear timer on drag end', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      await nodeItem.trigger('dragover')
+      await nodeItem.trigger('dragend')
+      
+      // Fast-forward past the timeout
+      vi.advanceTimersByTime(700)
+      
+      // Should not have emitted toggleExpand after drag end
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+    })
+
+    it('should expand directory on drop if collapsed', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      const dropData = {
+        path: '/other-file.md',
+        name: 'other-file.md',
+        type: 'file'
+      }
+
+      const dragEvent = new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+      dragEvent.dataTransfer?.setData('application/json', JSON.stringify(dropData))
+
+      await nodeItem.trigger('drop', { dataTransfer: dragEvent.dataTransfer })
+      
+      // Wait for async operations
+      await wrapper.vm.$nextTick()
+      
+      // Should emit toggleExpand after successful drop
+      expect(wrapper.emitted('toggleExpand')).toBeTruthy()
+      expect(wrapper.emitted('toggleExpand')[0]).toEqual(['/folder'])
+    })
+
+    it('should not expand directory on drop if already expanded', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set(['/folder'])
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      const dropData = {
+        path: '/other-file.md',
+        name: 'other-file.md',
+        type: 'file'
+      }
+
+      const dragEvent = new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+      dragEvent.dataTransfer?.setData('application/json', JSON.stringify(dropData))
+
+      await nodeItem.trigger('drop', { dataTransfer: dragEvent.dataTransfer })
+      
+      // Wait for async operations
+      await wrapper.vm.$nextTick()
+      
+      // Should not emit toggleExpand for already expanded directory
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
     })
   })
 })

@@ -71,7 +71,7 @@ vault/                           # Mounted Docker volume
 - `DELETE /directories/{path}` - Delete directory
 - `POST /directories/{path}/move` - Move directory
 - `POST /directories/{path}/copy` - Copy directory
-- `GET /notes/search/` - Omni-search (content, fuzzy, with snippets)
+- `GET /notes/search/` - Omni-search (content, fuzzy, with snippets, sorted by modified date)
 - `GET /config` - Get public config settings
 
 **WebSocket Endpoint** (`/ws`):
@@ -203,6 +203,9 @@ frontend/src/
     - Maintains folder-first ordering in all sort modes
     - Sort preferences persisted to localStorage
   - **Tree Navigation**: `collapseAll()`, `hasExpandedPaths` (computed)
+  - **UI State**: `isSidebarCollapsed`, `toggleSidebar()`
+    - Global sidebar visibility state for collapse/expand functionality
+    - Accessible across components for coordinated UI updates
     - **Auto-Expansion**: Vault root (`/`) is automatically expanded on initial load and after collapse operations
       - Ensures first-level files and folders are always visible for better UX
       - Improves discoverability of vault contents without requiring user interaction
@@ -231,11 +234,18 @@ frontend/src/
   - **Line Numbers**: Monospace-formatted snippets show exact match locations
   - **XSS Protection**: HTML-escaped content prevents security vulnerabilities
   - **Performance**: Uses ripgrep for fast search, limited to 50 results
+  - **Smart Sorting**: Results automatically sorted by last modified date (most recent first)
+    - Helps surface recently updated files for better relevance
 - **File Explorer**: Advanced file management with full CRUD operations
   - Hierarchical tree view with expand/collapse functionality
     - **Default Expansion**: Vault root is auto-expanded to show first-level items by default
     - Provides immediate visibility of top-level files and folders on page load
     - Collapse All action resets nested directories but preserves first-level visibility
+    - **Directory Item Counts**: Each directory shows total count of nested items (files + subdirectories)
+      - Recursive counting of all children at any depth
+      - Displayed in lighter color (#9ca3af) with smaller font (0.75rem)
+      - Format: `(123)` next to directory name
+      - Helps users understand directory size at a glance
   - **File Explorer Toolbar**: Quick access toolbar at the top of the sidebar
     - **New Folder Button**: Create new folders at root level with input validation
     - **New File Button**: Create new markdown files at root level with input validation
@@ -274,12 +284,20 @@ frontend/src/
     - Auto-save functionality (1 second debounce, matching Monaco)
     - Rich text editing with live preview
     - Task list support with interactive checkboxes
+      - Improved vertical alignment for better readability
+      - Checkbox and text properly centered on the same baseline
     - Tab/Shift-Tab for list indentation
     - Custom markdown serialization
     - Bidirectional sync with Monaco editor
   - **Smart Defaults**: Automatically selects TipTap for .md files, Monaco for other file types
   - **Icon-Based Toggle**: Single toggle button with dynamic icon - shows `</>` when in Monaco (Code) mode, `Md` when in TipTap (Markdown) mode
 - **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
+- **Sidebar Toggle**: Collapsible file explorer for maximizing editor space
+  - Toggle button in toolbar (left side, before file name)
+  - Smooth animation (0.3s ease) for collapse/expand
+  - Icon changes direction: `«` (hide) / `»` (show)
+  - State managed in vault store for global access
+  - Useful for distraction-free writing or small screens
 - **Responsive Design**: Clean, modern interface with mobile support
 - **Error Handling**: Comprehensive error states and user feedback
 
@@ -619,6 +637,15 @@ The file explorer provides comprehensive file and directory management through a
 5. **WebSocket Reconnection**: Exponential backoff
 6. **Optimized API**: Uses cached database instead of filesystem scanning
 7. **Memory Management**: 40x reduction in memory usage for large vaults
+8. **Directory Item Counting**: Recursive counting computed on-demand in Vue components
+   - Uses computed properties for reactive updates
+   - Counting happens client-side during tree rendering
+   - Efficient for typical vault sizes (< 5000 files)
+   - Minimal performance impact due to Vue's caching mechanism
+9. **Search Result Sorting**: Results sorted by modified date on backend
+   - Sorting done once before sending to frontend
+   - No additional frontend processing needed
+   - Helps surface most relevant (recent) files first
 
 ### Performance Benchmarks
 

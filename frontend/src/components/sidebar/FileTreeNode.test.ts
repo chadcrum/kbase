@@ -433,4 +433,186 @@ describe('FileTreeNode', () => {
       expect(wrapper.emitted('toggleExpand')).toBeFalsy()
     })
   })
+
+  describe('directory item counts', () => {
+    it('should display item count for directories', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'folder',
+        path: '/folder',
+        type: 'directory',
+        children: [
+          { name: 'file1.md', path: '/folder/file1.md', type: 'file' },
+          { name: 'file2.md', path: '/folder/file2.md', type: 'file' }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(true)
+      expect(itemCount.text()).toBe('(2)')
+    })
+
+    it('should recursively count nested items', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'folder',
+        path: '/folder',
+        type: 'directory',
+        children: [
+          { name: 'file1.md', path: '/folder/file1.md', type: 'file' },
+          { 
+            name: 'subfolder',
+            path: '/folder/subfolder',
+            type: 'directory',
+            children: [
+              { name: 'file2.md', path: '/folder/subfolder/file2.md', type: 'file' },
+              { name: 'file3.md', path: '/folder/subfolder/file3.md', type: 'file' }
+            ]
+          }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      // Should count: file1.md (1) + subfolder (1) + file2.md (1) + file3.md (1) = 4
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(true)
+      expect(itemCount.text()).toBe('(4)')
+    })
+
+    it('should handle deeply nested directories', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'root',
+        path: '/root',
+        type: 'directory',
+        children: [
+          {
+            name: 'level1',
+            path: '/root/level1',
+            type: 'directory',
+            children: [
+              {
+                name: 'level2',
+                path: '/root/level1/level2',
+                type: 'directory',
+                children: [
+                  { name: 'deep.md', path: '/root/level1/level2/deep.md', type: 'file' }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      // Should count: level1 (1) + level2 (1) + deep.md (1) = 3
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.text()).toBe('(3)')
+    })
+
+    it('should not display count for empty directories', () => {
+      const emptyDirectory: FileTreeNodeType = {
+        name: 'empty',
+        path: '/empty',
+        type: 'directory',
+        children: []
+      }
+
+      wrapper = createWrapper({
+        node: emptyDirectory,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(false)
+    })
+
+    it('should not display count for files', () => {
+      const fileNode: FileTreeNodeType = {
+        name: 'note.md',
+        path: '/note.md',
+        type: 'file'
+      }
+
+      wrapper = createWrapper({
+        node: fileNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(false)
+    })
+
+    it('should style item count correctly', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'folder',
+        path: '/folder',
+        type: 'directory',
+        children: [
+          { name: 'file.md', path: '/folder/file.md', type: 'file' }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(true)
+      expect(itemCount.classes()).toContain('item-count')
+    })
+
+    it('should handle mixed content (files and directories)', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'mixed',
+        path: '/mixed',
+        type: 'directory',
+        children: [
+          { name: 'file1.md', path: '/mixed/file1.md', type: 'file' },
+          { 
+            name: 'dir1',
+            path: '/mixed/dir1',
+            type: 'directory',
+            children: [
+              { name: 'file2.md', path: '/mixed/dir1/file2.md', type: 'file' }
+            ]
+          },
+          { name: 'file3.md', path: '/mixed/file3.md', type: 'file' },
+          {
+            name: 'dir2',
+            path: '/mixed/dir2',
+            type: 'directory',
+            children: []
+          }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      // Count: file1.md (1) + dir1 (1) + file2.md (1) + file3.md (1) + dir2 (1) = 5
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.text()).toBe('(5)')
+    })
+  })
 })

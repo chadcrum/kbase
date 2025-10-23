@@ -1,8 +1,21 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import ViewerToolbar from './ViewerToolbar.vue'
 
+// Mock the vault store
+vi.mock('@/stores/vault', () => ({
+  useVaultStore: vi.fn(() => ({
+    isSidebarCollapsed: false,
+    toggleSidebar: vi.fn()
+  }))
+}))
+
 describe('ViewerToolbar', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('renders file name', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {

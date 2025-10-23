@@ -26,38 +26,44 @@ vi.mock('@monaco-editor/loader', () => ({
 }))
 
 // Mock TipTap editor to avoid initialization issues in tests
-const mockEditor = {
-  commands: {
-    setContent: vi.fn(),
-  },
-  state: {
-    doc: {}
-  },
-  destroy: vi.fn(),
-  setEditable: vi.fn(),
-  isActive: vi.fn(() => false),
-  can: vi.fn(() => ({
-    undo: vi.fn(() => true),
-    redo: vi.fn(() => true)
-  })),
-  chain: vi.fn(() => ({
-    focus: vi.fn(() => ({
-      toggleBold: vi.fn(() => ({ run: vi.fn() })),
-      toggleItalic: vi.fn(() => ({ run: vi.fn() })),
-      toggleStrike: vi.fn(() => ({ run: vi.fn() })),
-      toggleCode: vi.fn(() => ({ run: vi.fn() })),
-      toggleHeading: vi.fn(() => ({ run: vi.fn() })),
-      toggleBulletList: vi.fn(() => ({ run: vi.fn() })),
-      toggleOrderedList: vi.fn(() => ({ run: vi.fn() })),
-      toggleTaskList: vi.fn(() => ({ run: vi.fn() })),
-      toggleBlockquote: vi.fn(() => ({ run: vi.fn() })),
-      toggleCodeBlock: vi.fn(() => ({ run: vi.fn() })),
-      setHorizontalRule: vi.fn(() => ({ run: vi.fn() })),
-      undo: vi.fn(() => ({ run: vi.fn() })),
-      redo: vi.fn(() => ({ run: vi.fn() }))
-    }))
-  }))
+const createMockEditor = () => {
+  const chainMethods = {
+    focus: vi.fn().mockReturnThis(),
+    toggleBold: vi.fn().mockReturnThis(),
+    toggleItalic: vi.fn().mockReturnThis(),
+    toggleStrike: vi.fn().mockReturnThis(),
+    toggleCode: vi.fn().mockReturnThis(),
+    toggleHeading: vi.fn().mockReturnThis(),
+    toggleBulletList: vi.fn().mockReturnThis(),
+    toggleOrderedList: vi.fn().mockReturnThis(),
+    toggleTaskList: vi.fn().mockReturnThis(),
+    toggleBlockquote: vi.fn().mockReturnThis(),
+    toggleCodeBlock: vi.fn().mockReturnThis(),
+    setHorizontalRule: vi.fn().mockReturnThis(),
+    undo: vi.fn().mockReturnThis(),
+    redo: vi.fn().mockReturnThis(),
+    run: vi.fn()
+  }
+  
+  return {
+    commands: {
+      setContent: vi.fn(),
+    },
+    state: {
+      doc: {}
+    },
+    destroy: vi.fn(),
+    setEditable: vi.fn(),
+    isActive: vi.fn((name: string) => false),
+    can: vi.fn(() => ({
+      undo: () => true,
+      redo: () => true
+    })),
+    chain: vi.fn(() => chainMethods)
+  }
 }
+
+const mockEditor = createMockEditor()
 
 vi.mock('@tiptap/vue-3', () => ({
   useEditor: vi.fn(() => ({
@@ -66,6 +72,26 @@ vi.mock('@tiptap/vue-3', () => ({
   EditorContent: {
     name: 'EditorContent',
     template: '<div class="tiptap-editor"></div>'
+  }
+}))
+
+// Mock TipTapEditor component
+vi.mock('@/components/editor/TipTapEditor.vue', () => ({
+  default: {
+    name: 'TipTapEditor',
+    template: '<div class="tiptap-editor-mock"></div>',
+    props: ['modelValue', 'path', 'disabled'],
+    emits: ['update:modelValue', 'save']
+  }
+}))
+
+// Mock MonacoEditor component
+vi.mock('@/components/editor/MonacoEditor.vue', () => ({
+  default: {
+    name: 'MonacoEditor',
+    template: '<div class="monaco-editor-mock"></div>',
+    props: ['modelValue', 'path', 'disabled'],
+    emits: ['update:modelValue', 'save']
   }
 }))
 
@@ -137,9 +163,12 @@ describe('NoteViewer', () => {
       wrapper = createWrapper()
       await wrapper.vm.$nextTick()
       
-      // Should show wysiwyg view for .md files
+      // Both views exist (v-show), wysiwyg is visible for .md files
       expect(wrapper.find('.wysiwyg-view').exists()).toBe(true)
-      expect(wrapper.find('.editor-view').exists()).toBe(false)
+      expect(wrapper.find('.editor-view').exists()).toBe(true)
+      // Check visibility via v-show
+      expect(wrapper.find('.wysiwyg-view').isVisible()).toBe(true)
+      expect(wrapper.find('.editor-view').isVisible()).toBe(false)
     })
 
     it('should extract title from note path correctly', () => {
@@ -231,9 +260,12 @@ describe('NoteViewer', () => {
       wrapper = createWrapper()
       await wrapper.vm.$nextTick()
       
-      // Should show editor view for non-.md files
+      // Both views exist (v-show), but only editor view is visible
       expect(wrapper.find('.editor-view').exists()).toBe(true)
-      expect(wrapper.find('.wysiwyg-view').exists()).toBe(false)
+      expect(wrapper.find('.wysiwyg-view').exists()).toBe(true)
+      // Check visibility via v-show
+      expect(wrapper.find('.editor-view').isVisible()).toBe(true)
+      expect(wrapper.find('.wysiwyg-view').isVisible()).toBe(false)
     })
 
     it('should allow switching between editor and wysiwyg modes', async () => {
@@ -241,15 +273,17 @@ describe('NoteViewer', () => {
       wrapper = createWrapper()
       await wrapper.vm.$nextTick()
       
-      // Starts in wysiwyg mode for .md files
+      // Both views exist (v-show), wysiwyg is visible for .md files
       expect(wrapper.find('.wysiwyg-view').exists()).toBe(true)
+      expect(wrapper.find('.editor-view').exists()).toBe(true)
       
       // Switch to editor mode
       await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'editor')
       await wrapper.vm.$nextTick()
       
+      // Both still exist, but editor is now visible
       expect(wrapper.find('.editor-view').exists()).toBe(true)
-      expect(wrapper.find('.wysiwyg-view').exists()).toBe(false)
+      expect(wrapper.find('.wysiwyg-view').exists()).toBe(true)
     })
   })
 

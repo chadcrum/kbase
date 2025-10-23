@@ -26,7 +26,7 @@ describe('ViewerToolbar', () => {
     expect(wrapper.text()).toContain('folder/test.md')
   })
 
-  it('renders editor and preview toggle buttons', () => {
+  it('renders single toggle button with icon', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md',
@@ -34,13 +34,12 @@ describe('ViewerToolbar', () => {
       }
     })
 
-    const buttons = wrapper.findAll('.toggle-btn')
-    expect(buttons).toHaveLength(2)
-    expect(buttons[0].text()).toContain('Editor')
-    expect(buttons[1].text()).toContain('Preview')
+    const button = wrapper.find('.toggle-btn')
+    expect(button.exists()).toBe(true)
+    expect(button.find('.icon-text').exists()).toBe(true)
   })
 
-  it('applies active class to editor button when in editor mode', () => {
+  it('shows </> icon when in editor mode', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md',
@@ -48,40 +47,38 @@ describe('ViewerToolbar', () => {
       }
     })
 
-    const buttons = wrapper.findAll('.toggle-btn')
-    expect(buttons[0].classes()).toContain('active')
-    expect(buttons[1].classes()).not.toContain('active')
+    const iconText = wrapper.find('.icon-text')
+    expect(iconText.text()).toBe('</>')
   })
 
-  it('applies active class to preview button when in preview mode', () => {
+  it('shows Md icon when in wysiwyg mode', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md',
-        viewMode: 'preview'
+        viewMode: 'wysiwyg'
       }
     })
 
-    const buttons = wrapper.findAll('.toggle-btn')
-    expect(buttons[0].classes()).not.toContain('active')
-    expect(buttons[1].classes()).toContain('active')
+    const iconText = wrapper.find('.icon-text')
+    expect(iconText.text()).toBe('Md')
   })
 
-  it('emits update:viewMode when editor button is clicked', async () => {
+  it('toggles from wysiwyg to editor when clicked', async () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md',
-        viewMode: 'preview'
+        viewMode: 'wysiwyg'
       }
     })
 
-    const buttons = wrapper.findAll('.toggle-btn')
-    await buttons[0].trigger('click')
+    const button = wrapper.find('.toggle-btn')
+    await button.trigger('click')
 
     expect(wrapper.emitted('update:viewMode')).toBeTruthy()
     expect(wrapper.emitted('update:viewMode')?.[0]).toEqual(['editor'])
   })
 
-  it('emits update:viewMode when preview button is clicked', async () => {
+  it('toggles from editor to wysiwyg when clicked', async () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md',
@@ -89,11 +86,11 @@ describe('ViewerToolbar', () => {
       }
     })
 
-    const buttons = wrapper.findAll('.toggle-btn')
-    await buttons[1].trigger('click')
+    const button = wrapper.find('.toggle-btn')
+    await button.trigger('click')
 
     expect(wrapper.emitted('update:viewMode')).toBeTruthy()
-    expect(wrapper.emitted('update:viewMode')?.[0]).toEqual(['preview'])
+    expect(wrapper.emitted('update:viewMode')?.[0]).toEqual(['wysiwyg'])
   })
 
   it('displays saving status', () => {

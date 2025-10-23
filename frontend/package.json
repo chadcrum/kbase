@@ -22,10 +22,18 @@
   },
   "dependencies": {
     "@monaco-editor/loader": "^1.6.1",
+    "@tiptap/extension-placeholder": "^3.7.2",
+    "@tiptap/extension-task-item": "^3.7.2",
+    "@tiptap/extension-task-list": "^3.7.2",
+    "@tiptap/pm": "^3.7.2",
+    "@tiptap/starter-kit": "^3.7.2",
+    "@tiptap/vue-3": "^3.7.2",
     "axios": "^1.7.0",
+    "marked": "^16.4.1",
     "monaco-editor": "^0.54.0",
     "pinia": "^2.2.0",
     "playwright": "^1.56.1",
+    "prosemirror-markdown": "^1.13.2",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0"
   },

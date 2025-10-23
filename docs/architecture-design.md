@@ -23,7 +23,8 @@
 - **HTTP Client**: Axios
 - **UI**: Custom CSS (no component library initially)
 - **Code Editor**: Monaco Editor (VS Code editor)
-- **Future**: WYSIWYG Editor (Milkdown), WebSocket Client, PWA features
+- **WYSIWYG Editor**: TipTap (Markdown-based rich text editor)
+- **Future**: WebSocket Client, PWA features
 
 ### Infrastructure
 
@@ -138,7 +139,9 @@ frontend/src/
 │   │   ├── ConfirmDialog.vue       # Reusable confirmation dialog
 │   │   └── InputDialog.vue         # Reusable input dialog for user input
 │   ├── editor/
-│   │   └── MonacoEditor.vue        # Monaco code editor wrapper
+│   │   ├── MonacoEditor.vue        # Monaco code editor wrapper
+│   │   ├── TipTapEditor.vue        # TipTap WYSIWYG markdown editor
+│   │   └── TipTapToolbar.vue       # Formatting toolbar for TipTap editor
 │   ├── layout/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
@@ -168,9 +171,11 @@ frontend/src/
 **Component Structure**:
 
 - **Editor Components**:
-  - `MonacoEditor.vue`: Monaco editor wrapper with auto-save
-  - `ViewerToolbar.vue`: Toolbar with view mode toggle and save status
-  - `NoteViewer.vue`: Orchestrates editor and preview views
+  - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting
+  - `TipTapEditor.vue`: TipTap WYSIWYG markdown editor with auto-save and rich text features
+  - `TipTapToolbar.vue`: Rich formatting toolbar for TipTap with buttons for bold, italic, headings, lists, code blocks, etc.
+  - `ViewerToolbar.vue`: Toolbar with icon-based view mode toggle and save status
+  - `NoteViewer.vue`: Orchestrates dual-editor system with bidirectional sync
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar container
@@ -237,14 +242,21 @@ frontend/src/
     - Prevents path traversal (no `../` or absolute paths)
     - Blocks reserved system names (CON, PRN, AUX, etc.)
     - Validates against invalid characters
-- **Monaco Editor**: Full-featured code editor with syntax highlighting for all text-based files
-  - Auto-save functionality (1 second debounce)
-  - Syntax highlighting for 30+ languages
-  - Dark theme matching VS Code
-  - Language detection from file extensions
-- **Dual View Modes**: Toggle between editor and preview modes
-  - **Editor Mode**: Monaco editor for editing files
-  - **Preview Mode**: Formatted text display with metadata
+- **Dual-Editor System**: Toggle between Monaco code editor and TipTap WYSIWYG editor
+  - **Code Mode (Monaco)**: Full-featured code editor with syntax highlighting for all text-based files
+    - Auto-save functionality (1 second debounce)
+    - Syntax highlighting for 30+ languages
+    - Dark theme matching VS Code
+    - Language detection from file extensions
+  - **Markdown Mode (TipTap)**: WYSIWYG rich text editor for markdown files
+    - Auto-save functionality (1 second debounce, matching Monaco)
+    - Rich text editing with live preview
+    - Task list support with interactive checkboxes
+    - Tab/Shift-Tab for list indentation
+    - Custom markdown serialization
+    - Bidirectional sync with Monaco editor
+  - **Smart Defaults**: Automatically selects TipTap for .md files, Monaco for other file types
+  - **Icon-Based Toggle**: Single toggle button with dynamic icon - shows `</>` when in Monaco (Code) mode, `Md` when in TipTap (Markdown) mode
 - **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
 - **Responsive Design**: Clean, modern interface with mobile support
 - **Error Handling**: Comprehensive error states and user feedback
@@ -357,6 +369,7 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - Minimap enabled for navigation
    - Word wrap enabled for better readability
    - Tab size: 2 spaces
+   - No custom toolbar (Monaco's built-in commands accessible via keyboard shortcuts)
    
 5. **View Mode Toggle**:
    - ViewerToolbar provides toggle between "Editor" and "Preview" modes
@@ -377,6 +390,85 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - Editor instance reused when switching files
    - ResizeObserver for efficient layout updates
    - Automatic cleanup on component unmount
+
+**TipTap WYSIWYG Editor Integration**:
+
+The TipTap editor provides a rich WYSIWYG markdown editing experience with bidirectional sync to the Monaco code editor.
+
+1. **Component Architecture**:
+   - `TipTapEditor.vue`: Wraps TipTap editor with Vue Composition API
+   - Initialized with markdown content and converts to/from markdown on save
+   - Handles editor initialization, content synchronization, and cleanup
+   - Matches Monaco's API for seamless integration (same props and events)
+   
+2. **Auto-Save Implementation**:
+   - Debounced save (1000ms delay after last edit, matching Monaco)
+   - Emits `save` event with markdown content to parent component
+   - Parent (NoteViewer) calls vault store's `updateNote` action
+   - Visual feedback via ViewerToolbar (saving/saved/error states)
+   
+3. **Bidirectional Sync**:
+   - Both editors share the same `editableContent` ref in NoteViewer
+   - Changes in Monaco are reflected in TipTap when switching views
+   - Changes in TipTap are reflected in Monaco when switching views
+   - Internal change tracking prevents infinite update loops
+   - Markdown serialization/deserialization ensures content consistency
+   
+4. **TipTap Extensions**:
+   - **StarterKit**: Core functionality (headings, bold, italic, lists, code, blockquotes, etc.)
+   - **TaskList**: Container for checkbox lists
+   - **TaskItem**: Interactive checkboxes with nested support
+   - **Placeholder**: Shows "Start writing..." hint in empty editor
+   - **Custom Tab Extension**: Keyboard shortcuts for list indentation
+     - Tab: Indent list items (sink)
+     - Shift-Tab: Outdent list items (lift)
+     - Works with both regular lists and task lists
+   
+5. **Markdown Support**:
+   - Custom markdown serializer for proper task list conversion
+   - Converts between TipTap's internal format and markdown string
+   - Preserves markdown syntax for checkboxes: `- [ ]` and `- [x]`
+   - Maintains compatibility with standard markdown files
+   
+6. **Checkbox Features**:
+   - Interactive checkboxes with click-to-toggle functionality
+   - Proper vertical alignment of checkboxes and text
+   - Support for nested task lists
+   - Checkbox state persists to markdown as `[ ]` or `[x]`
+   
+7. **Formatting Toolbar**:
+   - `TipTapToolbar.vue`: Rich formatting toolbar integrated into TipTap editor
+   - Formatting options grouped logically with visual separators:
+     - **Text Formatting**: Bold, Italic, Strikethrough, Inline Code
+     - **Headings**: H1, H2, H3
+     - **Lists**: Bullet List, Numbered List, Task List
+     - **Blocks**: Blockquote, Code Block, Horizontal Rule
+     - **History**: Undo, Redo
+   - Active state highlighting for current formatting
+   - Tooltips with keyboard shortcuts
+   - Clean, modern design matching the overall app aesthetic
+   
+8. **Editor Styling**:
+   - Clean, minimal interface with white background
+   - Prose-friendly typography with proper heading sizes
+   - Code blocks with dark theme (matching Monaco aesthetic)
+   - Proper spacing for paragraphs, lists, and blockquotes
+   - Responsive design for mobile and desktop
+   
+9. **Default Editor Selection**:
+   - TipTap is default for `.md` files (markdown-first editing experience)
+   - Monaco is default for all other file types (code-first editing)
+   - Selection happens automatically in NoteViewer when file changes
+   - Users can toggle between editors at any time via toolbar
+   
+10. **View Mode Toggle**:
+   - ViewerToolbar provides single icon-based toggle button between editors
+   - Toggle button icon changes to reflect current active editor:
+     - When Monaco is active: Shows `</>` icon (click to switch to TipTap)
+     - When TipTap is active: Shows `Md` icon (click to switch to Monaco)
+   - Tooltips indicate the mode being switched to ("Switch to Markdown" / "Switch to Code")
+   - Clean, minimal design with active state highlighting
+   - Same save status display for both editors
 
 **File Explorer CRUD Operations**:
 

@@ -218,6 +218,12 @@ frontend/src/
   - **Modal Interface**: Keyboard-activated search modal (Ctrl+K / Cmd+K)
   - **Content Snippets**: Shows up to 3 matching lines per file with line numbers
   - **Search Highlighting**: Matched search terms highlighted in yellow within snippets
+  - **Keyboard Navigation**: Full keyboard support for power users
+    - Arrow keys (↑/↓) navigate through results with wrap-around
+    - Enter opens the selected result
+    - First result auto-selected when results appear
+    - Selection resets to first item on new search
+    - Visual indication of selected item with blue highlight
   - **Fuzzy Search**: Case-insensitive, flexible partial matching
   - **Multi-phrase Search**: All space-separated phrases must match
   - **File & Content Search**: Searches both filenames and file contents

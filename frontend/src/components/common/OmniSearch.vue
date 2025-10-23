@@ -12,6 +12,7 @@
               class="search-input"
               placeholder="Search notes..."
               @keydown.esc="close"
+              @keydown="handleKeyDown"
               @input="handleSearchInput"
             />
             <div v-if="isSearching" class="loading-spinner">⏳</div>
@@ -23,9 +24,9 @@
 
           <div v-if="results.length > 0" class="results-container">
             <div
-              v-for="result in results"
+              v-for="(result, index) in results"
               :key="result.path"
-              class="result-item"
+              :class="['result-item', { selected: index === selectedIndex }]"
               @click="selectFile(result.path)"
             >
               <div class="result-icon">📄</div>
@@ -79,6 +80,7 @@ const searchQuery = ref('')
 const results = ref<SearchResult[]>([])
 const isSearching = ref(false)
 const searchInput = ref<HTMLInputElement | null>(null)
+const selectedIndex = ref(0)
 
 // Debounce timer
 let debounceTimer: number | null = null
@@ -94,12 +96,20 @@ watch(() => props.isOpen, async (newValue) => {
     // Reset state when opening
     searchQuery.value = ''
     results.value = []
+    selectedIndex.value = 0
   } else {
     // Clear debounce timer when closing
     if (debounceTimer) {
       clearTimeout(debounceTimer)
       debounceTimer = null
     }
+  }
+})
+
+// Watch results to auto-select first item
+watch(results, (newResults) => {
+  if (newResults.length > 0) {
+    selectedIndex.value = 0
   }
 })
 
@@ -162,6 +172,43 @@ const handleBackdropClick = () => {
 // Highlight search terms in snippet content
 const getHighlightedContent = (content: string): string => {
   return highlightSearchTerms(content, searchQuery.value)
+}
+
+// Handle keyboard navigation
+const handleKeyDown = (event: KeyboardEvent) => {
+  // Only handle arrow keys and Enter when there are results
+  if (results.value.length === 0) return
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    // Wrap around to first item
+    selectedIndex.value = (selectedIndex.value + 1) % results.value.length
+    scrollSelectedIntoView()
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    // Wrap around to last item
+    selectedIndex.value = selectedIndex.value === 0 
+      ? results.value.length - 1 
+      : selectedIndex.value - 1
+    scrollSelectedIntoView()
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    // Select the currently highlighted result
+    const selectedResult = results.value[selectedIndex.value]
+    if (selectedResult) {
+      selectFile(selectedResult.path)
+    }
+  }
+}
+
+// Scroll selected item into view
+const scrollSelectedIntoView = () => {
+  nextTick(() => {
+    const selected = document.querySelector('.result-item.selected')
+    if (selected) {
+      selected.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  })
 }
 </script>
 
@@ -247,9 +294,19 @@ const getHighlightedContent = (content: string): string => {
   transition: all 0.15s ease;
 }
 
+.result-item.selected {
+  background: linear-gradient(to right, #dbeafe, #bfdbfe);
+  border-left: 3px solid #3b82f6;
+  padding-left: calc(0.75rem - 3px);
+}
+
 .result-item:hover {
   background: linear-gradient(to right, #eef2ff, #e0e7ff);
   transform: translateX(2px);
+}
+
+.result-item.selected:hover {
+  background: linear-gradient(to right, #bfdbfe, #93c5fd);
 }
 
 .result-icon {

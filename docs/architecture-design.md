@@ -447,20 +447,25 @@ The TipTap editor provides a rich WYSIWYG markdown editing experience with bidir
    - Parent (NoteViewer) calls vault store's `updateNote` action
    - Visual feedback via ViewerToolbar (saving/saved/error states)
    
-3. **Bidirectional Sync** (Simplified Architecture):
+3. **Bidirectional Sync** (Simplified v-show Architecture):
    - Both editors share the same `editableContent` ref in NoteViewer via v-model
    - Uses `v-show` instead of `v-if` to keep both editors mounted simultaneously
-   - Hidden editor is disabled via `disabled` prop to prevent conflicting updates
+   - Hidden editor has `disabled` prop set to `true`
    - Eliminates lifecycle complexity - no mount/unmount when switching editors
+   - **Critical Fix**: `disabled` prop only prevents EMITTING, not RECEIVING updates
+     - ✅ **Watchers**: No `disabled` check - both editors always receive updates
+     - ✅ **Event Handlers**: Check `disabled` - only active editor emits changes
+     - ✅ **Result**: Both editors stay perfectly in sync at all times
    - Simple, reliable sync with no complex flags or async timing issues:
-     - Disabled editor ignores all content changes (via `disabled` prop check)
-     - Active editor updates normally and emits to v-model
-     - Watchers only process updates when editor is not disabled
+     - Both editors receive ALL updates via watchers (always in sync)
+     - Only active editor emits changes (prevents infinite loops)
      - Content comparison prevents redundant updates (simple `!==` check)
+     - No `isUpdatingFromEditor`, `isSettingContent`, or `lastEmittedContent` flags needed
    - Fixed markdown serialization bug: List items now correctly extract text from paragraph nodes
    - Significantly reduced code complexity (~100 lines of flag management removed)
    - Seamless switching preserves all unsaved changes in both directions
    - Faster editor switching since no remounting is needed
+   - **Zero data loss**: Text in lists, checkboxes, and all content types fully preserved
    
 4. **TipTap Extensions**:
    - **StarterKit**: Core functionality (headings, bold, italic, lists, code, blockquotes, etc.)

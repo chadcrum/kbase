@@ -144,26 +144,61 @@ Updated `docs/architecture-design.md` to reflect:
 1. **Both Editors Always Mounted**: Both Monaco and TipTap are mounted when a note is loaded
 2. **Visibility Toggle**: `v-show` controls which editor is visible
 3. **Disabled State**: Hidden editor has `disabled={true}` prop
-4. **Active Editor Updates**:
+4. **Active Editor Updates** (disabled=false):
    - User types in active editor
    - Editor's `onUpdate` or `onDidChangeModelContent` fires
    - Checks `if (props.disabled) return` → passes (not disabled)
    - Emits `update:modelValue` to parent
-   - Parent updates `editableContent` ref
-5. **Hidden Editor Receives Update**:
-   - Watcher sees `editableContent` changed
-   - Checks `if (props.disabled) return` → exits early
-   - Editor content is NOT updated (it's disabled)
+   - Parent updates `editableContent` ref via v-model
+5. **Hidden Editor Receives Update** (disabled=true):
+   - ⚠️ **CRITICAL**: Watcher has NO `disabled` check
+   - Watcher sees `editableContent` changed from v-model
+   - Compares content: `if (newValue !== currentValue)`
+   - Updates editor content to stay in sync
+   - **Does NOT emit** because event handlers check `disabled`
+   - ✅ Result: Both editors always in perfect sync
 6. **Switching Editors**:
    - User clicks toggle button
    - `viewMode` changes from 'editor' to 'wysiwyg' (or vice versa)
-   - `v-show` toggles visibility instantly
+   - `v-show` toggles visibility instantly (no unmount/remount)
    - `disabled` prop toggles (old editor becomes disabled, new editor becomes active)
-   - New active editor's watcher runs:
-     - Checks `if (props.disabled) return` → passes (now active)
-     - Compares content: `if (newValue !== currentValue)`
-     - Updates editor content if different
    - User sees updated content immediately
+   - No initialization needed, no delays
+
+## Critical Fix
+
+**The key insight**: The `disabled` prop should ONLY prevent EMITTING changes, NOT RECEIVING them.
+
+### Before (Broken):
+```typescript
+// Both watchers and event handlers checked disabled
+watch(() => props.modelValue, (newValue) => {
+  if (!editor || props.disabled) return  // ❌ Prevented receiving updates
+  // ... update editor
+})
+
+editor.onDidChangeModelContent(() => {
+  if (!editor || props.disabled) return  // ✅ Correctly prevents emitting
+  // ... emit changes
+})
+```
+**Problem**: Hidden editor never received updates, causing content divergence and data loss.
+
+### After (Fixed):
+```typescript
+// Watchers have NO disabled check - always receive updates
+watch(() => props.modelValue, (newValue) => {
+  if (!editor) return  // ✅ Only check if editor exists
+  // ... update editor (always happens)
+})
+
+// Event handlers check disabled - only active editor emits
+editor.onDidChangeModelContent(() => {
+  if (!editor || props.disabled) return  // ✅ Correctly prevents emitting
+  // ... emit changes (only when not disabled)
+})
+```
+**Solution**: Both editors always stay in sync, but only active one emits changes.
 
 ## Testing
 

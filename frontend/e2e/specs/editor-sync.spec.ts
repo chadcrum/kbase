@@ -533,5 +533,225 @@ Line 3 (three blank lines above)`
       }
     })
   })
+
+  test.describe('v-show Implementation Tests (Critical)', () => {
+    test('should keep both editors mounted with v-show', async ({ page }) => {
+      await page.waitForSelector('.tiptap-editor')
+      
+      // Both editor containers should exist in DOM even when hidden
+      const monacoContainer = page.locator('.editor-view')
+      const tiptapContainer = page.locator('.wysiwyg-view')
+      
+      // TipTap is visible, Monaco is hidden
+      await expect(tiptapContainer).toBeVisible()
+      await expect(monacoContainer).not.toBeVisible()
+      
+      // But Monaco container should still exist in DOM
+      const monacoExists = await monacoContainer.count()
+      expect(monacoExists).toBe(1)
+      
+      // Switch to Monaco
+      const toggleButton = page.locator('.toggle-btn')
+      await toggleButton.click()
+      await page.waitForTimeout(500)
+      
+      // Now Monaco is visible, TipTap is hidden
+      await expect(monacoContainer).toBeVisible()
+      await expect(tiptapContainer).not.toBeVisible()
+      
+      // But TipTap container should still exist in DOM
+      const tiptapExists = await tiptapContainer.count()
+      expect(tiptapExists).toBeGreaterThan(0)
+    })
+
+    test('hidden editor should receive updates from active editor', async ({ page }) => {
+      await page.waitForSelector('.tiptap-editor')
+      
+      // Type in TipTap (active editor)
+      const editor = page.locator('.tiptap')
+      await editor.click()
+      await page.keyboard.press('End')
+      await page.keyboard.press('Enter')
+      const uniqueText = `Sync-Test-${Date.now()}`
+      await page.keyboard.type(uniqueText)
+      
+      // Don't wait for save - switch immediately
+      const toggleButton = page.locator('.toggle-btn')
+      await toggleButton.click()
+      await page.waitForSelector('.monaco-editor')
+      await page.waitForTimeout(300)
+      
+      // Monaco (now active) should have received the update
+      const monacoContent = await page.evaluate(() => {
+        const monaco = (window as any).monaco
+        if (monaco) {
+          const editors = monaco.editor.getModels()
+          if (editors && editors[0]) {
+            return editors[0].getValue()
+          }
+        }
+        return null
+      })
+      
+      expect(monacoContent).toContain(uniqueText)
+      
+      // Now type in Monaco
+      await page.keyboard.press('Control+End')
+      await page.keyboard.press('Enter')
+      const secondUniqueText = `Monaco-Test-${Date.now()}`
+      await page.keyboard.type(secondUniqueText)
+      
+      // Switch back to TipTap immediately
+      await toggleButton.click()
+      await page.waitForSelector('.tiptap-editor')
+      await page.waitForTimeout(300)
+      
+      // TipTap should have received Monaco's update
+      const tiptapContent = await page.locator('.tiptap').textContent()
+      expect(tiptapContent).toContain(secondUniqueText)
+      expect(tiptapContent).toContain(uniqueText)
+    })
+
+    test('disabled prop should prevent editor from emitting changes', async ({ page }) => {
+      await page.waitForSelector('.tiptap-editor')
+      
+      // Switch to Monaco
+      const toggleButton = page.locator('.toggle-btn')
+      await toggleButton.click()
+      await page.waitForSelector('.monaco-editor')
+      await page.waitForTimeout(500)
+      
+      // Type in Monaco
+      await page.keyboard.press('Control+End')
+      await page.keyboard.press('Enter')
+      const testText = `Monaco-Content-${Date.now()}`
+      await page.keyboard.type(testText)
+      
+      // Wait for debounce and save
+      await page.waitForTimeout(1500)
+      await expect(page.locator('.save-status.saved')).toBeVisible({ timeout: 3000 })
+      
+      // Switch to TipTap
+      await toggleButton.click()
+      await page.waitForSelector('.tiptap-editor')
+      await page.waitForTimeout(500)
+      
+      // Verify content is in TipTap
+      const tiptapContent = await page.locator('.tiptap').textContent()
+      expect(tiptapContent).toContain(testText)
+      
+      // Content should be saved to backend
+      // Reload page to verify persistence
+      await page.reload()
+      await page.waitForSelector('.file-tree')
+      
+      const testFile = page.locator('.node-item:has-text("sync-test.md")').first()
+      await testFile.click()
+      await page.waitForSelector('.tiptap-editor')
+      await page.waitForTimeout(500)
+      
+      const reloadedContent = await page.locator('.tiptap').textContent()
+      expect(reloadedContent).toContain(testText)
+    })
+
+    test('bullet list text should persist when switching editors', async ({ page }) => {
+      await page.waitForSelector('.tiptap-editor')
+      
+      // Create bullet list in TipTap
+      const editor = page.locator('.tiptap')
+      await editor.click()
+      await page.keyboard.press('Control+A')
+      await page.keyboard.type('# Bullet List Test')
+      await page.keyboard.press('Enter')
+      await page.keyboard.press('Enter')
+      
+      // Create bullet list items
+      await page.keyboard.type('- First bullet item with text')
+      await page.keyboard.press('Enter')
+      await page.keyboard.type('- Second bullet item with text')
+      await page.keyboard.press('Enter')
+      await page.keyboard.type('- Third bullet item with text')
+      
+      // Wait for save
+      await page.waitForTimeout(1500)
+      await expect(page.locator('.save-status.saved')).toBeVisible({ timeout: 3000 })
+      
+      // Switch to Monaco
+      const toggleButton = page.locator('.toggle-btn')
+      await toggleButton.click()
+      await page.waitForSelector('.monaco-editor')
+      await page.waitForTimeout(500)
+      
+      // Get Monaco content
+      const monacoContent = await page.evaluate(() => {
+        const monaco = (window as any).monaco
+        if (monaco) {
+          const editors = monaco.editor.getModels()
+          if (editors && editors[0]) {
+            return editors[0].getValue()
+          }
+        }
+        return null
+      })
+      
+      // CRITICAL: Text should be preserved (this was the bug)
+      expect(monacoContent).toContain('- First bullet item with text')
+      expect(monacoContent).toContain('- Second bullet item with text')
+      expect(monacoContent).toContain('- Third bullet item with text')
+      
+      // Text should NOT disappear (only bullets remaining)
+      // Count how many list markers exist
+      const bulletMarkers = (monacoContent || '').match(/^- /gm)
+      expect(bulletMarkers?.length).toBe(3)
+      
+      // Verify all text is present
+      expect(monacoContent).toContain('First bullet item with text')
+      expect(monacoContent).toContain('Second bullet item with text')
+      expect(monacoContent).toContain('Third bullet item with text')
+    })
+
+    test('ordered list text should persist when switching editors', async ({ page }) => {
+      await page.waitForSelector('.tiptap-editor')
+      
+      const editor = page.locator('.tiptap')
+      await editor.click()
+      await page.keyboard.press('Control+A')
+      await page.keyboard.type('# Ordered List Test')
+      await page.keyboard.press('Enter')
+      await page.keyboard.press('Enter')
+      
+      // Create ordered list
+      await page.keyboard.type('1. First ordered item')
+      await page.keyboard.press('Enter')
+      await page.keyboard.type('2. Second ordered item')
+      await page.keyboard.press('Enter')
+      await page.keyboard.type('3. Third ordered item')
+      
+      await page.waitForTimeout(1500)
+      await expect(page.locator('.save-status.saved')).toBeVisible({ timeout: 3000 })
+      
+      // Switch to Monaco
+      const toggleButton = page.locator('.toggle-btn')
+      await toggleButton.click()
+      await page.waitForSelector('.monaco-editor')
+      await page.waitForTimeout(500)
+      
+      const monacoContent = await page.evaluate(() => {
+        const monaco = (window as any).monaco
+        if (monaco) {
+          const editors = monaco.editor.getModels()
+          if (editors && editors[0]) {
+            return editors[0].getValue()
+          }
+        }
+        return null
+      })
+      
+      // Text should be preserved
+      expect(monacoContent).toContain('1. First ordered item')
+      expect(monacoContent).toContain('2. Second ordered item')
+      expect(monacoContent).toContain('3. Third ordered item')
+    })
+  })
 })
 

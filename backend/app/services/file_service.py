@@ -393,23 +393,33 @@ class FileService:
         # Find files matching all phrases using ripgrep
         matching_files_with_snippets = self._search_with_ripgrep(phrases)
         
-        # Limit results
-        limited_files = list(matching_files_with_snippets.items())[:limit]
-        
-        # Build result structure
+        # Build result structure with modified timestamps
         results = []
-        for file_path, snippets in limited_files:
+        for file_path, snippets in matching_files_with_snippets.items():
             # Get relative path from vault root
             try:
                 rel_path = file_path.relative_to(self.vault_path.resolve())
+                
+                # Get file stats for modified time
+                modified = None
+                if file_path.exists():
+                    modified = int(file_path.stat().st_mtime)
+                
                 results.append({
                     "path": f"/{rel_path}",
                     "name": file_path.name,
-                    "snippets": snippets
+                    "snippets": snippets,
+                    "modified": modified
                 })
             except ValueError:
                 # Skip files outside vault (shouldn't happen due to validation)
                 continue
+        
+        # Sort by modified time (most recent first)
+        results.sort(key=lambda x: x.get("modified", 0), reverse=True)
+        
+        # Limit results after sorting
+        results = results[:limit]
         
         return {
             "results": results,

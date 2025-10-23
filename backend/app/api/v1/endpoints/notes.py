@@ -57,6 +57,7 @@ class SearchResult(BaseModel):
     path: str
     name: str
     snippets: List[Snippet] = []
+    modified: Optional[int] = None
 
 
 class SearchResponse(BaseModel):

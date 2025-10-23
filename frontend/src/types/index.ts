@@ -65,6 +65,7 @@ export interface SearchResult {
   path: string
   name: string
   snippets: Snippet[]
+  modified?: number
 }
 
 export interface SearchResponse {

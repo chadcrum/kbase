@@ -217,11 +217,13 @@ frontend/src/
 - **Omni Search**: Fast, comprehensive search across all notes
   - **Modal Interface**: Keyboard-activated search modal (Ctrl+K / Cmd+K)
   - **Content Snippets**: Shows up to 3 matching lines per file with line numbers
-  - **Fuzzy Search**: Case-insensitive, flexible matching
+  - **Search Highlighting**: Matched search terms highlighted in yellow within snippets
+  - **Fuzzy Search**: Case-insensitive, flexible partial matching
   - **Multi-phrase Search**: All space-separated phrases must match
   - **File & Content Search**: Searches both filenames and file contents
   - **Real-time Results**: Debounced search with instant visual feedback
   - **Line Numbers**: Monospace-formatted snippets show exact match locations
+  - **XSS Protection**: HTML-escaped content prevents security vulnerabilities
   - **Performance**: Uses ripgrep for fast search, limited to 50 results
 - **File Explorer**: Advanced file management with full CRUD operations
   - Hierarchical tree view with expand/collapse functionality
@@ -277,7 +279,7 @@ frontend/src/
 
 **Future Features**:
 
-- **Search Enhancements**: Syntax highlighting in snippets, more advanced filtering
+- **Search Enhancements**: Context lines around matches, jump to line on click, more advanced filtering
 - **Performance Optimized**: Handles large vaults (4000+ files) with lazy loading
 - **Conflict Resolution**: Modal on save conflict with diff view
 - **Image Paste**: Intercept paste events, upload to backend, insert markdown

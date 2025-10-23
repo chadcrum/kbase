@@ -39,7 +39,7 @@
                     class="snippet-line"
                   >
                     <span class="snippet-line-number">{{ snippet.line_number }}</span>
-                    <span class="snippet-content">{{ snippet.content }}</span>
+                    <span class="snippet-content" v-html="getHighlightedContent(snippet.content)"></span>
                   </div>
                 </div>
               </div>
@@ -60,6 +60,7 @@ import { ref, watch, nextTick } from 'vue'
 import { apiClient } from '@/api/client'
 import { useVaultStore } from '@/stores/vault'
 import type { SearchResult } from '@/types'
+import { highlightSearchTerms } from '@/utils/highlightSearch'
 
 // Props
 interface Props {
@@ -156,6 +157,11 @@ const close = () => {
 // Handle backdrop click
 const handleBackdropClick = () => {
   close()
+}
+
+// Highlight search terms in snippet content
+const getHighlightedContent = (content: string): string => {
+  return highlightSearchTerms(content, searchQuery.value)
 }
 </script>
 
@@ -309,6 +315,14 @@ const handleBackdropClick = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.snippet-content :deep(mark) {
+  background-color: #fef08a;
+  color: #713f12;
+  font-weight: 600;
+  padding: 0.1rem 0.2rem;
+  border-radius: 2px;
 }
 
 .no-results {

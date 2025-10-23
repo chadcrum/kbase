@@ -14,6 +14,10 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      VAULT_PATH: /tmp/kbase-test-vault
+      SECRET_KEY: test-secret-key-for-jwt-signing-in-backend-tests
+      PASSWORD: test-password
     
     steps:
     - name: Checkout code
@@ -40,10 +44,6 @@ jobs:
         
     - name: Run backend tests
       run: uv run pytest -v --tb=short
-      env:
-        VAULT_PATH: /tmp/kbase-test-vault
-        SECRET_KEY: test-secret-key-for-jwt-signing-in-backend-tests
-        PASSWORD: test-password
         
     - name: Upload backend test results
       uses: actions/upload-artifact@v4

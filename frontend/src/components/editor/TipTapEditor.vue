@@ -113,19 +113,28 @@ const markdownToHtml = async (markdown: string): Promise<string> => {
   let html = await marked.parse(markdown)
   
   // Convert task list items to TipTap format
+  // This regex handles input elements with attributes in any order
   html = html.replace(
-    /<li>\s*<input\s+(?:checked\s+)?(?:disabled\s+)?type="checkbox"(?:\s+checked)?(?:\s+disabled)?>\s*(.+?)<\/li>/gi,
-    (match, content) => {
-      const checked = match.includes('checked')
-      return `<li data-type="taskItem" data-checked="${checked}">${content}</li>`
+    /<li>(<input[^>]*type=["']?checkbox["']?[^>]*>)\s*([\s\S]*?)<\/li>/gi,
+    (match, inputTag, content) => {
+      // Check if the checkbox is checked by looking for the checked attribute
+      const checked = /checked/i.test(inputTag)
+      // TipTap TaskItem expects data-checked to be "true" for checked, "false" for unchecked
+      return `<li data-type="taskItem" data-checked="${checked}">${content.trim()}</li>`
     }
   )
   
   // Wrap task lists in proper container
+  // Only wrap ULs that contain ONLY taskItem elements (no mixed lists)
   html = html.replace(
-    /<ul>\s*(<li data-type="taskItem"[\s\S]*?<\/li>\s*)+<\/ul>/gi,
-    (match) => {
-      return match.replace('<ul>', '<ul data-type="taskList">')
+    /<ul>(\s*)(<li data-type="taskItem"[\s\S]*?<\/li>(\s*<li data-type="taskItem"[\s\S]*?<\/li>)*)\s*<\/ul>/gi,
+    (match, ws1, content) => {
+      // Verify there are no regular <li> tags mixed in
+      const tempDiv = match.substring(4, match.length - 5) // Remove <ul> and </ul>
+      if (!/<li(?!\s+data-type="taskItem")/.test(tempDiv)) {
+        return `<ul data-type="taskList">${ws1}${content}</ul>`
+      }
+      return match
     }
   )
   
@@ -141,7 +150,9 @@ const editorToMarkdown = (node: ProseMirrorNode): string => {
     node.forEach((child) => {
       if (child.type.name === 'taskList') {
         child.forEach((taskItem) => {
-          const checked = taskItem.attrs.checked ? 'x' : ' '
+          // Handle both boolean and string values for checked attribute
+          const isChecked = taskItem.attrs.checked === true || taskItem.attrs.checked === 'true'
+          const checked = isChecked ? 'x' : ' '
           markdown += `- [${checked}] `
           // Extract text from paragraph inside task item
           taskItem.forEach((content) => {
@@ -240,7 +251,13 @@ const editor = useEditor({
   content: '',
   editable: !props.readonly,
   extensions: [
-    StarterKit,
+    StarterKit.configure({
+      // Don't include the BulletList from StarterKit to avoid conflicts with TaskList
+      bulletList: {
+        keepMarks: true,
+        keepAttributes: false,
+      },
+    }),
     TaskList,
     TaskItem.configure({
       nested: true,

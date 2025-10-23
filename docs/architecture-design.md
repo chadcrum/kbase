@@ -488,6 +488,13 @@ The TipTap editor provides a rich WYSIWYG markdown editing experience with bidir
    - Proper vertical alignment of checkboxes and text
    - Support for nested task lists
    - Checkbox state persists to markdown as `[ ]` or `[x]`
+   - **Robust HTML Conversion** (Fixed):
+     - Flexible regex pattern handles checkbox input tags with attributes in any order
+     - Properly converts `marked` library output to TipTap's TaskItem format
+     - Sets `data-checked="true"` for checked items, `data-checked="false"` for unchecked
+     - Handles both boolean and string values in serialization
+     - Mixed lists (checkboxes + regular bullets) are properly preserved
+     - Checkboxes remain functional after file navigation and reload
    
 7. **Formatting Toolbar**:
    - `TipTapToolbar.vue`: Rich formatting toolbar integrated into TipTap editor

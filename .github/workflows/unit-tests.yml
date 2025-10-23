@@ -25,8 +25,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         cd backend
-        uv sync
-        uv pip install -e ".[dev]"
+        uv sync --all-extras
         
     - name: Create test vault
       run: |

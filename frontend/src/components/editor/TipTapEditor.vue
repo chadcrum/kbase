@@ -37,7 +37,8 @@ const emit = defineEmits<{
 }>()
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
-let isInternalChange = false
+let isUpdatingFromEditor = false
+let lastEmittedContent = ''
 
 // Debounce delay for auto-save (1 second) - same as Monaco
 const AUTO_SAVE_DELAY = 1000
@@ -231,9 +232,20 @@ const editor = useEditor({
     // Get markdown content from editor
     const markdown = editorToMarkdown(editor.state.doc)
     
+    // Only emit if content actually changed
+    if (markdown === lastEmittedContent) {
+      return
+    }
+    
     // Emit update for v-model
-    isInternalChange = true
+    isUpdatingFromEditor = true
+    lastEmittedContent = markdown
     emit('update:modelValue', markdown)
+    
+    // Reset flag after a short delay to allow watcher to process
+    setTimeout(() => {
+      isUpdatingFromEditor = false
+    }, 0)
     
     // Debounced auto-save
     if (saveTimeout) {
@@ -246,20 +258,21 @@ const editor = useEditor({
   },
 })
 
-// Watch for external content changes (from Monaco editor)
+// Watch for external content changes (from Monaco editor or parent component)
 watch(() => props.modelValue, async (newValue) => {
-  if (!editor.value || isInternalChange) {
-    isInternalChange = false
+  // Don't update if this change came from the editor itself
+  if (!editor.value || isUpdatingFromEditor) {
     return
   }
 
   // Get current editor content as markdown
   const currentMarkdown = editorToMarkdown(editor.value.state.doc)
   
-  // Only update if content actually changed
-  if (newValue !== currentMarkdown) {
+  // Only update if content actually changed (and it's not what we just emitted)
+  if (newValue !== currentMarkdown && newValue !== lastEmittedContent) {
     // Convert markdown to HTML and set content
     const html = await markdownToHtml(newValue)
+    lastEmittedContent = newValue // Update our tracking
     editor.value.commands.setContent(html)
   }
 })
@@ -268,6 +281,7 @@ watch(() => props.modelValue, async (newValue) => {
 watch(editor, async (newEditor) => {
   if (newEditor && props.modelValue) {
     const html = await markdownToHtml(props.modelValue)
+    lastEmittedContent = props.modelValue // Track initial content
     newEditor.commands.setContent(html)
   }
 }, { immediate: true })

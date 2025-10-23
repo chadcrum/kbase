@@ -30,7 +30,8 @@ const editorContainer = ref<HTMLElement | null>(null)
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
 let monaco: typeof Monaco | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
-let isInternalChange = false
+let isUpdatingFromEditor = false
+let lastEmittedContent = ''
 
 // Debounce delay for auto-save (1 second)
 const AUTO_SAVE_DELAY = 1000
@@ -67,6 +68,9 @@ onMounted(async () => {
       lineDecorationsWidth: 10,
       lineNumbersMinChars: 4,
     })
+    
+    // Track the initial content
+    lastEmittedContent = props.modelValue
 
     // Listen to content changes
     editor.onDidChangeModelContent(() => {
@@ -74,9 +78,20 @@ onMounted(async () => {
       
       const value = editor.getValue()
       
+      // Only emit if content actually changed
+      if (value === lastEmittedContent) {
+        return
+      }
+      
       // Emit update for v-model
-      isInternalChange = true
+      isUpdatingFromEditor = true
+      lastEmittedContent = value
       emit('update:modelValue', value)
+      
+      // Reset flag after a short delay to allow watcher to process
+      setTimeout(() => {
+        isUpdatingFromEditor = false
+      }, 0)
       
       // Debounced auto-save
       if (saveTimeout) {
@@ -106,15 +121,17 @@ onMounted(async () => {
   }
 })
 
-// Watch for external content changes
+// Watch for external content changes (from TipTap or parent component)
 watch(() => props.modelValue, (newValue) => {
-  if (!editor || isInternalChange) {
-    isInternalChange = false
+  // Don't update if this change came from the editor itself
+  if (!editor || isUpdatingFromEditor) {
     return
   }
 
   const currentValue = editor.getValue()
-  if (newValue !== currentValue) {
+  // Only update if content actually changed (and it's not what we just emitted)
+  if (newValue !== currentValue && newValue !== lastEmittedContent) {
+    lastEmittedContent = newValue // Update our tracking
     editor.setValue(newValue)
   }
 })

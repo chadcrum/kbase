@@ -451,8 +451,13 @@ The TipTap editor provides a rich WYSIWYG markdown editing experience with bidir
    - Both editors share the same `editableContent` ref in NoteViewer
    - Changes in Monaco are reflected in TipTap when switching views
    - Changes in TipTap are reflected in Monaco when switching views
-   - Internal change tracking prevents infinite update loops
+   - Advanced change tracking prevents data loss and infinite loops:
+     - `isUpdatingFromEditor` flag prevents watcher triggers during editor updates
+     - `lastEmittedContent` tracking ensures round-trip safety
+     - Content comparisons prevent redundant updates
+     - Async-safe flag handling prevents race conditions
    - Markdown serialization/deserialization ensures content consistency
+   - Seamless switching preserves all unsaved changes in both directions
    
 4. **TipTap Extensions**:
    - **StarterKit**: Core functionality (headings, bold, italic, lists, code, blockquotes, etc.)

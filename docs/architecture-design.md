@@ -23,7 +23,8 @@
 - **HTTP Client**: Axios
 - **UI**: Custom CSS (no component library initially)
 - **Code Editor**: Monaco Editor (VS Code editor)
-- **Future**: WYSIWYG Editor (Milkdown), WebSocket Client, PWA features
+- **WYSIWYG Editor**: TipTap (Markdown-based rich text editor)
+- **Future**: WebSocket Client, PWA features
 
 ### Infrastructure
 
@@ -70,7 +71,7 @@ vault/                           # Mounted Docker volume
 - `DELETE /directories/{path}` - Delete directory
 - `POST /directories/{path}/move` - Move directory
 - `POST /directories/{path}/copy` - Copy directory
-- `POST /search` - Omni-search (content, fuzzy)
+- `GET /notes/search/` - Omni-search (content, fuzzy, with snippets, sorted by modified date)
 - `GET /config` - Get public config settings
 
 **WebSocket Endpoint** (`/ws`):
@@ -113,10 +114,14 @@ vault/                           # Mounted Docker volume
 - Attachment management
 - Integrates with DatabaseService for metadata caching
 
-**SearchService** (`backend/app/services/search_service.py`):
+**SearchService** (integrated in `backend/app/services/file_service.py`):
 
-- Execute ripgrep for content search
-- Database-backed search for improved performance
+- Execute ripgrep for content search with line numbers
+- Returns up to 3 matching lines per file with snippets
+- Fuzzy, case-insensitive search across file content and filenames
+- All space-separated phrases in query must match
+- Combines filename matching with content search
+- Fallback to Python-based search when ripgrep unavailable
 
 **FileWatcher** (`backend/app/services/file_watcher.py`):
 
@@ -138,7 +143,9 @@ frontend/src/
 │   │   ├── ConfirmDialog.vue       # Reusable confirmation dialog
 │   │   └── InputDialog.vue         # Reusable input dialog for user input
 │   ├── editor/
-│   │   └── MonacoEditor.vue        # Monaco code editor wrapper
+│   │   ├── MonacoEditor.vue        # Monaco code editor wrapper
+│   │   ├── TipTapEditor.vue        # TipTap WYSIWYG markdown editor
+│   │   └── TipTapToolbar.vue       # Formatting toolbar for TipTap editor
 │   ├── layout/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
@@ -168,9 +175,11 @@ frontend/src/
 **Component Structure**:
 
 - **Editor Components**:
-  - `MonacoEditor.vue`: Monaco editor wrapper with auto-save
-  - `ViewerToolbar.vue`: Toolbar with view mode toggle and save status
-  - `NoteViewer.vue`: Orchestrates editor and preview views
+  - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting
+  - `TipTapEditor.vue`: TipTap WYSIWYG markdown editor with auto-save and rich text features
+  - `TipTapToolbar.vue`: Rich formatting toolbar for TipTap with buttons for bold, italic, headings, lists, code blocks, etc.
+  - `ViewerToolbar.vue`: Toolbar with icon-based view mode toggle and save status
+  - `NoteViewer.vue`: Orchestrates dual-editor system with bidirectional sync
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar container
@@ -181,6 +190,7 @@ frontend/src/
   - `ConfirmDialog.vue`: Reusable confirmation modal for destructive actions
   - `InputDialog.vue`: Reusable input dialog with validation for user text input
   - `ContextMenu.vue`: Right-click context menu with customizable items
+  - `OmniSearch.vue`: Modal search interface with content snippets and line numbers
 
 **State Management (Pinia)**:
 
@@ -193,6 +203,9 @@ frontend/src/
     - Maintains folder-first ordering in all sort modes
     - Sort preferences persisted to localStorage
   - **Tree Navigation**: `collapseAll()`, `hasExpandedPaths` (computed)
+  - **UI State**: `isSidebarCollapsed`, `toggleSidebar()`
+    - Global sidebar visibility state for collapse/expand functionality
+    - Accessible across components for coordinated UI updates
     - **Auto-Expansion**: Vault root (`/`) is automatically expanded on initial load and after collapse operations
       - Ensures first-level files and folders are always visible for better UX
       - Improves discoverability of vault contents without requiring user interaction
@@ -204,11 +217,35 @@ frontend/src/
 **Key Features** (Current MVP):
 
 - **Authentication**: JWT-based login with password protection
+- **Omni Search**: Fast, comprehensive search across all notes
+  - **Modal Interface**: Keyboard-activated search modal (Ctrl+K / Cmd+K)
+  - **Content Snippets**: Shows up to 3 matching lines per file with line numbers
+  - **Search Highlighting**: Matched search terms highlighted in yellow within snippets
+  - **Keyboard Navigation**: Full keyboard support for power users
+    - Arrow keys (↑/↓) navigate through results with wrap-around
+    - Enter opens the selected result
+    - First result auto-selected when results appear
+    - Selection resets to first item on new search
+    - Visual indication of selected item with blue highlight
+  - **Fuzzy Search**: Case-insensitive, flexible partial matching
+  - **Multi-phrase Search**: All space-separated phrases must match
+  - **File & Content Search**: Searches both filenames and file contents
+  - **Real-time Results**: Debounced search with instant visual feedback
+  - **Line Numbers**: Monospace-formatted snippets show exact match locations
+  - **XSS Protection**: HTML-escaped content prevents security vulnerabilities
+  - **Performance**: Uses ripgrep for fast search, limited to 50 results
+  - **Smart Sorting**: Results automatically sorted by last modified date (most recent first)
+    - Helps surface recently updated files for better relevance
 - **File Explorer**: Advanced file management with full CRUD operations
   - Hierarchical tree view with expand/collapse functionality
     - **Default Expansion**: Vault root is auto-expanded to show first-level items by default
     - Provides immediate visibility of top-level files and folders on page load
     - Collapse All action resets nested directories but preserves first-level visibility
+    - **Directory Item Counts**: Each directory shows total count of nested items (files + subdirectories)
+      - Recursive counting of all children at any depth
+      - Displayed in lighter color (#9ca3af) with smaller font (0.75rem)
+      - Format: `(123)` next to directory name
+      - Helps users understand directory size at a glance
   - **File Explorer Toolbar**: Quick access toolbar at the top of the sidebar
     - **New Folder Button**: Create new folders at root level with input validation
     - **New File Button**: Create new markdown files at root level with input validation
@@ -237,21 +274,36 @@ frontend/src/
     - Prevents path traversal (no `../` or absolute paths)
     - Blocks reserved system names (CON, PRN, AUX, etc.)
     - Validates against invalid characters
-- **Monaco Editor**: Full-featured code editor with syntax highlighting for all text-based files
-  - Auto-save functionality (1 second debounce)
-  - Syntax highlighting for 30+ languages
-  - Dark theme matching VS Code
-  - Language detection from file extensions
-- **Dual View Modes**: Toggle between editor and preview modes
-  - **Editor Mode**: Monaco editor for editing files
-  - **Preview Mode**: Formatted text display with metadata
+- **Dual-Editor System**: Toggle between Monaco code editor and TipTap WYSIWYG editor
+  - **Code Mode (Monaco)**: Full-featured code editor with syntax highlighting for all text-based files
+    - Auto-save functionality (1 second debounce)
+    - Syntax highlighting for 30+ languages
+    - Dark theme matching VS Code
+    - Language detection from file extensions
+  - **Markdown Mode (TipTap)**: WYSIWYG rich text editor for markdown files
+    - Auto-save functionality (1 second debounce, matching Monaco)
+    - Rich text editing with live preview
+    - Task list support with interactive checkboxes
+      - Improved vertical alignment for better readability
+      - Checkbox and text properly centered on the same baseline
+    - Tab/Shift-Tab for list indentation
+    - Custom markdown serialization
+    - Bidirectional sync with Monaco editor
+  - **Smart Defaults**: Automatically selects TipTap for .md files, Monaco for other file types
+  - **Icon-Based Toggle**: Single toggle button with dynamic icon - shows `</>` when in Monaco (Code) mode, `Md` when in TipTap (Markdown) mode
 - **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
+- **Sidebar Toggle**: Collapsible file explorer for maximizing editor space
+  - Toggle button in toolbar (left side, before file name)
+  - Smooth animation (0.3s ease) for collapse/expand
+  - Icon changes direction: `«` (hide) / `»` (show)
+  - State managed in vault store for global access
+  - Useful for distraction-free writing or small screens
 - **Responsive Design**: Clean, modern interface with mobile support
 - **Error Handling**: Comprehensive error states and user feedback
 
 **Future Features**:
 
-- **Omni Search**: Modal (Ctrl+K), filters as you type
+- **Search Enhancements**: Context lines around matches, jump to line on click, more advanced filtering
 - **Performance Optimized**: Handles large vaults (4000+ files) with lazy loading
 - **Conflict Resolution**: Modal on save conflict with diff view
 - **Image Paste**: Intercept paste events, upload to backend, insert markdown
@@ -357,6 +409,7 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - Minimap enabled for navigation
    - Word wrap enabled for better readability
    - Tab size: 2 spaces
+   - No custom toolbar (Monaco's built-in commands accessible via keyboard shortcuts)
    
 5. **View Mode Toggle**:
    - ViewerToolbar provides toggle between "Editor" and "Preview" modes
@@ -378,6 +431,98 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - ResizeObserver for efficient layout updates
    - Automatic cleanup on component unmount
 
+**TipTap WYSIWYG Editor Integration**:
+
+The TipTap editor provides a rich WYSIWYG markdown editing experience with bidirectional sync to the Monaco code editor.
+
+1. **Component Architecture**:
+   - `TipTapEditor.vue`: Wraps TipTap editor with Vue Composition API
+   - Initialized with markdown content and converts to/from markdown on save
+   - Handles editor initialization, content synchronization, and cleanup
+   - Matches Monaco's API for seamless integration (same props and events)
+   
+2. **Auto-Save Implementation**:
+   - Debounced save (1000ms delay after last edit, matching Monaco)
+   - Emits `save` event with markdown content to parent component
+   - Parent (NoteViewer) calls vault store's `updateNote` action
+   - Visual feedback via ViewerToolbar (saving/saved/error states)
+   
+3. **Bidirectional Sync** (Simplified v-show Architecture):
+   - Both editors share the same `editableContent` ref in NoteViewer via v-model
+   - Uses `v-show` instead of `v-if` to keep both editors mounted simultaneously
+   - Hidden editor has `disabled` prop set to `true`
+   - Eliminates lifecycle complexity - no mount/unmount when switching editors
+   - **Critical Fix**: `disabled` prop only prevents EMITTING, not RECEIVING updates
+     - ✅ **Watchers**: No `disabled` check - both editors always receive updates
+     - ✅ **Event Handlers**: Check `disabled` - only active editor emits changes
+     - ✅ **Result**: Both editors stay perfectly in sync at all times
+   - Simple, reliable sync with no complex flags or async timing issues:
+     - Both editors receive ALL updates via watchers (always in sync)
+     - Only active editor emits changes (prevents infinite loops)
+     - Content comparison prevents redundant updates (simple `!==` check)
+     - No `isUpdatingFromEditor`, `isSettingContent`, or `lastEmittedContent` flags needed
+   - Fixed markdown serialization bug: List items now correctly extract text from paragraph nodes
+   - Significantly reduced code complexity (~100 lines of flag management removed)
+   - Seamless switching preserves all unsaved changes in both directions
+   - Faster editor switching since no remounting is needed
+   - **Zero data loss**: Text in lists, checkboxes, and all content types fully preserved
+   
+4. **TipTap Extensions**:
+   - **StarterKit**: Core functionality (headings, bold, italic, lists, code, blockquotes, etc.)
+   - **TaskList**: Container for checkbox lists
+   - **TaskItem**: Interactive checkboxes with nested support
+   - **Placeholder**: Shows "Start writing..." hint in empty editor
+   - **Custom Tab Extension**: Keyboard shortcuts for list indentation
+     - Tab: Indent list items (sink)
+     - Shift-Tab: Outdent list items (lift)
+     - Works with both regular lists and task lists
+   
+5. **Markdown Support**:
+   - Custom markdown serializer for proper task list conversion
+   - Converts between TipTap's internal format and markdown string
+   - Preserves markdown syntax for checkboxes: `- [ ]` and `- [x]`
+   - Maintains compatibility with standard markdown files
+   
+6. **Checkbox Features**:
+   - Interactive checkboxes with click-to-toggle functionality
+   - Proper vertical alignment of checkboxes and text
+   - Support for nested task lists
+   - Checkbox state persists to markdown as `[ ]` or `[x]`
+   
+7. **Formatting Toolbar**:
+   - `TipTapToolbar.vue`: Rich formatting toolbar integrated into TipTap editor
+   - Formatting options grouped logically with visual separators:
+     - **Text Formatting**: Bold, Italic, Strikethrough, Inline Code
+     - **Headings**: H1, H2, H3
+     - **Lists**: Bullet List, Numbered List, Task List
+     - **Blocks**: Blockquote, Code Block, Horizontal Rule
+     - **History**: Undo, Redo
+   - Active state highlighting for current formatting
+   - Tooltips with keyboard shortcuts
+   - Clean, modern design matching the overall app aesthetic
+   
+8. **Editor Styling**:
+   - Clean, minimal interface with white background
+   - Prose-friendly typography with proper heading sizes
+   - Code blocks with dark theme (matching Monaco aesthetic)
+   - Proper spacing for paragraphs, lists, and blockquotes
+   - Responsive design for mobile and desktop
+   
+9. **Default Editor Selection**:
+   - TipTap is default for `.md` files (markdown-first editing experience)
+   - Monaco is default for all other file types (code-first editing)
+   - Selection happens automatically in NoteViewer when file changes
+   - Users can toggle between editors at any time via toolbar
+   
+10. **View Mode Toggle**:
+   - ViewerToolbar provides single icon-based toggle button between editors
+   - Toggle button icon changes to reflect current active editor:
+     - When Monaco is active: Shows `</>` icon (click to switch to TipTap)
+     - When TipTap is active: Shows `Md` icon (click to switch to Monaco)
+   - Tooltips indicate the mode being switched to ("Switch to Markdown" / "Switch to Code")
+   - Clean, minimal design with active state highlighting
+   - Same save status display for both editors
+
 **File Explorer CRUD Operations**:
 
 The file explorer provides comprehensive file and directory management through an intuitive user interface.
@@ -389,6 +534,12 @@ The file explorer provides comprehensive file and directory management through a
    - Prevents invalid operations (dropping on self, dropping parent into child)
    - Automatically refreshes file tree after successful drop
    - Uses JSON data transfer for cross-browser compatibility
+   - **Auto-Expand Feature**:
+     - Collapsed directories automatically expand after hovering for 600ms during drag
+     - Timer is cancelled if drag leaves the directory before 600ms
+     - Directories expand immediately upon successful drop if still collapsed
+     - Timer cleanup on drag end prevents memory leaks
+     - Only directories are auto-expanded; files are ignored
    
 2. **Context Menu System**:
    - Right-click on any file or directory to open context menu
@@ -499,6 +650,15 @@ The file explorer provides comprehensive file and directory management through a
 5. **WebSocket Reconnection**: Exponential backoff
 6. **Optimized API**: Uses cached database instead of filesystem scanning
 7. **Memory Management**: 40x reduction in memory usage for large vaults
+8. **Directory Item Counting**: Recursive counting computed on-demand in Vue components
+   - Uses computed properties for reactive updates
+   - Counting happens client-side during tree rendering
+   - Efficient for typical vault sizes (< 5000 files)
+   - Minimal performance impact due to Vue's caching mechanism
+9. **Search Result Sorting**: Results sorted by modified date on backend
+   - Sorting done once before sending to frontend
+   - No additional frontend processing needed
+   - Helps surface most relevant (recent) files first
 
 ### Performance Benchmarks
 

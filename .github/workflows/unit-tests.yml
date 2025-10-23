@@ -11,6 +11,13 @@ jobs:
   backend-tests:
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      VAULT_PATH: /tmp/kbase-test-vault
+      SECRET_KEY: test-secret-key-for-jwt-signing-in-backend-tests
+      PASSWORD: test-password
     
     steps:
     - name: Checkout code
@@ -19,16 +26,13 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v6
       with:
-        python-version: '3.11'
         enable-cache: true
         
     - name: Install Python dependencies
-      run: |
-        cd backend
-        uv sync
-        uv pip install -e ".[dev]"
+      run: uv sync --all-extras --python 3.11
         
     - name: Create test vault
+      working-directory: .
       run: |
         mkdir -p /tmp/kbase-test-vault
         echo "# Welcome to KBase" > /tmp/kbase-test-vault/welcome.md
@@ -39,25 +43,22 @@ jobs:
         echo "# Subdir Note" > /tmp/kbase-test-vault/subdir/subnote.md
         
     - name: Run backend tests
-      run: |
-        cd backend
-        uv run pytest -v --tb=short
-      env:
-        VAULT_PATH: /tmp/kbase-test-vault
-        SECRET_KEY: test-secret-key-for-jwt-signing-in-backend-tests
-        PASSWORD: test-password
+      run: uv run pytest -v --tb=short
         
     - name: Upload backend test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: backend-test-results
-        path: backend/test-results/
+        path: test-results/
         retention-days: 30
 
   frontend-tests:
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     
     steps:
     - name: Checkout code
@@ -71,14 +72,10 @@ jobs:
         cache-dependency-path: frontend/package-lock.json
         
     - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm ci
+      run: npm ci
         
     - name: Run frontend unit tests
-      run: |
-        cd frontend
-        npm run test:run -- --reporter=verbose --coverage
+      run: npm run test:run -- --reporter=verbose --coverage
       env:
         CI: true
         
@@ -87,7 +84,7 @@ jobs:
       if: always()
       with:
         name: frontend-coverage
-        path: frontend/coverage/
+        path: coverage/
         retention-days: 30
 
   test-summary:

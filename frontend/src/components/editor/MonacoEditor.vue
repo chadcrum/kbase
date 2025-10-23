@@ -13,10 +13,12 @@ interface Props {
   modelValue: string
   path: string
   readonly?: boolean
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  readonly: false
+  readonly: false,
+  disabled: false
 })
 
 // Emits
@@ -30,7 +32,6 @@ const editorContainer = ref<HTMLElement | null>(null)
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
 let monaco: typeof Monaco | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
-let isInternalChange = false
 
 // Debounce delay for auto-save (1 second)
 const AUTO_SAVE_DELAY = 1000
@@ -67,15 +68,14 @@ onMounted(async () => {
       lineDecorationsWidth: 10,
       lineNumbersMinChars: 4,
     })
-
+    
     // Listen to content changes
     editor.onDidChangeModelContent(() => {
-      if (!editor) return
+      if (!editor || props.disabled) return
       
       const value = editor.getValue()
       
       // Emit update for v-model
-      isInternalChange = true
       emit('update:modelValue', value)
       
       // Debounced auto-save
@@ -106,14 +106,13 @@ onMounted(async () => {
   }
 })
 
-// Watch for external content changes
+// Watch for external content changes (from TipTap or parent component)
 watch(() => props.modelValue, (newValue) => {
-  if (!editor || isInternalChange) {
-    isInternalChange = false
-    return
-  }
+  // Skip if no editor
+  if (!editor) return
 
   const currentValue = editor.getValue()
+  // Only update if content actually changed
   if (newValue !== currentValue) {
     editor.setValue(newValue)
   }

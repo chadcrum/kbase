@@ -1,8 +1,47 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import FileTreeNode from './FileTreeNode.vue'
 import type { FileTreeNode as FileTreeNodeType } from '@/types'
+
+// Mock DragEvent and DataTransfer for jsdom environment
+class MockDataTransfer {
+  data: Record<string, string> = {}
+  
+  setData(type: string, value: string) {
+    this.data[type] = value
+  }
+  
+  getData(type: string) {
+    return this.data[type] || ''
+  }
+}
+
+class MockDragEvent extends Event {
+  dataTransfer: MockDataTransfer | null
+  
+  constructor(type: string, init?: any) {
+    super(type, init)
+    this.dataTransfer = init?.dataTransfer || new MockDataTransfer()
+  }
+}
+
+// Make them available globally for tests
+global.DataTransfer = MockDataTransfer as any
+global.DragEvent = MockDragEvent as any
+
+// Mock vault store
+vi.mock('@/stores/vault', () => ({
+  useVaultStore: vi.fn(() => ({
+    moveFile: vi.fn(() => Promise.resolve()),
+    moveDirectory: vi.fn(() => Promise.resolve()),
+    createDirectory: vi.fn(() => Promise.resolve()),
+    renameNote: vi.fn(() => Promise.resolve()),
+    renameDirectory: vi.fn(() => Promise.resolve()),
+    deleteNote: vi.fn(() => Promise.resolve()),
+    deleteDirectory: vi.fn(() => Promise.resolve())
+  }))
+}))
 
 describe('FileTreeNode', () => {
   let wrapper: any
@@ -238,6 +277,381 @@ describe('FileTreeNode', () => {
       
       expect(wrapper.emitted('selectNote')).toBeTruthy()
       expect(wrapper.emitted('selectNote')[0]).toEqual(['/folder/note.md'])
+    })
+  })
+
+  describe('drag and drop auto-expand', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    const directoryNode: FileTreeNodeType = {
+      name: 'folder',
+      path: '/folder',
+      type: 'directory',
+      children: []
+    }
+
+    it('should auto-expand collapsed directory after hovering for 600ms', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      const dragEvent = new DragEvent('dragover', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+
+      await nodeItem.trigger('dragover', { dataTransfer: dragEvent.dataTransfer })
+      
+      // Should not emit immediately
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+
+      // Fast-forward time by 600ms
+      vi.advanceTimersByTime(600)
+
+      // Should now emit toggleExpand
+      expect(wrapper.emitted('toggleExpand')).toBeTruthy()
+      expect(wrapper.emitted('toggleExpand')[0]).toEqual(['/folder'])
+    })
+
+    it('should not auto-expand if drag leaves before 600ms', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      await nodeItem.trigger('dragover')
+      
+      // Fast-forward by 300ms (half the timeout)
+      vi.advanceTimersByTime(300)
+      
+      // Trigger dragleave
+      await nodeItem.trigger('dragleave')
+      
+      // Fast-forward past the original timeout
+      vi.advanceTimersByTime(400)
+      
+      // Should not have emitted toggleExpand
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+    })
+
+    it('should not auto-expand already expanded directories', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set(['/folder'])
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      await nodeItem.trigger('dragover')
+      
+      // Fast-forward time by 600ms
+      vi.advanceTimersByTime(600)
+      
+      // Should not emit toggleExpand for already expanded directory
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+    })
+
+    it('should not auto-expand files', async () => {
+      const fileNode: FileTreeNodeType = {
+        name: 'note.md',
+        path: '/note.md',
+        type: 'file'
+      }
+
+      wrapper = createWrapper({
+        node: fileNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      // Dragover should not be prevented on files
+      const dragEvent = await nodeItem.trigger('dragover')
+      
+      // Fast-forward time by 600ms
+      vi.advanceTimersByTime(600)
+      
+      // Should never emit toggleExpand for files
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+    })
+
+    it('should clear timer on drag end', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      await nodeItem.trigger('dragover')
+      await nodeItem.trigger('dragend')
+      
+      // Fast-forward past the timeout
+      vi.advanceTimersByTime(700)
+      
+      // Should not have emitted toggleExpand after drag end
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+    })
+
+    it('should expand directory on drop if collapsed', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      const dropData = {
+        path: '/other-file.md',
+        name: 'other-file.md',
+        type: 'file'
+      }
+
+      const dragEvent = new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+      dragEvent.dataTransfer?.setData('application/json', JSON.stringify(dropData))
+
+      await nodeItem.trigger('drop', { dataTransfer: dragEvent.dataTransfer })
+      
+      // Wait for async operations
+      await wrapper.vm.$nextTick()
+      
+      // Should emit toggleExpand after successful drop
+      expect(wrapper.emitted('toggleExpand')).toBeTruthy()
+      expect(wrapper.emitted('toggleExpand')[0]).toEqual(['/folder'])
+    })
+
+    it('should not expand directory on drop if already expanded', async () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set(['/folder'])
+      })
+
+      const nodeItem = wrapper.find('.node-item')
+      
+      const dropData = {
+        path: '/other-file.md',
+        name: 'other-file.md',
+        type: 'file'
+      }
+
+      const dragEvent = new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer: new DataTransfer()
+      })
+      dragEvent.dataTransfer?.setData('application/json', JSON.stringify(dropData))
+
+      await nodeItem.trigger('drop', { dataTransfer: dragEvent.dataTransfer })
+      
+      // Wait for async operations
+      await wrapper.vm.$nextTick()
+      
+      // Should not emit toggleExpand for already expanded directory
+      expect(wrapper.emitted('toggleExpand')).toBeFalsy()
+    })
+  })
+
+  describe('directory item counts', () => {
+    it('should display item count for directories', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'folder',
+        path: '/folder',
+        type: 'directory',
+        children: [
+          { name: 'file1.md', path: '/folder/file1.md', type: 'file' },
+          { name: 'file2.md', path: '/folder/file2.md', type: 'file' }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(true)
+      expect(itemCount.text()).toBe('(2)')
+    })
+
+    it('should recursively count nested items', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'folder',
+        path: '/folder',
+        type: 'directory',
+        children: [
+          { name: 'file1.md', path: '/folder/file1.md', type: 'file' },
+          { 
+            name: 'subfolder',
+            path: '/folder/subfolder',
+            type: 'directory',
+            children: [
+              { name: 'file2.md', path: '/folder/subfolder/file2.md', type: 'file' },
+              { name: 'file3.md', path: '/folder/subfolder/file3.md', type: 'file' }
+            ]
+          }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      // Should count: file1.md (1) + subfolder (1) + file2.md (1) + file3.md (1) = 4
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(true)
+      expect(itemCount.text()).toBe('(4)')
+    })
+
+    it('should handle deeply nested directories', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'root',
+        path: '/root',
+        type: 'directory',
+        children: [
+          {
+            name: 'level1',
+            path: '/root/level1',
+            type: 'directory',
+            children: [
+              {
+                name: 'level2',
+                path: '/root/level1/level2',
+                type: 'directory',
+                children: [
+                  { name: 'deep.md', path: '/root/level1/level2/deep.md', type: 'file' }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      // Should count: level1 (1) + level2 (1) + deep.md (1) = 3
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.text()).toBe('(3)')
+    })
+
+    it('should not display count for empty directories', () => {
+      const emptyDirectory: FileTreeNodeType = {
+        name: 'empty',
+        path: '/empty',
+        type: 'directory',
+        children: []
+      }
+
+      wrapper = createWrapper({
+        node: emptyDirectory,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(false)
+    })
+
+    it('should not display count for files', () => {
+      const fileNode: FileTreeNodeType = {
+        name: 'note.md',
+        path: '/note.md',
+        type: 'file'
+      }
+
+      wrapper = createWrapper({
+        node: fileNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(false)
+    })
+
+    it('should style item count correctly', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'folder',
+        path: '/folder',
+        type: 'directory',
+        children: [
+          { name: 'file.md', path: '/folder/file.md', type: 'file' }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.exists()).toBe(true)
+      expect(itemCount.classes()).toContain('item-count')
+    })
+
+    it('should handle mixed content (files and directories)', () => {
+      const directoryNode: FileTreeNodeType = {
+        name: 'mixed',
+        path: '/mixed',
+        type: 'directory',
+        children: [
+          { name: 'file1.md', path: '/mixed/file1.md', type: 'file' },
+          { 
+            name: 'dir1',
+            path: '/mixed/dir1',
+            type: 'directory',
+            children: [
+              { name: 'file2.md', path: '/mixed/dir1/file2.md', type: 'file' }
+            ]
+          },
+          { name: 'file3.md', path: '/mixed/file3.md', type: 'file' },
+          {
+            name: 'dir2',
+            path: '/mixed/dir2',
+            type: 'directory',
+            children: []
+          }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+      
+      // Count: file1.md (1) + dir1 (1) + file2.md (1) + file3.md (1) + dir2 (1) = 5
+      const itemCount = wrapper.find('.item-count')
+      expect(itemCount.text()).toBe('(5)')
     })
   })
 })

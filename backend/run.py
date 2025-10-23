@@ -4,9 +4,13 @@
 import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 
 def main():
     """Run the backend server."""
+    # Load environment variables from .env file
+    load_dotenv()
+    
     # Check if VAULT_PATH is set
     vault_path = os.environ.get("VAULT_PATH")
     if not vault_path:

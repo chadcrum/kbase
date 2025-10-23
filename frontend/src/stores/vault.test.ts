@@ -752,5 +752,53 @@ describe('VaultStore', () => {
       expect(vaultStore.isExpanded('/')).toBe(true)
     })
   })
+
+  describe('sidebar toggle', () => {
+    it('should have sidebar expanded by default', () => {
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+    })
+
+    it('should collapse sidebar when toggleSidebar is called', () => {
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      
+      vaultStore.toggleSidebar()
+      
+      expect(vaultStore.isSidebarCollapsed).toBe(true)
+    })
+
+    it('should expand sidebar when toggleSidebar is called again', () => {
+      vaultStore.toggleSidebar() // Collapse
+      expect(vaultStore.isSidebarCollapsed).toBe(true)
+      
+      vaultStore.toggleSidebar() // Expand
+      
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+    })
+
+    it('should toggle sidebar state multiple times', () => {
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      
+      vaultStore.toggleSidebar()
+      expect(vaultStore.isSidebarCollapsed).toBe(true)
+      
+      vaultStore.toggleSidebar()
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      
+      vaultStore.toggleSidebar()
+      expect(vaultStore.isSidebarCollapsed).toBe(true)
+    })
+
+    it('should maintain sidebar state across operations', () => {
+      vaultStore.toggleSidebar() // Collapse
+      expect(vaultStore.isSidebarCollapsed).toBe(true)
+      
+      // Perform other operations
+      vaultStore.expandedPaths.add('/folder1')
+      vaultStore.collapseAll()
+      
+      // Sidebar state should remain collapsed
+      expect(vaultStore.isSidebarCollapsed).toBe(true)
+    })
+  })
 })
 

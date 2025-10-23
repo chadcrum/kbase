@@ -8,37 +8,27 @@
         :view-mode="viewMode"
         :save-status="saveStatus"
         @update:view-mode="viewMode = $event"
+        @open-search="handleOpenSearch"
       />
       
       <!-- Monaco Editor View -->
-      <div v-if="viewMode === 'editor'" class="editor-view">
+      <div v-show="viewMode === 'editor'" class="editor-view">
         <MonacoEditor
           v-model="editableContent"
           :path="selectedNote.path"
+          :disabled="viewMode !== 'editor'"
           @save="handleSave"
         />
       </div>
       
-      <!-- Preview View -->
-      <div v-else class="preview-view">
-        <!-- Note header with metadata -->
-        <div class="note-header">
-          <div class="note-metadata">
-            <span class="metadata-item">
-              <span class="metadata-label">Size:</span>
-              <span class="metadata-value">{{ formatFileSize(selectedNote.size) }}</span>
-            </span>
-            <span class="metadata-item">
-              <span class="metadata-label">Modified:</span>
-              <span class="metadata-value">{{ formatDate(selectedNote.modified) }}</span>
-            </span>
-          </div>
-        </div>
-        
-        <!-- Note content -->
-        <div class="note-body">
-          <pre class="note-text">{{ selectedNote.content }}</pre>
-        </div>
+      <!-- TipTap WYSIWYG View -->
+      <div v-show="viewMode === 'wysiwyg'" class="wysiwyg-view">
+        <TipTapEditor
+          v-model="editableContent"
+          :path="selectedNote.path"
+          :disabled="viewMode !== 'wysiwyg'"
+          @save="handleSave"
+        />
       </div>
     </div>
     
@@ -66,12 +56,18 @@ import { computed, ref, watch } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import ViewerToolbar from './ViewerToolbar.vue'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
+import TipTapEditor from '@/components/editor/TipTapEditor.vue'
+
+// Emits
+const emit = defineEmits<{
+  'openSearch': []
+}>()
 
 // Store
 const vaultStore = useVaultStore()
 
 // State
-const viewMode = ref<'editor' | 'preview'>('editor')
+const viewMode = ref<'editor' | 'wysiwyg'>('wysiwyg')
 const editableContent = ref('')
 const saveStatus = ref<'saving' | 'saved' | 'error' | null>(null)
 let saveStatusTimeout: ReturnType<typeof setTimeout> | null = null
@@ -86,6 +82,8 @@ const error = computed(() => vaultStore.error)
 watch(selectedNote, (newNote) => {
   if (newNote) {
     editableContent.value = newNote.content
+    // Set default view mode: wysiwyg for .md files, editor for others
+    viewMode.value = newNote.path.endsWith('.md') ? 'wysiwyg' : 'editor'
   } else {
     editableContent.value = ''
   }
@@ -153,6 +151,10 @@ const handleRetry = () => {
     vaultStore.loadNote(selectedNote.value.path)
   }
 }
+
+const handleOpenSearch = () => {
+  emit('openSearch')
+}
 </script>
 
 <style scoped>
@@ -179,58 +181,12 @@ const handleRetry = () => {
   background-color: #1e1e1e;
 }
 
-.preview-view {
+.wysiwyg-view {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.note-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  background-color: #f8fafc;
-}
-
-.note-metadata {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  font-size: 0.875rem;
-}
-
-.metadata-item {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.metadata-label {
-  font-weight: 500;
-  color: #6b7280;
-}
-
-.metadata-value {
-  color: #374151;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-}
-
-.note-body {
-  flex: 1;
-  padding: 1.5rem;
-  overflow: auto;
-}
-
-.note-text {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: #374151;
-  background: none;
-  border: none;
-  margin: 0;
-  padding: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  background-color: white;
 }
 
 .loading-state,
@@ -309,19 +265,18 @@ const handleRetry = () => {
   }
 }
 
+/* Hide inactive editors properly to prevent layout issues */
+.editor-view[style*="display: none"],
+.wysiwyg-view[style*="display: none"] {
+  visibility: hidden;
+  position: absolute;
+  pointer-events: none;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
-  .note-header {
-    padding: 1rem;
-  }
-  
-  .note-body {
-    padding: 1rem;
-  }
-  
-  .note-metadata {
-    flex-direction: column;
-    gap: 0.5rem;
+  .note-viewer {
+    font-size: 0.875rem;
   }
 }
 </style>

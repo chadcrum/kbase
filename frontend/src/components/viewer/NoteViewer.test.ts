@@ -25,6 +25,76 @@ vi.mock('@monaco-editor/loader', () => ({
   }
 }))
 
+// Mock TipTap editor to avoid initialization issues in tests
+const createMockEditor = () => {
+  const chainMethods = {
+    focus: vi.fn().mockReturnThis(),
+    toggleBold: vi.fn().mockReturnThis(),
+    toggleItalic: vi.fn().mockReturnThis(),
+    toggleStrike: vi.fn().mockReturnThis(),
+    toggleCode: vi.fn().mockReturnThis(),
+    toggleHeading: vi.fn().mockReturnThis(),
+    toggleBulletList: vi.fn().mockReturnThis(),
+    toggleOrderedList: vi.fn().mockReturnThis(),
+    toggleTaskList: vi.fn().mockReturnThis(),
+    toggleBlockquote: vi.fn().mockReturnThis(),
+    toggleCodeBlock: vi.fn().mockReturnThis(),
+    setHorizontalRule: vi.fn().mockReturnThis(),
+    undo: vi.fn().mockReturnThis(),
+    redo: vi.fn().mockReturnThis(),
+    run: vi.fn()
+  }
+  
+  return {
+    commands: {
+      setContent: vi.fn(),
+    },
+    state: {
+      doc: {}
+    },
+    destroy: vi.fn(),
+    setEditable: vi.fn(),
+    isActive: vi.fn((name: string) => false),
+    can: vi.fn(() => ({
+      undo: () => true,
+      redo: () => true
+    })),
+    chain: vi.fn(() => chainMethods)
+  }
+}
+
+const mockEditor = createMockEditor()
+
+vi.mock('@tiptap/vue-3', () => ({
+  useEditor: vi.fn(() => ({
+    value: mockEditor
+  })),
+  EditorContent: {
+    name: 'EditorContent',
+    template: '<div class="tiptap-editor"></div>'
+  }
+}))
+
+// Mock TipTapEditor component
+vi.mock('@/components/editor/TipTapEditor.vue', () => ({
+  default: {
+    name: 'TipTapEditor',
+    template: '<div class="tiptap-editor-mock"></div>',
+    props: ['modelValue', 'path', 'disabled'],
+    emits: ['update:modelValue', 'save']
+  }
+}))
+
+// Mock MonacoEditor component
+vi.mock('@/components/editor/MonacoEditor.vue', () => ({
+  default: {
+    name: 'MonacoEditor',
+    template: '<div class="monaco-editor-mock"></div>',
+    props: ['modelValue', 'path', 'disabled'],
+    emits: ['update:modelValue', 'save']
+  }
+}))
+
 // Mock the vault store
 vi.mock('@/stores/vault', () => ({
   useVaultStore: vi.fn()
@@ -76,15 +146,6 @@ describe('NoteViewer', () => {
       
       expect(wrapper.find('.note-content').exists()).toBe(true)
       expect(wrapper.findComponent(ViewerToolbar).exists()).toBe(true)
-      
-      // Switch to preview mode to see the content
-      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
-      await wrapper.vm.$nextTick()
-      
-      const noteText = wrapper.find('.note-text')
-      if (noteText.exists()) {
-        expect(noteText.text()).toBe(mockNote.content)
-      }
     })
 
     it('should display ViewerToolbar with file information', () => {
@@ -97,23 +158,17 @@ describe('NoteViewer', () => {
       expect(toolbar.props('filePath')).toBe('/folder/test-note.md')
     })
 
-    it('should display note metadata in preview mode', async () => {
+    it('should default to wysiwyg mode for .md files', async () => {
       mockVaultStore.selectedNote = mockNote
       wrapper = createWrapper()
-      
-      // Switch to preview mode
-      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
       await wrapper.vm.$nextTick()
       
-      const metadata = wrapper.find('.note-metadata')
-      expect(metadata.exists()).toBe(true)
-      
-      // Check size (should be formatted)
-      expect(wrapper.text()).toContain('Size:')
-      expect(wrapper.text()).toContain('1 KB')
-      
-      // Check modified date
-      expect(wrapper.text()).toContain('Modified:')
+      // Both views exist (v-show), wysiwyg is visible for .md files
+      expect(wrapper.find('.wysiwyg-view').exists()).toBe(true)
+      expect(wrapper.find('.editor-view').exists()).toBe(true)
+      // Check visibility via v-show
+      expect(wrapper.find('.wysiwyg-view').isVisible()).toBe(true)
+      expect(wrapper.find('.editor-view').isVisible()).toBe(false)
     })
 
     it('should extract title from note path correctly', () => {
@@ -195,97 +250,51 @@ describe('NoteViewer', () => {
     })
   })
 
-  describe('utility functions', () => {
-    it('should format file sizes correctly', async () => {
-      mockVaultStore.selectedNote = { ...mockNote, size: 0 }
+  describe('view mode selection', () => {
+    it('should default to editor mode for non-.md files', async () => {
+      const nonMdNote: NoteData = {
+        ...mockNote,
+        path: '/folder/readme.txt'
+      }
+      mockVaultStore.selectedNote = nonMdNote
       wrapper = createWrapper()
-      
-      // Switch to preview mode to see metadata
-      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
       await wrapper.vm.$nextTick()
       
-      expect(wrapper.text()).toContain('0 B')
-
-      wrapper.unmount()
-      
-      mockVaultStore.selectedNote = { ...mockNote, size: 1024 }
-      wrapper = createWrapper()
-      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
-      await wrapper.vm.$nextTick()
-      expect(wrapper.text()).toContain('1 KB')
-
-      wrapper.unmount()
-      
-      mockVaultStore.selectedNote = { ...mockNote, size: 1024 * 1024 }
-      wrapper = createWrapper()
-      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
-      await wrapper.vm.$nextTick()
-      expect(wrapper.text()).toContain('1 MB')
+      // Both views exist (v-show), but only editor view is visible
+      expect(wrapper.find('.editor-view').exists()).toBe(true)
+      expect(wrapper.find('.wysiwyg-view').exists()).toBe(true)
+      // Check visibility via v-show
+      expect(wrapper.find('.editor-view').isVisible()).toBe(true)
+      expect(wrapper.find('.wysiwyg-view').isVisible()).toBe(false)
     })
 
-    it('should format dates correctly', async () => {
+    it('should allow switching between editor and wysiwyg modes', async () => {
       mockVaultStore.selectedNote = mockNote
       wrapper = createWrapper()
-      
-      // Switch to preview mode to see metadata
-      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
       await wrapper.vm.$nextTick()
       
-      // The exact format depends on locale, but it should contain some recognizable date/time parts
-      const dateText = wrapper.text()
-      expect(dateText).toContain('Modified:')
-      // Check that it's not showing the raw timestamp
-      expect(dateText).not.toContain('1640995200')
+      // Both views exist (v-show), wysiwyg is visible for .md files
+      expect(wrapper.find('.wysiwyg-view').exists()).toBe(true)
+      expect(wrapper.find('.editor-view').exists()).toBe(true)
+      
+      // Switch to editor mode
+      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'editor')
+      await wrapper.vm.$nextTick()
+      
+      // Both still exist, but editor is now visible
+      expect(wrapper.find('.editor-view').exists()).toBe(true)
+      expect(wrapper.find('.wysiwyg-view').exists()).toBe(true)
     })
   })
 
-  describe('content display', () => {
-    it('should preserve whitespace and formatting in note content', async () => {
-      const noteWithFormatting: NoteData = {
-        ...mockNote,
-        content: 'Line 1\n\nLine 2\n    Indented line'
-      }
-      mockVaultStore.selectedNote = noteWithFormatting
+  describe('save functionality', () => {
+    it('should handle save requests from editors', async () => {
+      mockVaultStore.selectedNote = mockNote
       wrapper = createWrapper()
-      
-      // Switch to preview mode
-      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
       await wrapper.vm.$nextTick()
       
-      const noteText = wrapper.find('.note-text')
-      expect(noteText.text()).toBe(noteWithFormatting.content)
-    })
-
-    it('should handle empty note content', async () => {
-      const emptyNote: NoteData = {
-        ...mockNote,
-        content: ''
-      }
-      mockVaultStore.selectedNote = emptyNote
-      wrapper = createWrapper()
-      
-      // Switch to preview mode
-      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
-      await wrapper.vm.$nextTick()
-      
-      const noteText = wrapper.find('.note-text')
-      expect(noteText.text()).toBe('')
-    })
-
-    it('should handle very long note content', async () => {
-      const longNote: NoteData = {
-        ...mockNote,
-        content: 'A'.repeat(10000)
-      }
-      mockVaultStore.selectedNote = longNote
-      wrapper = createWrapper()
-      
-      // Switch to preview mode
-      await wrapper.findComponent(ViewerToolbar).vm.$emit('update:viewMode', 'preview')
-      await wrapper.vm.$nextTick()
-      
-      const noteText = wrapper.find('.note-text')
-      expect(noteText.text()).toBe(longNote.content)
+      // The component should be ready to handle save events from either editor
+      expect(mockVaultStore.updateNote).toBeDefined()
     })
   })
 

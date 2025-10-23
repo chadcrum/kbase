@@ -145,3 +145,8 @@ dist
 .out
 .storybook-out
 
+# Playwright test outputs
+test-results/
+test-results.json
+playwright-report/
+test-screenshot.png

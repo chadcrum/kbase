@@ -138,6 +138,44 @@ All endpoints (except login) require authentication via JWT token in cookies.
   - Destination path must not already exist
   - Parent directories are created automatically if they don't exist
 
+### Search Notes
+- **GET** `/search/`
+- **Description**: Search for notes by content and filename with content snippets
+- **Query Parameters**:
+  - `q` (required): Search query (space-separated phrases, all must match)
+  - `limit` (optional): Maximum number of results (1-100, default: 50)
+- **Response**: Search results with matching files and content snippets
+- **Example Response**:
+```json
+{
+  "results": [
+    {
+      "path": "/folder/note.md",
+      "name": "note.md",
+      "snippets": [
+        {
+          "line_number": 15,
+          "content": "This line contains the search term"
+        },
+        {
+          "line_number": 42,
+          "content": "Another matching line with the term"
+        }
+      ]
+    }
+  ],
+  "total": 1
+}
+```
+- **Status Codes**: 200 (success), 500 (search failed)
+- **Notes**:
+  - Search is case-insensitive and fuzzy
+  - All space-separated phrases in query must match (either in filename or content)
+  - Returns up to 3 matching lines per file with line numbers
+  - Uses ripgrep for fast search, falls back to Python search if unavailable
+  - Empty snippets array indicates filename-only match
+  - Results are limited by the `limit` parameter (default 50)
+
 ## Directories API (`/api/v1/directories/`)
 
 ### Create Directory
@@ -224,6 +262,47 @@ All endpoints (except login) require authentication via JWT token in cookies.
   "path": "/path/to/note.md",
   "size": 123,
   "modified": 1640995200
+}
+```
+
+### SearchResponse
+```json
+{
+  "results": [
+    {
+      "path": "/path/to/note.md",
+      "name": "note.md",
+      "snippets": [
+        {
+          "line_number": 10,
+          "content": "Matching line content"
+        }
+      ]
+    }
+  ],
+  "total": 1
+}
+```
+
+### SearchResult
+```json
+{
+  "path": "/path/to/note.md",
+  "name": "note.md",
+  "snippets": [
+    {
+      "line_number": 10,
+      "content": "Matching line content"
+    }
+  ]
+}
+```
+
+### Snippet
+```json
+{
+  "line_number": 10,
+  "content": "Matching line content"
 }
 ```
 

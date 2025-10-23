@@ -40,6 +40,9 @@
         @click.stop
       />
       <span v-else class="node-name" @dblclick="startRename">{{ node.name }}</span>
+      
+      <!-- Item count for directories -->
+      <span v-if="node.type === 'directory' && itemCount > 0" class="item-count">({{ itemCount }})</span>
     </div>
     
     <!-- Children (for directories) -->
@@ -160,6 +163,22 @@ const deleteConfirmMessage = computed(() => {
   } else {
     return `Are you sure you want to delete "${props.node.name}"? This action cannot be undone.`
   }
+})
+
+const itemCount = computed(() => {
+  if (props.node.type !== 'directory' || !props.node.children) return 0
+  
+  function countItems(children: FileTreeNodeType[]): number {
+    let count = children.length
+    children.forEach(child => {
+      if (child.type === 'directory' && child.children) {
+        count += countItems(child.children)
+      }
+    })
+    return count
+  }
+  
+  return countItems(props.node.children)
 })
 
 // Methods
@@ -411,6 +430,14 @@ const handleDrop = async (event: DragEvent) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.item-count {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: normal;
+  margin-left: 0.25rem;
+  flex-shrink: 0;
 }
 
 .children {

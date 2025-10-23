@@ -4,6 +4,45 @@ import { createPinia, setActivePinia } from 'pinia'
 import FileTreeNode from './FileTreeNode.vue'
 import type { FileTreeNode as FileTreeNodeType } from '@/types'
 
+// Mock DragEvent and DataTransfer for jsdom environment
+class MockDataTransfer {
+  data: Record<string, string> = {}
+  
+  setData(type: string, value: string) {
+    this.data[type] = value
+  }
+  
+  getData(type: string) {
+    return this.data[type] || ''
+  }
+}
+
+class MockDragEvent extends Event {
+  dataTransfer: MockDataTransfer | null
+  
+  constructor(type: string, init?: any) {
+    super(type, init)
+    this.dataTransfer = init?.dataTransfer || new MockDataTransfer()
+  }
+}
+
+// Make them available globally for tests
+global.DataTransfer = MockDataTransfer as any
+global.DragEvent = MockDragEvent as any
+
+// Mock vault store
+vi.mock('@/stores/vault', () => ({
+  useVaultStore: vi.fn(() => ({
+    moveFile: vi.fn(() => Promise.resolve()),
+    moveDirectory: vi.fn(() => Promise.resolve()),
+    createDirectory: vi.fn(() => Promise.resolve()),
+    renameNote: vi.fn(() => Promise.resolve()),
+    renameDirectory: vi.fn(() => Promise.resolve()),
+    deleteNote: vi.fn(() => Promise.resolve()),
+    deleteDirectory: vi.fn(() => Promise.resolve())
+  }))
+}))
+
 describe('FileTreeNode', () => {
   let wrapper: any
 

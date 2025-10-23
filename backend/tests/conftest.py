@@ -31,8 +31,10 @@ def temp_vault() -> Generator[Path, None, None]:
 @pytest.fixture
 def client(temp_vault: Path) -> Generator[TestClient, None, None]:
     """Create a test client with temporary vault."""
-    # Set the vault path environment variable
+    # Set environment variables (Settings requires secret_key and password)
     os.environ["VAULT_PATH"] = str(temp_vault)
+    os.environ["SECRET_KEY"] = "test-secret-key-for-jwt-signing"
+    os.environ["PASSWORD"] = "test-password"
     
     # Clear any cached modules to ensure fresh import
     import sys
@@ -40,7 +42,7 @@ def client(temp_vault: Path) -> Generator[TestClient, None, None]:
     for mod in modules_to_clear:
         del sys.modules[mod]
     
-    # Import app after setting environment variable
+    # Import app after setting environment variables
     from app.main import app
     
     # Create test client
@@ -48,8 +50,10 @@ def client(temp_vault: Path) -> Generator[TestClient, None, None]:
         yield test_client
     
     # Clean up environment
-    if "VAULT_PATH" in os.environ:
-        del os.environ["VAULT_PATH"]
+    env_vars = ["VAULT_PATH", "SECRET_KEY", "PASSWORD"]
+    for var in env_vars:
+        if var in os.environ:
+            del os.environ[var]
 
 
 @pytest.fixture

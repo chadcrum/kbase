@@ -27,13 +27,6 @@
         <span class="search-icon">🔍</span>
         <span class="search-text">Search</span>
       </button>
-      
-      <div v-if="saveStatus" class="save-status" :class="saveStatus">
-        <span v-if="saveStatus === 'saving'" class="status-icon spinner">⏳</span>
-        <span v-else-if="saveStatus === 'saved'" class="status-icon">✓</span>
-        <span v-else-if="saveStatus === 'error'" class="status-icon">⚠️</span>
-        <span class="status-text">{{ saveStatusText }}</span>
-      </div>
     </div>
   </div>
 </template>
@@ -50,12 +43,10 @@ interface Props {
   fileName: string
   filePath?: string
   viewMode: 'editor' | 'wysiwyg'
-  saveStatus?: 'saving' | 'saved' | 'error' | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  filePath: '',
-  saveStatus: null
+  filePath: ''
 })
 
 // Emits
@@ -79,19 +70,6 @@ const toggleSidebar = () => {
 }
 
 // Computed
-const saveStatusText = computed(() => {
-  switch (props.saveStatus) {
-    case 'saving':
-      return 'Saving...'
-    case 'saved':
-      return 'Saved'
-    case 'error':
-      return 'Save failed'
-    default:
-      return ''
-  }
-})
-
 const sidebarToggleIcon = computed(() => {
   return vaultStore.isSidebarCollapsed ? '»' : '«'
 })
@@ -268,50 +246,6 @@ const sidebarToggleTitle = computed(() => {
 
 .search-text {
   font-size: 0.875rem;
-  white-space: nowrap;
-}
-
-.save-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.save-status.saving {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.save-status.saved {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.save-status.error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.status-icon {
-  font-size: 1rem;
-  line-height: 1;
-}
-
-.status-icon.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.status-text {
   white-space: nowrap;
 }
 

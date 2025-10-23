@@ -39,6 +39,7 @@ const emit = defineEmits<{
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
 let isUpdatingFromEditor = false
 let lastEmittedContent = ''
+let isSettingContent = false
 
 // Debounce delay for auto-save (1 second) - same as Monaco
 const AUTO_SAVE_DELAY = 1000
@@ -130,6 +131,14 @@ const markdownToHtml = async (markdown: string): Promise<string> => {
   )
   
   return html
+}
+
+// Helper function to normalize markdown for comparison
+const normalizeMarkdown = (markdown: string): string => {
+  return markdown
+    .trim() // Remove leading/trailing whitespace
+    .replace(/\r\n/g, '\n') // Normalize line endings
+    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
 }
 
 // Helper function to convert TipTap content to markdown
@@ -229,11 +238,20 @@ const editor = useEditor({
     },
   },
   onUpdate: ({ editor }) => {
+    // Don't emit if we're programmatically setting content
+    if (isSettingContent) {
+      return
+    }
+    
     // Get markdown content from editor
     const markdown = editorToMarkdown(editor.state.doc)
     
+    // Normalize for comparison
+    const normalizedMarkdown = normalizeMarkdown(markdown)
+    const normalizedLast = normalizeMarkdown(lastEmittedContent)
+    
     // Only emit if content actually changed
-    if (markdown === lastEmittedContent) {
+    if (normalizedMarkdown === normalizedLast) {
       return
     }
     
@@ -245,7 +263,7 @@ const editor = useEditor({
     // Reset flag after a short delay to allow watcher to process
     setTimeout(() => {
       isUpdatingFromEditor = false
-    }, 0)
+    }, 10) // Increased from 0 to 10ms for better async handling
     
     // Debounced auto-save
     if (saveTimeout) {
@@ -261,28 +279,50 @@ const editor = useEditor({
 // Watch for external content changes (from Monaco editor or parent component)
 watch(() => props.modelValue, async (newValue) => {
   // Don't update if this change came from the editor itself
-  if (!editor.value || isUpdatingFromEditor) {
+  if (!editor.value || isUpdatingFromEditor || isSettingContent) {
     return
   }
 
   // Get current editor content as markdown
   const currentMarkdown = editorToMarkdown(editor.value.state.doc)
   
-  // Only update if content actually changed (and it's not what we just emitted)
-  if (newValue !== currentMarkdown && newValue !== lastEmittedContent) {
-    // Convert markdown to HTML and set content
-    const html = await markdownToHtml(newValue)
-    lastEmittedContent = newValue // Update our tracking
-    editor.value.commands.setContent(html)
+  // Normalize for comparison
+  const normalizedNew = normalizeMarkdown(newValue)
+  const normalizedCurrent = normalizeMarkdown(currentMarkdown)
+  const normalizedLast = normalizeMarkdown(lastEmittedContent)
+  
+  // Only update if content actually changed (using normalized comparison)
+  if (normalizedNew !== normalizedCurrent && normalizedNew !== normalizedLast) {
+    // Set flag to prevent onUpdate from firing
+    isSettingContent = true
+    
+    try {
+      // Convert markdown to HTML and set content
+      const html = await markdownToHtml(newValue)
+      lastEmittedContent = newValue // Update our tracking
+      editor.value.commands.setContent(html)
+    } finally {
+      // Reset flag after content is set
+      setTimeout(() => {
+        isSettingContent = false
+      }, 10)
+    }
   }
 })
 
 // Initialize content from markdown on mount
 watch(editor, async (newEditor) => {
   if (newEditor && props.modelValue) {
-    const html = await markdownToHtml(props.modelValue)
-    lastEmittedContent = props.modelValue // Track initial content
-    newEditor.commands.setContent(html)
+    isSettingContent = true
+    try {
+      const html = await markdownToHtml(props.modelValue)
+      lastEmittedContent = props.modelValue // Track initial content
+      newEditor.commands.setContent(html)
+    } finally {
+      setTimeout(() => {
+        isSettingContent = false
+      }, 10)
+    }
   }
 }, { immediate: true })
 

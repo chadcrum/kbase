@@ -14,6 +14,7 @@
       <!-- Monaco Editor View -->
       <div v-if="viewMode === 'editor'" class="editor-view">
         <MonacoEditor
+          :key="`monaco-${selectedNote.path}`"
           v-model="editableContent"
           :path="selectedNote.path"
           @save="handleSave"
@@ -23,6 +24,7 @@
       <!-- TipTap WYSIWYG View -->
       <div v-else class="wysiwyg-view">
         <TipTapEditor
+          :key="`tiptap-${selectedNote.path}`"
           v-model="editableContent"
           :path="selectedNote.path"
           @save="handleSave"

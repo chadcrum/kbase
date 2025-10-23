@@ -32,6 +32,7 @@ let monaco: typeof Monaco | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
 let isUpdatingFromEditor = false
 let lastEmittedContent = ''
+let isSettingContent = false
 
 // Debounce delay for auto-save (1 second)
 const AUTO_SAVE_DELAY = 1000
@@ -76,6 +77,11 @@ onMounted(async () => {
     editor.onDidChangeModelContent(() => {
       if (!editor) return
       
+      // Don't emit if we're programmatically setting content
+      if (isSettingContent) {
+        return
+      }
+      
       const value = editor.getValue()
       
       // Only emit if content actually changed
@@ -91,7 +97,7 @@ onMounted(async () => {
       // Reset flag after a short delay to allow watcher to process
       setTimeout(() => {
         isUpdatingFromEditor = false
-      }, 0)
+      }, 10) // Increased from 0 to 10ms for better async handling
       
       // Debounced auto-save
       if (saveTimeout) {
@@ -124,15 +130,22 @@ onMounted(async () => {
 // Watch for external content changes (from TipTap or parent component)
 watch(() => props.modelValue, (newValue) => {
   // Don't update if this change came from the editor itself
-  if (!editor || isUpdatingFromEditor) {
+  if (!editor || isUpdatingFromEditor || isSettingContent) {
     return
   }
 
   const currentValue = editor.getValue()
   // Only update if content actually changed (and it's not what we just emitted)
   if (newValue !== currentValue && newValue !== lastEmittedContent) {
+    // Set flag to prevent onDidChangeModelContent from firing
+    isSettingContent = true
     lastEmittedContent = newValue // Update our tracking
     editor.setValue(newValue)
+    
+    // Reset flag after content is set
+    setTimeout(() => {
+      isSettingContent = false
+    }, 10)
   }
 })
 

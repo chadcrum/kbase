@@ -56,9 +56,15 @@ export interface ApiError {
   detail: string
 }
 
+export interface Snippet {
+  line_number: number
+  content: string
+}
+
 export interface SearchResult {
   path: string
   name: string
+  snippets: Snippet[]
 }
 
 export interface SearchResponse {

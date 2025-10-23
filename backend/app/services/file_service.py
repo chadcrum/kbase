@@ -367,7 +367,7 @@ class FileService:
             "path": f"/{normalized_path}"
         }
     
-    def search_notes(self, query: str, limit: int = 50) -> Dict[str, Union[List[Dict[str, str]], int]]:
+    def search_notes(self, query: str, limit: int = 50) -> Dict[str, Union[List[Dict], int]]:
         """
         Search for notes by content and filename using ripgrep.
         
@@ -379,7 +379,7 @@ class FileService:
             limit: Maximum number of results to return
             
         Returns:
-            Dict: Search results with list of matching files and total count
+            Dict: Search results with list of matching files, snippets, and total count
         """
         if not query or not query.strip():
             return {"results": [], "total": 0}
@@ -391,20 +391,21 @@ class FileService:
             return {"results": [], "total": 0}
         
         # Find files matching all phrases using ripgrep
-        matching_files = self._search_with_ripgrep(phrases)
+        matching_files_with_snippets = self._search_with_ripgrep(phrases)
         
         # Limit results
-        limited_files = list(matching_files)[:limit]
+        limited_files = list(matching_files_with_snippets.items())[:limit]
         
         # Build result structure
         results = []
-        for file_path in limited_files:
+        for file_path, snippets in limited_files:
             # Get relative path from vault root
             try:
                 rel_path = file_path.relative_to(self.vault_path.resolve())
                 results.append({
                     "path": f"/{rel_path}",
-                    "name": file_path.name
+                    "name": file_path.name,
+                    "snippets": snippets
                 })
             except ValueError:
                 # Skip files outside vault (shouldn't happen due to validation)
@@ -415,19 +416,20 @@ class FileService:
             "total": len(results)
         }
     
-    def _search_with_ripgrep(self, phrases: List[str]) -> set[Path]:
+    def _search_with_ripgrep(self, phrases: List[str]) -> Dict[Path, List[Dict[str, Union[int, str]]]]:
         """
-        Use ripgrep to find files matching all phrases.
+        Use ripgrep to find files matching all phrases with snippets.
         
         A file matches if all phrases are found somewhere in the file content or filename.
+        Returns up to 3 matching lines per file with line numbers.
         
         Args:
             phrases: List of search phrases (all must match)
             
         Returns:
-            set: Set of matching file paths
+            Dict: Mapping of file paths to list of snippets (line_number, content)
         """
-        # Start with all markdown files in the vault
+        # First pass: Find files matching all phrases
         all_matches = None
         
         for phrase in phrases:
@@ -490,7 +492,7 @@ class FileService:
                 pass
             except FileNotFoundError:
                 # ripgrep not installed, fall back to basic search
-                phrase_matches = self._fallback_search(phrase)
+                phrase_matches = self._fallback_search_files(phrase)
             
             # Intersect with previous matches (all phrases must match)
             if all_matches is None:
@@ -502,11 +504,79 @@ class FileService:
             if not all_matches:
                 break
         
-        return all_matches if all_matches else set()
+        if not all_matches:
+            return {}
+        
+        # Second pass: Get snippets for matching files
+        # Combine all phrases into a single regex pattern (OR operation)
+        combined_pattern = '|'.join(phrases)
+        
+        results_with_snippets = {}
+        
+        try:
+            # Search with line numbers and get matching content
+            result = subprocess.run(
+                [
+                    'rg',
+                    '-i',  # case insensitive
+                    '-n',  # show line numbers
+                    '--max-count', '3',  # limit to first 3 matches per file
+                    '--type-add', 'md:*.md',
+                    '--type-add', 'md:*.markdown',
+                    '--type', 'md',
+                    combined_pattern
+                ],
+                cwd=str(self.vault_path),
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            # Parse ripgrep output: "filename:line_number:content"
+            if result.returncode == 0 and result.stdout.strip():
+                for line in result.stdout.strip().split('\n'):
+                    if ':' in line:
+                        parts = line.split(':', 2)
+                        if len(parts) >= 3:
+                            filename = parts[0]
+                            line_number = parts[1]
+                            content = parts[2]
+                            
+                            file_path = self.vault_path / filename
+                            
+                            # Only include files that matched all phrases
+                            if file_path in all_matches:
+                                if file_path not in results_with_snippets:
+                                    results_with_snippets[file_path] = []
+                                
+                                # Add snippet if we haven't reached the limit
+                                if len(results_with_snippets[file_path]) < 3:
+                                    try:
+                                        results_with_snippets[file_path].append({
+                                            "line_number": int(line_number),
+                                            "content": content.strip()
+                                        })
+                                    except ValueError:
+                                        # Skip if line_number is not an integer
+                                        continue
+        
+        except subprocess.TimeoutExpired:
+            # If ripgrep times out, continue with what we have
+            pass
+        except FileNotFoundError:
+            # ripgrep not installed, fall back to basic search
+            results_with_snippets = self._fallback_search_with_snippets(all_matches, phrases)
+        
+        # Add files without content matches (filename matches only)
+        for file_path in all_matches:
+            if file_path not in results_with_snippets:
+                results_with_snippets[file_path] = []
+        
+        return results_with_snippets
     
-    def _fallback_search(self, phrase: str) -> set[Path]:
+    def _fallback_search_files(self, phrase: str) -> set[Path]:
         """
-        Fallback search method when ripgrep is not available.
+        Fallback search method when ripgrep is not available - returns only file paths.
         
         Args:
             phrase: Search phrase
@@ -534,3 +604,45 @@ class FileService:
                 continue
         
         return matches
+    
+    def _fallback_search_with_snippets(
+        self, 
+        file_paths: set[Path], 
+        phrases: List[str]
+    ) -> Dict[Path, List[Dict[str, Union[int, str]]]]:
+        """
+        Fallback method to extract snippets when ripgrep is not available.
+        
+        Args:
+            file_paths: Set of file paths to search in
+            phrases: List of search phrases
+            
+        Returns:
+            Dict: Mapping of file paths to list of snippets
+        """
+        results = {}
+        combined_pattern = '|'.join([p.lower() for p in phrases])
+        
+        for file_path in file_paths:
+            snippets = []
+            try:
+                # Read file and search for matches
+                lines = file_path.read_text(encoding='utf-8').split('\n')
+                for line_num, line_content in enumerate(lines, start=1):
+                    line_lower = line_content.lower()
+                    # Check if any phrase matches
+                    if any(phrase.lower() in line_lower for phrase in phrases):
+                        snippets.append({
+                            "line_number": line_num,
+                            "content": line_content.strip()
+                        })
+                        # Limit to 3 matches
+                        if len(snippets) >= 3:
+                            break
+            except (UnicodeDecodeError, PermissionError):
+                # Skip files we can't read
+                pass
+            
+            results[file_path] = snippets
+        
+        return results

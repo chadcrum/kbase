@@ -46,10 +46,17 @@ class FileTreeNode(BaseModel):
     modified: Optional[int] = None
 
 
+class Snippet(BaseModel):
+    """Model for a search result snippet."""
+    line_number: int
+    content: str
+
+
 class SearchResult(BaseModel):
     """Model for a single search result."""
     path: str
     name: str
+    snippets: List[Snippet] = []
 
 
 class SearchResponse(BaseModel):

@@ -71,7 +71,7 @@ vault/                           # Mounted Docker volume
 - `DELETE /directories/{path}` - Delete directory
 - `POST /directories/{path}/move` - Move directory
 - `POST /directories/{path}/copy` - Copy directory
-- `POST /search` - Omni-search (content, fuzzy)
+- `GET /notes/search/` - Omni-search (content, fuzzy, with snippets)
 - `GET /config` - Get public config settings
 
 **WebSocket Endpoint** (`/ws`):
@@ -114,10 +114,14 @@ vault/                           # Mounted Docker volume
 - Attachment management
 - Integrates with DatabaseService for metadata caching
 
-**SearchService** (`backend/app/services/search_service.py`):
+**SearchService** (integrated in `backend/app/services/file_service.py`):
 
-- Execute ripgrep for content search
-- Database-backed search for improved performance
+- Execute ripgrep for content search with line numbers
+- Returns up to 3 matching lines per file with snippets
+- Fuzzy, case-insensitive search across file content and filenames
+- All space-separated phrases in query must match
+- Combines filename matching with content search
+- Fallback to Python-based search when ripgrep unavailable
 
 **FileWatcher** (`backend/app/services/file_watcher.py`):
 
@@ -186,6 +190,7 @@ frontend/src/
   - `ConfirmDialog.vue`: Reusable confirmation modal for destructive actions
   - `InputDialog.vue`: Reusable input dialog with validation for user text input
   - `ContextMenu.vue`: Right-click context menu with customizable items
+  - `OmniSearch.vue`: Modal search interface with content snippets and line numbers
 
 **State Management (Pinia)**:
 
@@ -209,6 +214,15 @@ frontend/src/
 **Key Features** (Current MVP):
 
 - **Authentication**: JWT-based login with password protection
+- **Omni Search**: Fast, comprehensive search across all notes
+  - **Modal Interface**: Keyboard-activated search modal (Ctrl+K / Cmd+K)
+  - **Content Snippets**: Shows up to 3 matching lines per file with line numbers
+  - **Fuzzy Search**: Case-insensitive, flexible matching
+  - **Multi-phrase Search**: All space-separated phrases must match
+  - **File & Content Search**: Searches both filenames and file contents
+  - **Real-time Results**: Debounced search with instant visual feedback
+  - **Line Numbers**: Monospace-formatted snippets show exact match locations
+  - **Performance**: Uses ripgrep for fast search, limited to 50 results
 - **File Explorer**: Advanced file management with full CRUD operations
   - Hierarchical tree view with expand/collapse functionality
     - **Default Expansion**: Vault root is auto-expanded to show first-level items by default
@@ -263,7 +277,7 @@ frontend/src/
 
 **Future Features**:
 
-- **Omni Search**: Modal (Ctrl+K), filters as you type
+- **Search Enhancements**: Syntax highlighting in snippets, more advanced filtering
 - **Performance Optimized**: Handles large vaults (4000+ files) with lazy loading
 - **Conflict Resolution**: Modal on save conflict with diff view
 - **Image Paste**: Intercept paste events, upload to backend, insert markdown

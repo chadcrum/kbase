@@ -32,6 +32,16 @@
               <div class="result-info">
                 <div class="result-name">{{ result.name }}</div>
                 <div class="result-path">{{ result.path }}</div>
+                <div v-if="result.snippets && result.snippets.length > 0" class="result-snippets">
+                  <div
+                    v-for="snippet in result.snippets"
+                    :key="`${result.path}-${snippet.line_number}`"
+                    class="snippet-line"
+                  >
+                    <span class="snippet-line-number">{{ snippet.line_number }}</span>
+                    <span class="snippet-content">{{ snippet.content }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -263,6 +273,42 @@ const handleBackdropClick = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 0.125rem;
+}
+
+.result-snippets {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.snippet-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  background: #f8fafc;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border-left: 2px solid #e0e7ff;
+}
+
+.snippet-line-number {
+  color: #94a3b8;
+  font-weight: 600;
+  min-width: 2.5rem;
+  text-align: right;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.snippet-content {
+  color: #475569;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .no-results {

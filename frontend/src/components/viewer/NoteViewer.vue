@@ -8,6 +8,7 @@
         :view-mode="viewMode"
         :save-status="saveStatus"
         @update:view-mode="viewMode = $event"
+        @open-search="handleOpenSearch"
       />
       
       <!-- Monaco Editor View -->
@@ -54,6 +55,11 @@ import { useVaultStore } from '@/stores/vault'
 import ViewerToolbar from './ViewerToolbar.vue'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
 import TipTapEditor from '@/components/editor/TipTapEditor.vue'
+
+// Emits
+const emit = defineEmits<{
+  'openSearch': []
+}>()
 
 // Store
 const vaultStore = useVaultStore()
@@ -142,6 +148,10 @@ const handleRetry = () => {
   if (selectedNote.value) {
     vaultStore.loadNote(selectedNote.value.path)
   }
+}
+
+const handleOpenSearch = () => {
+  emit('openSearch')
 }
 </script>
 

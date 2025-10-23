@@ -1,8 +1,8 @@
 """Notes API endpoints."""
 
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from app.core.auth import get_current_user
@@ -46,6 +46,18 @@ class FileTreeNode(BaseModel):
     modified: Optional[int] = None
 
 
+class SearchResult(BaseModel):
+    """Model for a single search result."""
+    path: str
+    name: str
+
+
+class SearchResponse(BaseModel):
+    """Response model for search results."""
+    results: List[SearchResult]
+    total: int
+
+
 @router.get("/", response_model=FileTreeNode)
 async def list_notes(current_user: str = Depends(get_current_user)):
     """
@@ -60,6 +72,35 @@ async def list_notes(current_user: str = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list notes: {str(e)}"
+        )
+
+
+@router.get("/search/", response_model=SearchResponse)
+async def search_notes(
+    q: str = Query(..., description="Search query (space-separated phrases)"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of results"),
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Search for notes by content and filename.
+    
+    All space-separated phrases in the query must match somewhere in the file
+    (either in content or filename). Search is case-insensitive and supports
+    fuzzy/partial matching.
+    
+    Args:
+        q: Search query (space-separated phrases)
+        limit: Maximum number of results to return (1-100, default 50)
+        
+    Returns:
+        SearchResponse: List of matching files and total count
+    """
+    try:
+        return file_service.search_notes(q, limit)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Search failed: {str(e)}"
         )
 
 

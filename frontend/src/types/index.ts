@@ -56,3 +56,13 @@ export interface ApiError {
   detail: string
 }
 
+export interface SearchResult {
+  path: string
+  name: string
+}
+
+export interface SearchResponse {
+  results: SearchResult[]
+  total: number
+}
+

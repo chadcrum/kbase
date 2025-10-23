@@ -18,6 +18,11 @@
     </div>
     
     <div class="toolbar-right">
+      <button class="search-btn" @click="openSearch" title="Search (Ctrl+P)">
+        <span class="search-icon">🔍</span>
+        <span class="search-text">Search</span>
+      </button>
+      
       <div v-if="saveStatus" class="save-status" :class="saveStatus">
         <span v-if="saveStatus === 'saving'" class="status-icon spinner">⏳</span>
         <span v-else-if="saveStatus === 'saved'" class="status-icon">✓</span>
@@ -47,12 +52,17 @@ const props = withDefaults(defineProps<Props>(), {
 // Emits
 const emit = defineEmits<{
   'update:viewMode': [mode: 'editor' | 'wysiwyg']
+  'openSearch': []
 }>()
 
 // Methods
 const toggleViewMode = () => {
   const newMode = props.viewMode === 'editor' ? 'wysiwyg' : 'editor'
   emit('update:viewMode', newMode)
+}
+
+const openSearch = () => {
+  emit('openSearch')
 }
 
 // Computed
@@ -157,7 +167,46 @@ const saveStatusText = computed(() => {
   flex: 0 0 auto;
   min-width: 120px;
   display: flex;
+  align-items: center;
+  gap: 0.75rem;
   justify-content: flex-end;
+}
+
+.search-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #667eea;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.search-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.search-btn:active {
+  transform: scale(0.98);
+}
+
+.search-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.search-text {
+  font-size: 0.875rem;
+  white-space: nowrap;
 }
 
 .save-status {

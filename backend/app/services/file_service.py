@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
@@ -365,3 +366,171 @@ class FileService:
             "message": "Note copied successfully",
             "path": f"/{normalized_path}"
         }
+    
+    def search_notes(self, query: str, limit: int = 50) -> Dict[str, Union[List[Dict[str, str]], int]]:
+        """
+        Search for notes by content and filename using ripgrep.
+        
+        The search is fuzzy and case-insensitive. All space-separated phrases in the query
+        must match somewhere in the file (either in content or filename).
+        
+        Args:
+            query: Search query (space-separated phrases)
+            limit: Maximum number of results to return
+            
+        Returns:
+            Dict: Search results with list of matching files and total count
+        """
+        if not query or not query.strip():
+            return {"results": [], "total": 0}
+        
+        # Split query into phrases (by spaces, ignoring multiple spaces)
+        phrases = [p for p in query.split() if p.strip()]
+        
+        if not phrases:
+            return {"results": [], "total": 0}
+        
+        # Find files matching all phrases using ripgrep
+        matching_files = self._search_with_ripgrep(phrases)
+        
+        # Limit results
+        limited_files = list(matching_files)[:limit]
+        
+        # Build result structure
+        results = []
+        for file_path in limited_files:
+            # Get relative path from vault root
+            try:
+                rel_path = file_path.relative_to(self.vault_path.resolve())
+                results.append({
+                    "path": f"/{rel_path}",
+                    "name": file_path.name
+                })
+            except ValueError:
+                # Skip files outside vault (shouldn't happen due to validation)
+                continue
+        
+        return {
+            "results": results,
+            "total": len(results)
+        }
+    
+    def _search_with_ripgrep(self, phrases: List[str]) -> set[Path]:
+        """
+        Use ripgrep to find files matching all phrases.
+        
+        A file matches if all phrases are found somewhere in the file content or filename.
+        
+        Args:
+            phrases: List of search phrases (all must match)
+            
+        Returns:
+            set: Set of matching file paths
+        """
+        # Start with all markdown files in the vault
+        all_matches = None
+        
+        for phrase in phrases:
+            # Search for this phrase in file contents AND filenames
+            phrase_matches = set()
+            
+            try:
+                # Search file contents with ripgrep (case-insensitive)
+                result = subprocess.run(
+                    [
+                        'rg',
+                        '-i',  # case insensitive
+                        '-l',  # list files only
+                        '--type-add', 'md:*.md',
+                        '--type-add', 'md:*.markdown',
+                        '--type', 'md',
+                        phrase
+                    ],
+                    cwd=str(self.vault_path),
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                
+                # Parse ripgrep output (one filename per line)
+                if result.returncode == 0 and result.stdout.strip():
+                    for line in result.stdout.strip().split('\n'):
+                        if line:
+                            file_path = self.vault_path / line.strip()
+                            if file_path.exists() and file_path.is_file():
+                                phrase_matches.add(file_path)
+                
+                # Also search filenames using ripgrep --files with case-insensitive glob
+                # This is much faster than Python's rglob
+                files_result = subprocess.run(
+                    [
+                        'rg',
+                        '--files',
+                        '--type-add', 'md:*.md',
+                        '--type-add', 'md:*.markdown',
+                        '--type', 'md',
+                        '--iglob', f'*{phrase}*'  # case-insensitive glob for filename matching
+                    ],
+                    cwd=str(self.vault_path),
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                
+                # Add matching files
+                if files_result.returncode == 0 and files_result.stdout.strip():
+                    for line in files_result.stdout.strip().split('\n'):
+                        if line:
+                            file_path = self.vault_path / line.strip()
+                            if file_path.exists() and file_path.is_file():
+                                phrase_matches.add(file_path)
+            
+            except subprocess.TimeoutExpired:
+                # If ripgrep times out, continue with what we have
+                pass
+            except FileNotFoundError:
+                # ripgrep not installed, fall back to basic search
+                phrase_matches = self._fallback_search(phrase)
+            
+            # Intersect with previous matches (all phrases must match)
+            if all_matches is None:
+                all_matches = phrase_matches
+            else:
+                all_matches = all_matches.intersection(phrase_matches)
+            
+            # Early exit if no matches
+            if not all_matches:
+                break
+        
+        return all_matches if all_matches else set()
+    
+    def _fallback_search(self, phrase: str) -> set[Path]:
+        """
+        Fallback search method when ripgrep is not available.
+        
+        Args:
+            phrase: Search phrase
+            
+        Returns:
+            set: Set of matching file paths
+        """
+        matches = set()
+        phrase_lower = phrase.lower()
+        
+        # Search all markdown files
+        for md_file in self.vault_path.rglob('*.md'):
+            try:
+                # Check filename
+                if phrase_lower in md_file.name.lower():
+                    matches.add(md_file)
+                    continue
+                
+                # Check content
+                content = md_file.read_text(encoding='utf-8').lower()
+                if phrase_lower in content:
+                    matches.add(md_file)
+            except (UnicodeDecodeError, PermissionError):
+                # Skip files we can't read
+                continue
+        
+        return matches

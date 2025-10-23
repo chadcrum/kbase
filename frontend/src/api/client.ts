@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError } from 'axios'
-import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteData } from '@/types'
+import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteData, SearchResponse } from '@/types'
 
 export class ApiClient {
   private client: AxiosInstance
@@ -69,6 +69,13 @@ export class ApiClient {
   // Notes API
   async getNotes(): Promise<FileTreeNode> {
     const response: AxiosResponse<FileTreeNode> = await this.client.get('/notes/')
+    return response.data
+  }
+
+  async searchNotes(query: string, limit: number = 50): Promise<SearchResponse> {
+    const response: AxiosResponse<SearchResponse> = await this.client.get('/notes/search/', {
+      params: { q: query, limit }
+    })
     return response.data
   }
 

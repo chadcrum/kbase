@@ -1,8 +1,13 @@
 <template>
   <div class="viewer-toolbar">
     <div class="toolbar-left">
-      <h2 class="file-name">{{ fileName }}</h2>
-      <span v-if="filePath" class="file-path">{{ filePath }}</span>
+      <button class="sidebar-toggle-btn" @click="toggleSidebar" :title="sidebarToggleTitle">
+        <span class="toggle-icon">{{ sidebarToggleIcon }}</span>
+      </button>
+      <div class="file-info">
+        <h2 class="file-name">{{ fileName }}</h2>
+        <span v-if="filePath" class="file-path">{{ filePath }}</span>
+      </div>
     </div>
     
     <div class="toolbar-center">
@@ -35,6 +40,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useVaultStore } from '@/stores/vault'
+
+// Store
+const vaultStore = useVaultStore()
 
 // Props
 interface Props {
@@ -65,6 +74,10 @@ const openSearch = () => {
   emit('openSearch')
 }
 
+const toggleSidebar = () => {
+  vaultStore.toggleSidebar()
+}
+
 // Computed
 const saveStatusText = computed(() => {
   switch (props.saveStatus) {
@@ -77,6 +90,14 @@ const saveStatusText = computed(() => {
     default:
       return ''
   }
+})
+
+const sidebarToggleIcon = computed(() => {
+  return vaultStore.isSidebarCollapsed ? '»' : '«'
+})
+
+const sidebarToggleTitle = computed(() => {
+  return vaultStore.isSidebarCollapsed ? 'Show Sidebar' : 'Hide Sidebar'
 })
 </script>
 
@@ -93,6 +114,47 @@ const saveStatusText = computed(() => {
 }
 
 .toolbar-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sidebar-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #667eea;
+  font-size: 1.25rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-toggle-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.sidebar-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.toggle-icon {
+  line-height: 1;
+  font-weight: bold;
+}
+
+.file-info {
   flex: 1;
   min-width: 0;
   display: flex;

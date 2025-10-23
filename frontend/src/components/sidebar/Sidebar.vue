@@ -50,6 +50,13 @@ onMounted(() => {
   border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
+  transition: margin-left 0.3s ease, opacity 0.3s ease;
+  flex-shrink: 0;
+}
+
+.sidebar.collapsed {
+  margin-left: -300px;
+  opacity: 0;
 }
 
 .sidebar-content {

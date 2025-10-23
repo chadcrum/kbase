@@ -22,6 +22,9 @@ export const useVaultStore = defineStore('vault', () => {
   // Sort state - load from localStorage
   const sortBy = ref<SortBy>((localStorage.getItem(SORT_BY_KEY) as SortBy) || 'name')
   const sortOrder = ref<SortOrder>((localStorage.getItem(SORT_ORDER_KEY) as SortOrder) || 'asc')
+  
+  // Sidebar visibility state
+  const isSidebarCollapsed = ref(false)
 
   // Getters
   const hasError = computed(() => error.value !== null)
@@ -360,6 +363,11 @@ export const useVaultStore = defineStore('vault', () => {
 
   const hasExpandedPaths = computed(() => expandedPaths.value.size > 0)
 
+  // Sidebar actions
+  const toggleSidebar = () => {
+    isSidebarCollapsed.value = !isSidebarCollapsed.value
+  }
+
   return {
     // State
     fileTree,
@@ -371,6 +379,7 @@ export const useVaultStore = defineStore('vault', () => {
     saveError,
     sortBy,
     sortOrder,
+    isSidebarCollapsed,
     // Getters
     hasError,
     isNoteSelected,
@@ -403,7 +412,9 @@ export const useVaultStore = defineStore('vault', () => {
     setSortOrder,
     toggleSortOrder,
     // Collapse all action
-    collapseAll
+    collapseAll,
+    // Sidebar actions
+    toggleSidebar
   }
 })
 

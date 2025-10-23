@@ -108,8 +108,8 @@ onMounted(async () => {
 
 // Watch for external content changes (from TipTap or parent component)
 watch(() => props.modelValue, (newValue) => {
-  // Skip if disabled or no editor
-  if (!editor || props.disabled) return
+  // Skip if no editor
+  if (!editor) return
 
   const currentValue = editor.getValue()
   // Only update if content actually changed

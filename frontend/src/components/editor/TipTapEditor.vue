@@ -278,8 +278,8 @@ const editor = useEditor({
 
 // Watch for external content changes (from Monaco editor or parent component)
 watch(() => props.modelValue, async (newValue) => {
-  // Skip if disabled or no editor
-  if (!editor.value || props.disabled) return
+  // Skip if no editor
+  if (!editor.value) return
 
   // Get current editor content as markdown
   const currentMarkdown = editorToMarkdown(editor.value.state.doc)

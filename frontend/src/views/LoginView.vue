@@ -1,5 +1,6 @@
 <template>
   <div class="login-container">
+    <BackendWarning />
     <div class="login-card">
       <h1 class="login-title">KBase</h1>
       <p class="login-subtitle">Sign in to access your notes</p>
@@ -54,6 +55,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import BackendWarning from '@/components/common/BackendWarning.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

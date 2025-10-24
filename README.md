@@ -38,6 +38,14 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Performance Optimized**: Handles large vaults (4000+ files) efficiently with database caching
 - **Lazy Loading**: Initial display of 100 files with "Show More" option
 
+### Backend Health Monitoring
+- **Connection Status**: Real-time monitoring of backend server connectivity
+- **Warning Banner**: Dismissible warning banner when backend is unreachable
+- **Auto-Detection**: Automatically detects network errors vs authentication errors
+- **Manual Retry**: Retry button to test connection immediately
+- **Smart Dismissal**: Auto-dismisses when backend reconnects, reappears on new failures
+- **Cross-Platform**: Works on both login screen and main editor interface
+
 ## Quick Start
 
 ### Prerequisites

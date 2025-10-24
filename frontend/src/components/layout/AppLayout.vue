@@ -1,5 +1,6 @@
 <template>
   <div class="app-layout">
+    <BackendWarning />
     <Sidebar :class="{ 'collapsed': vaultStore.isSidebarCollapsed }" />
     <main class="main-content">
       <slot />
@@ -10,6 +11,7 @@
 <script setup lang="ts">
 import { useVaultStore } from '@/stores/vault'
 import Sidebar from '@/components/sidebar/Sidebar.vue'
+import BackendWarning from '@/components/common/BackendWarning.vue'
 
 const vaultStore = useVaultStore()
 </script>

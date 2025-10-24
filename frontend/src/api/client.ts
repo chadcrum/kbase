@@ -4,6 +4,7 @@ import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteDat
 export class ApiClient {
   private client: AxiosInstance
   private token: string | null = null
+  private healthCallback: ((isOnline: boolean) => void) | null = null
 
   constructor(baseURL: string = import.meta.env.VITE_API_URL || 'http://localhost:8000') {
     this.client = axios.create({
@@ -21,17 +22,37 @@ export class ApiClient {
       this.setAuthToken(storedToken)
     }
 
-    // Setup response interceptor to handle 401 errors
+    // Setup response interceptor to handle 401 errors and network issues
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // Mark backend as online on successful response
+        this.healthCallback?.(true)
+        return response
+      },
       (error: AxiosError) => {
-        if (error.response?.status === 401) {
+        // Check if it's a network error (backend down)
+        const isNetworkError = !error.response || 
+          error.code === 'ECONNREFUSED' || 
+          error.code === 'ENOTFOUND' ||
+          error.code === 'ETIMEDOUT' ||
+          error.message?.includes('Network Error') ||
+          error.message?.includes('timeout')
+        
+        if (isNetworkError) {
+          // Mark backend as offline
+          this.healthCallback?.(false)
+        } else if (error.response?.status === 401) {
+          // Auth error - backend is up but token is invalid
+          this.healthCallback?.(true)
           // Clear auth state
           this.logout()
           // Only redirect if not already on login page
           if (window.location.pathname !== '/login') {
             window.location.href = '/login'
           }
+        } else {
+          // Other errors - assume backend is online
+          this.healthCallback?.(true)
         }
         return Promise.reject(error)
       }
@@ -69,6 +90,11 @@ export class ApiClient {
 
   isAuthenticated(): boolean {
     return this.token !== null
+  }
+
+  // Health monitoring
+  setHealthCallback(callback: (isOnline: boolean) => void): void {
+    this.healthCallback = callback
   }
 
   // Notes API

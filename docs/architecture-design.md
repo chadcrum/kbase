@@ -123,6 +123,37 @@ vault/                           # Mounted Docker volume
 7. If token is invalid/expired, user is redirected to login
 8. On logout (via logout button in ViewerToolbar), token is removed from localStorage, auth state is cleared, and user is redirected to login page
 
+**Backend Health Monitoring**:
+
+The application includes comprehensive backend connectivity monitoring to provide user feedback when the backend server is unavailable.
+
+**Health Check System** (`frontend/src/composables/useBackendHealth.ts`):
+- Monitors backend connectivity status in real-time
+- Distinguishes between network errors (backend down) and authentication errors (backend up, invalid token)
+- Tracks dismissal state to prevent immediate re-showing of warnings
+- Provides manual retry functionality for connection testing
+- Auto-dismisses warnings when backend comes back online
+
+**API Client Integration** (`frontend/src/api/client.ts`):
+- Response interceptor detects network errors (ECONNREFUSED, ENOTFOUND, ETIMEDOUT, etc.)
+- Automatically marks backend as offline for network errors
+- Preserves authentication error handling for 401 responses
+- Updates health status on successful API responses
+
+**Warning Banner Component** (`frontend/src/components/common/BackendWarning.vue`):
+- Fixed position banner at top of page with warning styling (amber/orange theme)
+- Shows "Cannot connect to backend server" message with retry button
+- Dismissible with X button (stores dismissal timestamp)
+- Auto-hides when backend reconnects
+- Reappears on next failed request after dismissal (5-second cooldown)
+- Responsive design for mobile and desktop
+
+**Integration Points**:
+- **Login View**: Shows warning if backend is unreachable during login attempts
+- **Main Editor (AppLayout)**: Monitors backend health during normal operation
+- **Separate from Auth Errors**: Backend warnings don't replace login-specific error messages
+- **Immediate Detection**: Health check runs on page load and during API calls
+
 **Logout Button**:
 
 - Located in the ViewerToolbar at the top right of the application

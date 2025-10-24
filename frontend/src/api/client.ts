@@ -15,9 +15,10 @@ export class ApiClient {
     })
 
     // Load token from localStorage on initialization
-    this.token = localStorage.getItem('kbase_token')
-    if (this.token) {
-      this.setAuthToken(this.token)
+    const storedToken = localStorage.getItem('kbase_token')
+    if (storedToken) {
+      this.token = storedToken
+      this.setAuthToken(storedToken)
     }
 
     // Setup response interceptor to handle 401 errors
@@ -25,8 +26,12 @@ export class ApiClient {
       (response) => response,
       (error: AxiosError) => {
         if (error.response?.status === 401) {
+          // Clear auth state
           this.logout()
-          window.location.href = '/login'
+          // Only redirect if not already on login page
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login'
+          }
         }
         return Promise.reject(error)
       }

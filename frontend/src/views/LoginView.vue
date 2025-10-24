@@ -20,6 +20,19 @@
           />
         </div>
         
+        <div class="form-checkbox">
+          <input
+            id="remember-me"
+            v-model="rememberMe"
+            type="checkbox"
+            class="checkbox-input"
+            :disabled="isLoading"
+          />
+          <label for="remember-me" class="checkbox-label">
+            Remember me for 30 days
+          </label>
+        </div>
+        
         <div v-if="hasError" class="error-message">
           {{ error }}
         </div>
@@ -47,6 +60,7 @@ const authStore = useAuthStore()
 
 // Reactive state
 const password = ref('')
+const rememberMe = ref(false)
 
 // Computed properties
 const isLoading = computed(() => authStore.isLoading)
@@ -58,7 +72,10 @@ const handleLogin = async () => {
   if (!password.value.trim()) return
 
   authStore.clearError()
-  const success = await authStore.login({ password: password.value })
+  const success = await authStore.login({ 
+    password: password.value,
+    remember_me: rememberMe.value
+  })
   
   if (success) {
     router.push('/')
@@ -121,6 +138,31 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-input {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.checkbox-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkbox-label {
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
 }
 
 .form-label {

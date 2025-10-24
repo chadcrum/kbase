@@ -6,7 +6,56 @@ This document provides detailed information about all available API endpoints in
 All API endpoints are prefixed with `/api/v1/`
 
 ## Authentication
-All endpoints (except login) require authentication via JWT token in cookies.
+All endpoints (except login) require authentication via JWT token in the Authorization header using Bearer scheme.
+
+### Authentication Endpoints (`/api/v1/auth/`)
+
+#### Login
+- **POST** `/login`
+- **Description**: Authenticate and receive a JWT access token
+- **Request Body**:
+```json
+{
+  "password": "your-password",
+  "remember_me": false
+}
+```
+- **Parameters**:
+  - `password` (required): The authentication password
+  - `remember_me` (optional): If true, extends token expiration to 30 days (default: 7 days)
+- **Response**:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+- **Status Codes**: 
+  - 200 (success)
+  - 401 (incorrect password)
+- **Notes**:
+  - Default token expiration: 7 days
+  - With `remember_me=true`: 30 days
+  - Token must be included in subsequent requests via `Authorization: Bearer <token>` header
+  - Token is stored in localStorage by the frontend for persistent sessions
+
+#### Verify Token
+- **GET** `/verify`
+- **Description**: Verify if the current JWT token is valid
+- **Headers**: 
+  - `Authorization: Bearer <token>`
+- **Response**:
+```json
+{
+  "valid": true
+}
+```
+- **Status Codes**: 
+  - 200 (valid token)
+  - 401 (invalid/expired token)
+- **Notes**:
+  - Used by frontend on app initialization to restore session
+  - Automatically called on page refresh to maintain login state
 
 ## Notes API (`/api/v1/notes/`)
 

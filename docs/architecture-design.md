@@ -88,12 +88,40 @@ vault/                           # Mounted Docker volume
 - Plain text password verification (suitable for personal use)
 - Bearer token authentication scheme
 - FastAPI dependency injection for route protection
+- Configurable token expiration (default: 7 days, extended to 30 days with "Remember Me")
 
 **Auth Endpoints** (`backend/app/api/v1/endpoints/auth.py`):
 
 - `POST /api/v1/auth/login` - Authenticate with password, return JWT token
+  - Accepts optional `remember_me` flag for extended token expiration
+  - Default token expiration: 7 days (10,080 minutes)
+  - With `remember_me=true`: 30 days token expiration
 - `GET /api/v1/auth/verify` - Verify token validity
 - All other endpoints require valid JWT token in Authorization header
+
+**Persistent Session Management**:
+
+- JWT tokens stored in browser localStorage for persistent sessions
+- Token automatically loaded on app initialization
+- Token verification on first navigation to restore session state
+- Automatic logout on token expiration (401 response)
+- Router guard prevents multiple auth initializations
+- Session persists across:
+  - Page refreshes
+  - Browser restarts
+  - New tabs/windows (same browser)
+  - Until token expiration or explicit logout
+
+**Frontend Authentication Flow**:
+
+1. User logs in with password and optional "Remember Me" checkbox
+2. Backend returns JWT token with appropriate expiration (7 or 30 days)
+3. Frontend stores token in localStorage (`kbase_token` key)
+4. API client automatically attaches token to all requests
+5. On app load, router guard calls `initializeAuth()` to verify stored token
+6. If token is valid, user is authenticated automatically
+7. If token is invalid/expired, user is redirected to login
+8. On logout, token is removed from localStorage and auth state is cleared
 
 ### 4. Core Backend Services
 
@@ -323,7 +351,7 @@ The application uses Pydantic Settings for type-safe configuration management wi
 **Optional Environment Variables**:
 - `HOST` - Server host (default: `0.0.0.0`)
 - `PORT` - Server port (default: `8000`)
-- `ACCESS_TOKEN_EXPIRE_MINUTES` - Token expiration time (default: `30`)
+- `ACCESS_TOKEN_EXPIRE_MINUTES` - Token expiration time (default: `10080` = 7 days)
 - `ALGORITHM` - JWT signing algorithm (default: `HS256`)
 - `APP_NAME` - Application name (default: `KBase`)
 - `APP_VERSION` - Application version (default: `0.1.0`)
@@ -598,11 +626,18 @@ The file explorer provides comprehensive file and directory management through a
    - Checks for `../` and `..\\` patterns to prevent directory traversal
    - Allows absolute paths starting with `/` within the vault scope
    - Uses `os.path.commonpath()` to verify paths remain within vault boundaries
-2. **JWT Security**: Bearer tokens stored in localStorage, 30-minute expiry
+2. **JWT Security**: 
+   - Bearer tokens stored in browser localStorage
+   - Default token expiration: 7 days (10,080 minutes)
+   - Extended expiration with "Remember Me": 30 days
+   - Tokens automatically verified on app initialization
+   - Expired tokens trigger automatic logout and redirect to login
+   - Suitable for personal use; consider httpOnly cookies for multi-user environments
 3. **Password Security**: Plain text storage in environment variables (suitable for personal use)
 4. **File Upload**: Validate image types, size limits, sanitize filenames
 5. **CORS**: Configure properly for frontend-backend communication
 6. **Token Validation**: All protected endpoints validate JWT tokens
+7. **Session Persistence**: Tokens persist across page refreshes and browser restarts until expiration
 
 ## PWA Features
 

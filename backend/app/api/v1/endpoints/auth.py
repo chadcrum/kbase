@@ -1,5 +1,7 @@
 """Authentication API endpoints."""
 
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
@@ -11,6 +13,7 @@ router = APIRouter()
 class LoginRequest(BaseModel):
     """Request model for login."""
     password: str
+    remember_me: bool = False
 
 
 class LoginResponse(BaseModel):
@@ -30,7 +33,7 @@ async def login(login_request: LoginRequest):
     Authenticate user and return JWT token.
     
     Args:
-        login_request: Login credentials with password
+        login_request: Login credentials with password and optional remember_me flag
         
     Returns:
         LoginResponse: JWT access token and type
@@ -46,8 +49,14 @@ async def login(login_request: LoginRequest):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Create access token
-    access_token = create_access_token(data={"sub": "user"})
+    # Create access token with custom expiration if remember_me is enabled
+    # Default: 7 days, Remember Me: 30 days
+    if login_request.remember_me:
+        expires_delta = timedelta(days=30)
+    else:
+        expires_delta = None  # Use default from settings (7 days)
+    
+    access_token = create_access_token(data={"sub": "user"}, expires_delta=expires_delta)
     
     return LoginResponse(
         access_token=access_token,

@@ -466,6 +466,12 @@ onBeforeUnmount(() => {
   line-height: 1.6;
 }
 
+/* Strikethrough for checked task items */
+:deep(.tiptap ul[data-type="taskList"] li[data-checked="true"] > div) {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
 /* Nested task lists */
 :deep(.tiptap ul[data-type="taskList"] ul[data-type="taskList"]) {
   margin-left: 1.5rem;

@@ -27,16 +27,24 @@
         <span class="search-icon">🔍</span>
         <span class="search-text">Search</span>
       </button>
+      <button class="logout-btn" @click="handleLogout" title="Logout">
+        <span class="logout-icon">🚪</span>
+        <span class="logout-text">Logout</span>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useVaultStore } from '@/stores/vault'
+import { useAuthStore } from '@/stores/auth'
 
 // Store
 const vaultStore = useVaultStore()
+const authStore = useAuthStore()
+const router = useRouter()
 
 // Props
 interface Props {
@@ -67,6 +75,11 @@ const openSearch = () => {
 
 const toggleSidebar = () => {
   vaultStore.toggleSidebar()
+}
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
 }
 
 // Computed
@@ -205,7 +218,7 @@ const sidebarToggleTitle = computed(() => {
 
 .toolbar-right {
   flex: 0 0 auto;
-  min-width: 120px;
+  min-width: 220px;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -245,6 +258,43 @@ const sidebarToggleTitle = computed(() => {
 }
 
 .search-text {
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #667eea;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.logout-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.logout-btn:active {
+  transform: scale(0.98);
+}
+
+.logout-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.logout-text {
   font-size: 0.875rem;
   white-space: nowrap;
 }

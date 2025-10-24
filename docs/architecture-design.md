@@ -121,7 +121,16 @@ vault/                           # Mounted Docker volume
 5. On app load, router guard calls `initializeAuth()` to verify stored token
 6. If token is valid, user is authenticated automatically
 7. If token is invalid/expired, user is redirected to login
-8. On logout, token is removed from localStorage and auth state is cleared
+8. On logout (via logout button in ViewerToolbar), token is removed from localStorage, auth state is cleared, and user is redirected to login page
+
+**Logout Button**:
+
+- Located in the ViewerToolbar at the top right of the application
+- Positioned to the right of the Search button
+- Icon-based button with door emoji (🚪) and "Logout" text
+- Styled consistently with other toolbar buttons (white background, purple hover effect)
+- On click, triggers `authStore.logout()` and redirects to `/login` route
+- Provides easy access to logout functionality from anywhere in the application
 
 ### 4. Core Backend Services
 
@@ -206,7 +215,7 @@ frontend/src/
   - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting
   - `TipTapEditor.vue`: TipTap WYSIWYG markdown editor with auto-save and rich text features
   - `TipTapToolbar.vue`: Rich formatting toolbar for TipTap with buttons for bold, italic, headings, lists, code blocks, etc.
-  - `ViewerToolbar.vue`: Toolbar with icon-based view mode toggle and save status
+  - `ViewerToolbar.vue`: Toolbar with icon-based view mode toggle, search button, logout button, and save status
   - `NoteViewer.vue`: Orchestrates dual-editor system with bidirectional sync
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout

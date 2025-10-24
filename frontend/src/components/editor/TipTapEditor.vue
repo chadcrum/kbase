@@ -445,7 +445,7 @@ onBeforeUnmount(() => {
 :deep(.tiptap ul[data-type="taskList"] li) {
   display: flex;
   align-items: center;
-  margin: 0.25em 0;
+  margin: 0.05em 0;
 }
 
 :deep(.tiptap ul[data-type="taskList"] li > label) {

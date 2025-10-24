@@ -42,7 +42,7 @@
       <span v-else class="node-name" @dblclick="startRename">{{ node.name }}</span>
       
       <!-- Item count for directories -->
-      <span v-if="node.type === 'directory' && itemCount > 0" class="item-count">({{ itemCount }})</span>
+      <span v-if="node.type === 'directory' && itemCount > 0" class="item-count">{{ itemCount }}</span>
     </div>
     
     <!-- Children (for directories) -->
@@ -582,7 +582,7 @@ const handleDrop = async (event: DragEvent) => {
 }
 
 .node-name {
-  flex: 1;
+  flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

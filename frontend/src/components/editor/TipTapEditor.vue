@@ -528,7 +528,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.tiptap ul[data-type="taskList"] ul[data-type="taskList"]) {
-  padding-left: 2em; /* Indentation for nested task lists */
+  padding-left: 0.05em; /* Ultra-minimal indent for nested task lists (0.5 space worth) */
 }
 
 /* Target the actual li elements (not data-type="taskItem") */
@@ -579,7 +579,7 @@ onBeforeUnmount(() => {
 :deep(.tiptap ul[data-type="taskList"] li ul) {
   margin-top: 0;
   margin-bottom: 0;
-  padding-left: 1.5em;
+  padding-left: 0.05em; /* Ultra-minimal indent for nested task lists */
 }
 
 /* Ultra-tight vertical spacing for list items */

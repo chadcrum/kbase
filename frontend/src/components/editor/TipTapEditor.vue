@@ -536,7 +536,7 @@ onBeforeUnmount(() => {
   position: relative;
   margin: 0;
   padding: 0;
-  padding-left: 20px; /* Space for absolutely positioned checkbox */
+  padding-left: 30px; /* Space for absolutely positioned checkbox */
   min-height: 1.5em;
 }
 
@@ -544,7 +544,7 @@ onBeforeUnmount(() => {
 :deep(.tiptap ul[data-type="taskList"] li > label) {
   position: absolute;
   left: 0;
-  top: 0;
+  top: 6px;
   margin: 0;
   padding: 0;
   width: 20px;
@@ -556,7 +556,7 @@ onBeforeUnmount(() => {
 :deep(.tiptap ul[data-type="taskList"] li > label input[type="checkbox"]) {
   position: absolute;
   left: 0;
-  top: 0;
+  top: 6px;
   margin: 0;
   padding: 0;
   width: 100%;

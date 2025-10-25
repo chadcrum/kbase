@@ -50,41 +50,29 @@ const TabExtension = Extension.create({
   addKeyboardShortcuts() {
     return {
       'Tab': () => {
-        const { state } = this.editor
-        const { selection } = state
-        const { $from } = selection
-        
-        // Check if we're in a list
-        if ($from.parent.type.name === 'listItem' || $from.parent.type.name === 'taskItem') {
-          // Try to sink list items (indent)
-          if (this.editor.commands.sinkListItem('listItem')) {
-            return true
-          }
-          if (this.editor.commands.sinkListItem('taskItem')) {
-            return true
-          }
+        // Try list commands first - they return false if not applicable
+        if (this.editor.commands.sinkListItem('listItem')) {
+          return true
+        }
+        if (this.editor.commands.sinkListItem('taskItem')) {
+          return true
         }
         
-        // If not in a list, insert tab character (4 spaces)
+        // Fallback: insert spaces for regular text
         return this.editor.commands.insertContent('    ')
       },
       'Shift-Tab': () => {
-        const { state } = this.editor
-        const { selection } = state
-        const { $from } = selection
-        
-        // Check if we're in a list
-        if ($from.parent.type.name === 'listItem' || $from.parent.type.name === 'taskItem') {
-          // Try to lift list items (outdent)
-          if (this.editor.commands.liftListItem('listItem')) {
-            return true
-          }
-          if (this.editor.commands.liftListItem('taskItem')) {
-            return true
-          }
+        // Try list commands first - they return false if not applicable
+        if (this.editor.commands.liftListItem('listItem')) {
+          return true
+        }
+        if (this.editor.commands.liftListItem('taskItem')) {
+          return true
         }
         
         // For regular text, remove up to 4 spaces before cursor
+        const { state } = this.editor
+        const { selection } = state
         const { $anchor } = selection
         const textBefore = $anchor.parent.textContent.slice(0, $anchor.parentOffset)
         const match = textBefore.match(/[ ]{1,4}$/)
@@ -517,6 +505,80 @@ onBeforeUnmount(() => {
 /* Strike through */
 :deep(.tiptap s) {
   text-decoration: line-through;
+}
+
+/* List styling for proper nesting and tight spacing */
+:deep(.tiptap ul), :deep(.tiptap ol) {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  padding-left: 1.5em; /* Indentation for nested lists */
+}
+
+:deep(.tiptap li) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Task list specific: SIMPLE approach */
+/* FINAL SOLUTION: Target the actual TipTap DOM structure */
+:deep(.tiptap ul[data-type="taskList"]) {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+:deep(.tiptap ul[data-type="taskList"] ul[data-type="taskList"]) {
+  padding-left: 2em; /* Indentation for nested task lists */
+}
+
+/* Target the actual li elements (not data-type="taskItem") */
+:deep(.tiptap ul[data-type="taskList"] li) {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  padding-left: 20px; /* Space for absolutely positioned checkbox */
+  min-height: 1.5em;
+}
+
+/* Target the actual label elements */
+:deep(.tiptap ul[data-type="taskList"] li > label) {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  vertical-align: top;
+}
+
+:deep(.tiptap ul[data-type="taskList"] li > label input[type="checkbox"]) {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  vertical-align: top;
+}
+
+/* Target the actual div elements */
+:deep(.tiptap ul[data-type="taskList"] li > div) {
+  margin-left: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0;
+  min-height: 1.2em;
+  vertical-align: top;
+}
+
+/* CRITICAL: Prevent nested content from affecting parent positioning */
+:deep(.tiptap ul[data-type="taskList"] li ul) {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 1.5em;
 }
 </style>
 

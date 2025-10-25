@@ -538,13 +538,14 @@ onBeforeUnmount(() => {
   padding: 0;
   padding-left: 30px; /* Space for absolutely positioned checkbox */
   min-height: 1.5em;
+  line-height: 1.1; /* Tight line height */
 }
 
 /* Target the actual label elements */
 :deep(.tiptap ul[data-type="taskList"] li > label) {
   position: absolute;
   left: 0;
-  top: 6px;
+  top: 2px;
   margin: 0;
   padding: 0;
   width: 20px;
@@ -556,7 +557,7 @@ onBeforeUnmount(() => {
 :deep(.tiptap ul[data-type="taskList"] li > label input[type="checkbox"]) {
   position: absolute;
   left: 0;
-  top: 6px;
+  top: 2px;
   margin: 0;
   padding: 0;
   width: 100%;
@@ -579,6 +580,50 @@ onBeforeUnmount(() => {
   margin-top: 0;
   margin-bottom: 0;
   padding-left: 1.5em;
+}
+
+/* Ultra-tight vertical spacing for list items */
+:deep(.tiptap ul[data-type="taskList"] li > div) {
+  line-height: 1.1; /* Tight line height */
+}
+
+/* Target paragraph elements inside list items for ultra-tight spacing */
+:deep(.tiptap ul[data-type="taskList"] li p) {
+  margin: 0;
+  padding: 0;
+  line-height: 1.1;
+}
+
+/* Target any text content inside list items */
+:deep(.tiptap ul[data-type="taskList"] li > div > p) {
+  margin: 0;
+  padding: 0;
+  line-height: 1.1;
+}
+
+/* Tight spacing for bullet and numbered lists (NOT task lists) */
+:deep(.tiptap ul:not([data-type="taskList"]) li) {
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: 1.1;
+}
+
+:deep(.tiptap ol li) {
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: 1.1;
+}
+
+:deep(.tiptap ul:not([data-type="taskList"]) li p) {
+  margin: 0;
+  padding: 0;
+  line-height: 1.1;
+}
+
+:deep(.tiptap ol li p) {
+  margin: 0;
+  padding: 0;
+  line-height: 1.1;
 }
 </style>
 

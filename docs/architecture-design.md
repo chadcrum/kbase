@@ -281,10 +281,28 @@ frontend/src/
     - Track expanded state for UI button disable/enable logic
   - All CRUD operations automatically refresh the file tree and handle selection updates
   - `createNote()` automatically opens newly created files in the editor
+- `themeStore`: Dark mode state management, system preference detection, theme persistence
+  - **Theme State**: `isDarkMode` reactive boolean tracking current theme
+  - **System Preference**: Automatic detection using `matchMedia('prefers-color-scheme: dark')`
+  - **Persistence**: User preference stored in localStorage (`kbase_theme_mode`)
+  - **Actions**: `toggleTheme()`, `setTheme()`, `initializeTheme()`
+  - **System Watcher**: Monitors system preference changes when no user preference exists
+  - **Theme Application**: Applies `data-theme` attribute to document root
+  - **Monaco Integration**: Monaco editor theme matches app theme (vs-dark in dark mode, vs-light in light mode)
+  - **CSS Variables**: Uses CSS custom properties for consistent theming across all components
 
 **Key Features** (Current MVP):
 
 - **Authentication**: JWT-based login with password protection
+- **Dark Mode**: Global dark mode with system preference detection
+  - **System Preference**: Automatically respects OS dark mode preference on first visit
+  - **User Control**: Toggle button in ViewerToolbar (between Search and Logout)
+  - **Persistence**: User preference saved in localStorage across sessions
+  - **System Sync**: Watches system preference changes when no manual override set
+  - **Consistent Theming**: All components use CSS variables for theme switching
+  - **Monaco Editor**: Theme matches app (vs-dark in dark mode, vs-light in light mode)
+  - **Smooth Transitions**: 0.3s ease transitions between theme changes
+  - **Toggle Icons**: Moon icon (🌙) in dark mode, sun icon (☀️) in light mode
 - **Omni Search**: Fast, comprehensive search across all notes
   - **Modal Interface**: Keyboard-activated search modal (Ctrl+K / Cmd+K)
   - **Content Snippets**: Shows up to 3 matching lines per file with line numbers

@@ -20,9 +20,9 @@
         />
       </div>
       
-      <!-- TipTap WYSIWYG View -->
+      <!-- Milkdown WYSIWYG View -->
       <div v-show="viewMode === 'wysiwyg'" class="wysiwyg-view">
-        <TipTapEditor
+        <MilkdownEditor
           v-model="editableContent"
           :path="selectedNote.path"
           :disabled="viewMode !== 'wysiwyg'"
@@ -63,7 +63,7 @@ import { computed, ref, watch } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import ViewerToolbar from './ViewerToolbar.vue'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
-import TipTapEditor from '@/components/editor/TipTapEditor.vue'
+import MilkdownEditor from '@/components/editor/MilkdownEditor.vue'
 
 // Emits
 const emit = defineEmits<{

@@ -23,7 +23,7 @@
 - **HTTP Client**: Axios
 - **UI**: Custom CSS (no component library initially)
 - **Code Editor**: Monaco Editor (VS Code editor)
-- **WYSIWYG Editor**: TipTap (Markdown-based rich text editor)
+- **Markdown Editor**: Milkdown (split-pane markdown editor with source + preview)
 - **Future**: WebSocket Client, PWA features
 
 ### Infrastructure
@@ -212,8 +212,7 @@ frontend/src/
 │   │   └── InputDialog.vue         # Reusable input dialog for user input
 │   ├── editor/
 │   │   ├── MonacoEditor.vue        # Monaco code editor wrapper
-│   │   ├── TipTapEditor.vue        # TipTap WYSIWYG markdown editor
-│   │   └── TipTapToolbar.vue       # Formatting toolbar for TipTap editor
+│   │   └── MilkdownEditor.vue      # Milkdown split-pane markdown editor
 │   ├── layout/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
@@ -244,10 +243,9 @@ frontend/src/
 
 - **Editor Components**:
   - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting
-  - `TipTapEditor.vue`: TipTap WYSIWYG markdown editor with auto-save and rich text features
-  - `TipTapToolbar.vue`: Rich formatting toolbar for TipTap with buttons for bold, italic, headings, lists, code blocks, etc.
+  - `MilkdownEditor.vue`: Milkdown split-pane markdown editor with source + preview, auto-save, and rich text features
   - `ViewerToolbar.vue`: Toolbar with icon-based view mode toggle, search button, logout button, and save status
-  - `NoteViewer.vue`: Orchestrates dual-editor system with bidirectional sync
+  - `NoteViewer.vue`: Orchestrates editor system with Milkdown for markdown files and Monaco for other files
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar container
@@ -360,23 +358,20 @@ frontend/src/
     - Prevents path traversal (no `../` or absolute paths)
     - Blocks reserved system names (CON, PRN, AUX, etc.)
     - Validates against invalid characters
-- **Dual-Editor System**: Toggle between Monaco code editor and TipTap WYSIWYG editor
-  - **Code Mode (Monaco)**: Full-featured code editor with syntax highlighting for all text-based files
+- **Dual-Editor System**: Milkdown for markdown files, Monaco for non-markdown files
+  - **Markdown Mode (Milkdown)**: Split-pane editor with markdown source and live preview
+    - Auto-save functionality (1 second debounce)
+    - Task list support with interactive checkboxes
+    - Tab/Shift-Tab for list indentation
+    - Pane visibility controls (both/source only/preview only)
+    - User preference persistence for pane layout
+  - **Code Mode (Monaco)**: Full-featured code editor with syntax highlighting for all non-markdown files
     - Auto-save functionality (1 second debounce)
     - Syntax highlighting for 30+ languages
     - Dark theme matching VS Code
     - Language detection from file extensions
-  - **Markdown Mode (TipTap)**: WYSIWYG rich text editor for markdown files
-    - Auto-save functionality (1 second debounce, matching Monaco)
-    - Rich text editing with live preview
-    - Task list support with interactive checkboxes
-      - Improved vertical alignment for better readability
-      - Checkbox and text properly centered on the same baseline
-    - Tab/Shift-Tab for list indentation
-    - Custom markdown serialization
-    - Bidirectional sync with Monaco editor
-  - **Smart Defaults**: Automatically selects TipTap for .md files, Monaco for other file types
-  - **Icon-Based Toggle**: Single toggle button with dynamic icon - shows `</>` when in Monaco (Code) mode, `Md` when in TipTap (Markdown) mode
+  - **Smart Defaults**: Automatically selects Milkdown for .md files, Monaco for other file types
+  - **Icon-Based Toggle**: Single toggle button with dynamic icon - shows `</>` when in Monaco (Code) mode, `Md` when in Milkdown (Markdown) mode
 - **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
 - **Sidebar Toggle**: Collapsible file explorer for maximizing editor space
   - Toggle button in toolbar (left side, before file name)
@@ -517,13 +512,13 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - ResizeObserver for efficient layout updates
    - Automatic cleanup on component unmount
 
-**TipTap WYSIWYG Editor Integration**:
+**Milkdown Split-Pane Editor Integration**:
 
-The TipTap editor provides a rich WYSIWYG markdown editing experience with bidirectional sync to the Monaco code editor.
+The Milkdown editor provides a modern markdown editing experience with split-pane view (source | preview) for `.md` files while keeping Monaco for non-markdown files.
 
 1. **Component Architecture**:
-   - `TipTapEditor.vue`: Wraps TipTap editor with Vue Composition API
-   - Initialized with markdown content and converts to/from markdown on save
+   - `MilkdownEditor.vue`: Wraps Milkdown editor with Vue 3 Composition API
+   - Uses `@milkdown/vue` composable for seamless Vue integration
    - Handles editor initialization, content synchronization, and cleanup
    - Matches Monaco's API for seamless integration (same props and events)
    
@@ -533,85 +528,50 @@ The TipTap editor provides a rich WYSIWYG markdown editing experience with bidir
    - Parent (NoteViewer) calls vault store's `updateNote` action
    - Visual feedback via ViewerToolbar (saving/saved/error states)
    
-3. **Bidirectional Sync** (Simplified v-show Architecture):
-   - Both editors share the same `editableContent` ref in NoteViewer via v-model
-   - Uses `v-show` instead of `v-if` to keep both editors mounted simultaneously
-   - Hidden editor has `disabled` prop set to `true`
-   - Eliminates lifecycle complexity - no mount/unmount when switching editors
-   - **Critical Fix**: `disabled` prop only prevents EMITTING, not RECEIVING updates
-     - ✅ **Watchers**: No `disabled` check - both editors always receive updates
-     - ✅ **Event Handlers**: Check `disabled` - only active editor emits changes
-     - ✅ **Result**: Both editors stay perfectly in sync at all times
-   - Simple, reliable sync with no complex flags or async timing issues:
-     - Both editors receive ALL updates via watchers (always in sync)
-     - Only active editor emits changes (prevents infinite loops)
-     - Content comparison prevents redundant updates (simple `!==` check)
-     - No `isUpdatingFromEditor`, `isSettingContent`, or `lastEmittedContent` flags needed
-   - Fixed markdown serialization bug: List items now correctly extract text from paragraph nodes
-   - Significantly reduced code complexity (~100 lines of flag management removed)
-   - Seamless switching preserves all unsaved changes in both directions
-   - Faster editor switching since no remounting is needed
-   - **Zero data loss**: Text in lists, checkboxes, and all content types fully preserved
+3. **Split-Pane Architecture**:
+   - **Source Pane**: Live markdown editing with syntax highlighting
+   - **Preview Pane**: Real-time rendered markdown using `marked` library
+   - **Resizable**: Users can drag to adjust pane sizes
+   - **Pane Controls**: Three-state toggle (both/source only/preview only)
+   - **Preference Persistence**: User's pane layout preference saved to localStorage
    
-4. **TipTap Extensions**:
-   - **StarterKit**: Core functionality (headings, bold, italic, lists, code, blockquotes, etc.)
-   - **TaskList**: Container for checkbox lists
-   - **TaskItem**: Interactive checkboxes with nested support
-   - **Placeholder**: Shows "Start writing..." hint in empty editor
-   - **Custom Tab Extension**: Keyboard shortcuts for list indentation
-     - Tab: Indent list items (sink)
-     - Shift-Tab: Outdent list items (lift)
-     - Works with both regular lists and task lists
+4. **Milkdown Configuration**:
+   - **Nord Theme**: Modern, clean theme for both light and dark modes
+   - **CommonMark Preset**: Core markdown functionality
+   - **GFM Preset**: GitHub Flavored Markdown including task lists
+   - **Listener Plugin**: Handles content changes and auto-save
+   - **Custom Tab Plugin**: Tab/Shift-Tab for list indentation
    
-5. **Markdown Support**:
-   - Custom markdown serializer for proper task list conversion
-   - Converts between TipTap's internal format and markdown string
-   - Preserves markdown syntax for checkboxes: `- [ ]` and `- [x]`
-   - Maintains compatibility with standard markdown files
-   
-6. **Checkbox Features**:
+5. **Task List Support**:
    - Interactive checkboxes with click-to-toggle functionality
-   - Proper vertical alignment of checkboxes and text
-   - Support for nested task lists
-   - Checkbox state persists to markdown as `[ ]` or `[x]`
-   - **Robust HTML Conversion** (Fixed):
-     - Flexible regex pattern handles checkbox input tags with attributes in any order
-     - Properly converts `marked` library output to TipTap's TaskItem format
-     - Sets `data-checked="true"` for checked items, `data-checked="false"` for unchecked
-     - Handles both boolean and string values in serialization
-     - Mixed lists (checkboxes + regular bullets) are properly preserved
-     - Checkboxes remain functional after file navigation and reload
+   - Proper markdown serialization: `- [ ]` and `- [x]`
+   - Nested task list support
+   - Checkbox state persists across file navigation
    
-7. **Formatting Toolbar**:
-   - `TipTapToolbar.vue`: Rich formatting toolbar integrated into TipTap editor
-   - Formatting options grouped logically with visual separators:
-     - **Text Formatting**: Bold, Italic, Strikethrough, Inline Code
-     - **Headings**: H1, H2, H3
-     - **Lists**: Bullet List, Numbered List, Task List
-     - **Blocks**: Blockquote, Code Block, Horizontal Rule
-     - **History**: Undo, Redo
-   - Active state highlighting for current formatting
-   - Tooltips with keyboard shortcuts
-   - Clean, modern design matching the overall app aesthetic
+6. **Pane Visibility Management**:
+   - **Vault Store Integration**: `milkdownViewMode` state with localStorage persistence
+   - **Three States**: `'both'`, `'source'`, `'preview'`
+   - **Default Behavior**: Show both panes on first visit
+   - **User Control**: Pane control buttons in editor header
    
-8. **Editor Styling**:
-   - Clean, minimal interface with white background
+7. **Editor Styling**:
+   - Clean, minimal interface with app theme integration
    - Prose-friendly typography with proper heading sizes
-   - Code blocks with dark theme (matching Monaco aesthetic)
+   - Code blocks with syntax highlighting
    - Proper spacing for paragraphs, lists, and blockquotes
    - Responsive design for mobile and desktop
    
-9. **Default Editor Selection**:
-   - TipTap is default for `.md` files (markdown-first editing experience)
+8. **Default Editor Selection**:
+   - Milkdown is default for `.md` files (markdown-first editing experience)
    - Monaco is default for all other file types (code-first editing)
    - Selection happens automatically in NoteViewer when file changes
    - Users can toggle between editors at any time via toolbar
    
-10. **View Mode Toggle**:
+9. **View Mode Toggle**:
    - ViewerToolbar provides single icon-based toggle button between editors
    - Toggle button icon changes to reflect current active editor:
-     - When Monaco is active: Shows `</>` icon (click to switch to TipTap)
-     - When TipTap is active: Shows `Md` icon (click to switch to Monaco)
+     - When Monaco is active: Shows `</>` icon (click to switch to Milkdown)
+     - When Milkdown is active: Shows `Md` icon (click to switch to Monaco)
    - Tooltips indicate the mode being switched to ("Switch to Markdown" / "Switch to Code")
    - Clean, minimal design with active state highlighting
    - Same save status display for both editors

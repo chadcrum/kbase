@@ -25,61 +25,28 @@ vi.mock('@monaco-editor/loader', () => ({
   }
 }))
 
-// Mock TipTap editor to avoid initialization issues in tests
-const createMockEditor = () => {
-  const chainMethods = {
-    focus: vi.fn().mockReturnThis(),
-    toggleBold: vi.fn().mockReturnThis(),
-    toggleItalic: vi.fn().mockReturnThis(),
-    toggleStrike: vi.fn().mockReturnThis(),
-    toggleCode: vi.fn().mockReturnThis(),
-    toggleHeading: vi.fn().mockReturnThis(),
-    toggleBulletList: vi.fn().mockReturnThis(),
-    toggleOrderedList: vi.fn().mockReturnThis(),
-    toggleTaskList: vi.fn().mockReturnThis(),
-    toggleBlockquote: vi.fn().mockReturnThis(),
-    toggleCodeBlock: vi.fn().mockReturnThis(),
-    setHorizontalRule: vi.fn().mockReturnThis(),
-    undo: vi.fn().mockReturnThis(),
-    redo: vi.fn().mockReturnThis(),
-    run: vi.fn()
-  }
-  
-  return {
-    commands: {
-      setContent: vi.fn(),
-    },
-    state: {
-      doc: {}
-    },
-    destroy: vi.fn(),
-    setEditable: vi.fn(),
-    isActive: vi.fn((name: string) => false),
-    can: vi.fn(() => ({
-      undo: () => true,
-      redo: () => true
-    })),
-    chain: vi.fn(() => chainMethods)
-  }
-}
-
-const mockEditor = createMockEditor()
-
-vi.mock('@tiptap/vue-3', () => ({
+// Mock Milkdown editor to avoid initialization issues in tests
+vi.mock('@milkdown/vue', () => ({
   useEditor: vi.fn(() => ({
-    value: mockEditor
+    editor: {
+      value: {
+        getMarkdown: vi.fn(() => 'test content'),
+        setMarkdown: vi.fn(),
+        destroy: vi.fn()
+      }
+    }
   })),
-  EditorContent: {
-    name: 'EditorContent',
-    template: '<div class="tiptap-editor"></div>'
+  Milkdown: {
+    name: 'Milkdown',
+    template: '<div class="milkdown-editor"></div>'
   }
 }))
 
-// Mock TipTapEditor component
-vi.mock('@/components/editor/TipTapEditor.vue', () => ({
+// Mock MilkdownEditor component
+vi.mock('@/components/editor/MilkdownEditor.vue', () => ({
   default: {
-    name: 'TipTapEditor',
-    template: '<div class="tiptap-editor-mock"></div>',
+    name: 'MilkdownEditor',
+    template: '<div class="milkdown-editor-mock"></div>',
     props: ['modelValue', 'path', 'disabled'],
     emits: ['update:modelValue', 'save']
   }

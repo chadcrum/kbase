@@ -285,6 +285,9 @@ frontend/src/
   - **Theme Application**: Applies `data-theme` attribute to document root
   - **Monaco Integration**: Monaco editor theme matches app theme (vs-dark in dark mode, vs-light in light mode)
   - **CSS Variables**: Uses CSS custom properties for consistent theming across all components
+    - **Variable System**: Light and dark theme variables defined in `App.vue`
+    - **Modal Components**: All modals (ConfirmDialog, InputDialog, OmniSearch) use CSS variables
+    - **Automatic Switching**: Components automatically adapt when `[data-theme="dark"]` is applied
 
 **Key Features** (Current MVP):
 
@@ -295,6 +298,8 @@ frontend/src/
   - **Persistence**: User preference saved in localStorage across sessions
   - **System Sync**: Watches system preference changes when no manual override set
   - **Consistent Theming**: All components use CSS variables for theme switching
+    - **Modal Dark Mode**: ConfirmDialog, InputDialog, and OmniSearch fully support dark mode
+    - **CSS Variables**: `--bg-primary`, `--bg-secondary`, `--text-primary`, `--text-secondary`, `--border-color`
   - **Monaco Editor**: Theme matches app (vs-dark in dark mode, vs-light in light mode)
   - **Smooth Transitions**: 0.3s ease transitions between theme changes
   - **Toggle Icons**: Moon icon (🌙) in dark mode, sun icon (☀️) in light mode
@@ -644,4 +649,144 @@ The file explorer provides comprehensive file and directory management through a
 - **UI Load Time**: 10+ seconds → <1 second (10x faster)  
 - **Memory Usage**: 40x reduction with lazy loading
 - **Large Vault Support**: Tested with 4000+ files
+
+## Deployment Architecture
+
+### Docker Containerization
+
+KBase is deployed as a single Docker container containing both frontend and backend services, optimized for production deployment.
+
+**Container Structure**:
+
+```
+kbase-container/
+├── /app/
+│   ├── backend/              # FastAPI application
+│   │   ├── app/              # Python application code
+│   │   ├── requirements.txt  # Python dependencies
+│   │   └── pyproject.toml   # Project configuration
+│   └── dist/                 # Built frontend assets
+│       ├── index.html        # SPA entry point
+│       ├── assets/           # CSS, JS, images
+│       └── favicon.ico       # App icon
+└── /app/vault/               # Mounted volume for notes
+```
+
+**Multi-Stage Build Process**:
+
+1. **Frontend Builder Stage** (`node:18-alpine`):
+   - Installs Node.js dependencies
+   - Builds Vue.js frontend with Vite
+   - Outputs optimized static assets to `/app/frontend/dist`
+
+2. **Production Stage** (`python:3.11-slim`):
+   - Installs Python dependencies with uv
+   - Copies built frontend assets to `/app/dist`
+   - Configures FastAPI to serve static files
+   - Creates non-root user for security
+   - Exposes port 8000
+
+**Static File Serving**:
+
+- FastAPI serves frontend assets at root path (`/`)
+- API routes (`/api/v1/*`) take precedence over static files
+- SPA routing handled by serving `index.html` for non-API routes
+- Assets served from `/assets/` path for optimal caching
+
+### CI/CD Pipeline
+
+**GitHub Actions Workflow** (`.github/workflows/docker-publish.yml`):
+
+1. **Trigger**: Push to `main` branch (when PRs merge)
+2. **Build Process**:
+   - Checkout code
+   - Set up Docker Buildx for multi-platform builds
+   - Login to GitHub Container Registry (GHCR)
+   - Extract metadata and generate tags
+   - Build and push Docker image
+
+3. **Image Tagging Strategy**:
+   - `latest`: Always points to latest main branch
+   - `sha-{commit-hash}`: Specific commit for reproducibility
+   - Multi-platform: `linux/amd64` and `linux/arm64`
+
+4. **Registry Configuration**:
+   - **Registry**: `ghcr.io` (GitHub Container Registry)
+   - **Visibility**: Public (anyone can pull)
+   - **Authentication**: Uses `GITHUB_TOKEN` automatically
+   - **Permissions**: `packages: write`, `contents: read`
+
+**Deployment Workflow**:
+
+```mermaid
+graph LR
+    A[PR Merged to Main] --> B[GitHub Actions Triggered]
+    B --> C[Build Multi-Stage Docker Image]
+    C --> D[Push to GHCR]
+    D --> E[Update Package Visibility]
+    E --> F[Deploy Summary Generated]
+```
+
+### Production Deployment
+
+**Container Configuration**:
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  kbase:
+    image: ghcr.io/yourusername/kbase:latest
+    container_name: kbase
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./vault:/app/vault
+    environment:
+      - VAULT_PATH=/app/vault
+      - SECRET_KEY=your-secret-key
+      - PASSWORD=your-password
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+**Required Environment Variables**:
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `VAULT_PATH` | Yes | Path to notes directory inside container | `/app/vault` |
+| `SECRET_KEY` | Yes | JWT signing key | `a1b2c3d4e5f6...` |
+| `PASSWORD` | Yes | Login password | `my-secure-password` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | No | Token expiration (default: 10080) | `10080` |
+| `HOST` | No | Server host (default: 0.0.0.0) | `0.0.0.0` |
+| `PORT` | No | Server port (default: 8000) | `8000` |
+
+**Security Considerations**:
+
+- **Non-root User**: Container runs as `kbase` user for security
+- **Health Checks**: Built-in health monitoring via `/health` endpoint
+- **Volume Mounts**: Vault directory mounted as volume for data persistence
+- **Environment Variables**: Sensitive data passed via environment variables
+- **Network Security**: Container exposes only port 8000
+
+**Production Recommendations**:
+
+1. **Reverse Proxy**: Use nginx or traefik for HTTPS termination
+2. **SSL/TLS**: Configure SSL certificates for secure communication
+3. **Backups**: Regular backups of vault directory
+4. **Updates**: Pull new images regularly for security updates
+5. **Monitoring**: Set up logging and monitoring for container health
+6. **Resource Limits**: Configure CPU and memory limits for container
+
+**Scaling Considerations**:
+
+- **Single Instance**: Current architecture designed for single-user deployment
+- **Data Persistence**: Vault directory must be shared across container restarts
+- **Session Management**: JWT tokens stored client-side (no server-side session state)
+- **File Locking**: No built-in file locking for concurrent access
+- **Future Scaling**: Architecture supports horizontal scaling with shared storage
 

@@ -87,6 +87,90 @@ For the fastest way to get started, you can run both frontend and backend togeth
 
 **Note**: The backend requires a `.env` file with `VAULT_PATH`, `SECRET_KEY`, and `PASSWORD` configured.
 
+## Docker Deployment
+
+KBase is available as a pre-built Docker image from GitHub Container Registry (GHCR). This is the easiest way to deploy KBase in production.
+
+### Quick Docker Setup
+
+1. **Pull the latest image**:
+   ```bash
+   docker pull ghcr.io/yourusername/kbase:latest
+   ```
+
+2. **Create your vault directory**:
+   ```bash
+   mkdir -p ~/kbase-vault
+   echo "# Welcome to KBase" > ~/kbase-vault/welcome.md
+   ```
+
+3. **Run the container**:
+   ```bash
+   docker run -d \
+     --name kbase \
+     -p 8000:8000 \
+     -v ~/kbase-vault:/app/vault \
+     -e VAULT_PATH=/app/vault \
+     -e SECRET_KEY=$(openssl rand -hex 32) \
+     -e PASSWORD=your-secure-password \
+     ghcr.io/yourusername/kbase:latest
+   ```
+
+4. **Access the application**:
+   - Open http://localhost:8000 in your browser
+   - Login with the password you set in the `PASSWORD` environment variable
+
+### Docker Environment Variables
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `VAULT_PATH` | Yes | Path to your notes directory inside the container | `/app/vault` |
+| `SECRET_KEY` | Yes | JWT signing key (generate with `openssl rand -hex 32`) | `a1b2c3d4e5f6...` |
+| `PASSWORD` | Yes | Login password for the application | `my-secure-password` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | No | Token expiration time in minutes (default: 10080) | `10080` |
+| `HOST` | No | Server host (default: 0.0.0.0) | `0.0.0.0` |
+| `PORT` | No | Server port (default: 8000) | `8000` |
+
+### Docker Compose Example
+
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+
+services:
+  kbase:
+    image: ghcr.io/yourusername/kbase:latest
+    container_name: kbase
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./vault:/app/vault
+    environment:
+      - VAULT_PATH=/app/vault
+      - SECRET_KEY=your-secret-key-here
+      - PASSWORD=your-password-here
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+Run with:
+```bash
+docker-compose up -d
+```
+
+### Production Considerations
+
+- **Security**: Change the default password and secret key
+- **Volumes**: Mount your vault directory to persist data
+- **Networking**: Use reverse proxy (nginx/traefik) for HTTPS
+- **Updates**: Pull new images regularly for security updates
+- **Backups**: Regularly backup your vault directory
+
 ### Backend Setup
 
 1. **Clone and navigate to the repository**:

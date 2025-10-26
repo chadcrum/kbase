@@ -221,9 +221,10 @@ const handleDeIndent = () => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
   flex-wrap: wrap;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .toolbar-group {
@@ -234,7 +235,7 @@ const handleDeIndent = () => {
 .toolbar-separator {
   width: 1px;
   height: 24px;
-  background: #cbd5e1;
+  background: var(--border-color-subtle);
   margin: 0 0.25rem;
 }
 
@@ -243,9 +244,9 @@ const handleDeIndent = () => {
   align-items: center;
   justify-content: center;
   padding: 0.375rem 0.75rem;
-  border: 1px solid #e2e8f0;
-  background: white;
-  color: #475569;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -255,13 +256,13 @@ const handleDeIndent = () => {
 }
 
 .toolbar-btn:hover:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #1e293b;
+  background: var(--bg-tertiary);
+  border-color: var(--text-tertiary);
+  color: var(--text-primary);
 }
 
 .toolbar-btn:active:not(:disabled) {
-  background: #e2e8f0;
+  background: var(--border-color);
   transform: scale(0.98);
 }
 

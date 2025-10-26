@@ -331,7 +331,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: white;
+  background-color: var(--bg-secondary);
+  transition: background-color 0.3s ease;
 }
 
 .tiptap-editor {
@@ -391,7 +392,7 @@ onBeforeUnmount(() => {
 
 /* Code styles */
 :deep(.tiptap code) {
-  background-color: #f3f4f6;
+  background-color: var(--code-bg);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
@@ -399,8 +400,8 @@ onBeforeUnmount(() => {
 }
 
 :deep(.tiptap pre) {
-  background-color: #1e1e1e;
-  color: #d4d4d4;
+  background-color: var(--code-bg);
+  color: var(--text-primary);
   padding: 1rem;
   border-radius: 0.5rem;
   overflow-x: auto;
@@ -416,10 +417,10 @@ onBeforeUnmount(() => {
 
 /* Blockquote styles */
 :deep(.tiptap blockquote) {
-  border-left: 4px solid #e5e7eb;
+  border-left: 4px solid var(--border-color-subtle);
   padding-left: 1rem;
   margin: 1em 0;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
@@ -457,7 +458,7 @@ onBeforeUnmount(() => {
 /* Strikethrough for checked task items */
 :deep(.tiptap ul[data-type="taskList"] li[data-checked="true"] > div) {
   text-decoration: line-through;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 /* Nested task lists */
@@ -470,7 +471,7 @@ onBeforeUnmount(() => {
 :deep(.tiptap p.is-editor-empty:first-child::before) {
   content: attr(data-placeholder);
   float: left;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   pointer-events: none;
   height: 0;
 }
@@ -489,7 +490,7 @@ onBeforeUnmount(() => {
 /* Horizontal rule */
 :deep(.tiptap hr) {
   border: none;
-  border-top: 2px solid #e5e7eb;
+  border-top: 2px solid var(--border-color-subtle);
   margin: 2em 0;
 }
 

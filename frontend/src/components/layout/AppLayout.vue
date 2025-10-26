@@ -20,7 +20,8 @@ const vaultStore = useVaultStore()
 .app-layout {
   display: flex;
   height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--bg-primary);
+  transition: background-color 0.3s ease;
 }
 
 .main-content {
@@ -28,7 +29,8 @@ const vaultStore = useVaultStore()
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: white;
+  background-color: var(--bg-secondary);
+  transition: background-color 0.3s ease;
 }
 
 /* Responsive design */

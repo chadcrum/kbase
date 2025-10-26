@@ -281,8 +281,9 @@ onUnmounted(() => {
 .toolbar {
   display: flex;
   flex-direction: column;
-  background-color: white;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .toolbar-buttons {
@@ -329,22 +330,22 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: none;
-  border: 1px solid #d1d5db;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--text-primary);
   transition: all 0.2s ease;
 }
 
 .toolbar-button:hover {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
+  background-color: var(--bg-tertiary);
+  border-color: var(--text-tertiary);
 }
 
 .toolbar-button:active {
-  background-color: #e5e7eb;
+  background-color: var(--border-color);
 }
 
 .toolbar-button .icon {
@@ -383,10 +384,10 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 0.25rem);
   right: 0;
-  background: white;
-  border: 1px solid #d1d5db;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px var(--shadow);
   min-width: 160px;
   z-index: 1000;
   overflow: hidden;
@@ -403,12 +404,12 @@ onUnmounted(() => {
 }
 
 .sort-option:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-tertiary);
 }
 
 .sort-option.active {
-  background-color: #eff6ff;
-  color: #2563eb;
+  background-color: var(--bg-tertiary);
+  color: #667eea;
 }
 
 .sort-option-icon {

@@ -103,10 +103,10 @@ onUnmounted(() => {
 <style scoped>
 .context-menu {
   position: fixed;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color-subtle);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow);
   padding: 0.25rem;
   min-width: 180px;
   z-index: 9999;
@@ -121,11 +121,11 @@ onUnmounted(() => {
   border-radius: 4px;
   transition: background-color 0.15s ease;
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .context-menu-item:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-tertiary);
 }
 
 .context-menu-item.is-danger {

@@ -68,7 +68,7 @@ const handleSelectNote = (path: string) => {
   justify-content: center;
   padding: 2rem 1rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .loading-state {

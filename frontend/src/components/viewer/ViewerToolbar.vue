@@ -27,6 +27,9 @@
         <span class="search-icon">🔍</span>
         <span class="search-text">Search</span>
       </button>
+      <button class="theme-toggle-btn" @click="toggleTheme" :title="themeToggleTitle">
+        <span class="theme-icon">{{ themeIcon }}</span>
+      </button>
       <button class="logout-btn" @click="handleLogout" title="Logout">
         <span class="logout-icon">🚪</span>
         <span class="logout-text">Logout</span>
@@ -40,10 +43,12 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVaultStore } from '@/stores/vault'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 
 // Store
 const vaultStore = useVaultStore()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const router = useRouter()
 
 // Props
@@ -82,6 +87,10 @@ const handleLogout = () => {
   router.push('/login')
 }
 
+const toggleTheme = () => {
+  themeStore.toggleTheme()
+}
+
 // Computed
 const sidebarToggleIcon = computed(() => {
   return vaultStore.isSidebarCollapsed ? '»' : '«'
@@ -89,6 +98,14 @@ const sidebarToggleIcon = computed(() => {
 
 const sidebarToggleTitle = computed(() => {
   return vaultStore.isSidebarCollapsed ? 'Show Sidebar' : 'Hide Sidebar'
+})
+
+const themeIcon = computed(() => {
+  return themeStore.isDarkMode ? '🌙' : '☀️'
+})
+
+const themeToggleTitle = computed(() => {
+  return themeStore.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'
 })
 </script>
 
@@ -98,10 +115,11 @@ const sidebarToggleTitle = computed(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
-  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(to bottom, var(--bg-primary), var(--bg-tertiary));
+  border-bottom: 1px solid var(--border-color);
   min-height: 60px;
   gap: 1rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .toolbar-left {
@@ -118,15 +136,15 @@ const sidebarToggleTitle = computed(() => {
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  border: 1px solid #e2e8f0;
-  background: white;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   color: #667eea;
   font-size: 1.25rem;
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--shadow);
 }
 
 .sidebar-toggle-btn:hover {
@@ -156,7 +174,7 @@ const sidebarToggleTitle = computed(() => {
 .file-name {
   font-size: 1rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -165,7 +183,7 @@ const sidebarToggleTitle = computed(() => {
 
 .file-path {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   white-space: nowrap;
   overflow: hidden;
@@ -186,8 +204,8 @@ const sidebarToggleTitle = computed(() => {
   align-items: center;
   justify-content: center;
   padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  background: white;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   color: #667eea;
   font-size: 1rem;
   font-weight: 600;
@@ -195,7 +213,7 @@ const sidebarToggleTitle = computed(() => {
   border-radius: 6px;
   transition: all 0.2s ease;
   min-width: 56px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--shadow);
 }
 
 .toggle-btn:hover {
@@ -230,15 +248,15 @@ const sidebarToggleTitle = computed(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  background: white;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   color: #667eea;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--shadow);
 }
 
 .search-btn:hover {
@@ -262,20 +280,55 @@ const sidebarToggleTitle = computed(() => {
   white-space: nowrap;
 }
 
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: #667eea;
+  font-size: 1.25rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.theme-toggle-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.98);
+}
+
+.theme-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .logout-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  background: white;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   color: #667eea;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px var(--shadow);
 }
 
 .logout-btn:hover {

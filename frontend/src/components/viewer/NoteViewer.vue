@@ -183,7 +183,8 @@ const handleOpenSearch = () => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: white;
+  background-color: var(--bg-secondary);
+  transition: background-color 0.3s ease;
 }
 
 .note-content {
@@ -206,7 +207,8 @@ const handleOpenSearch = () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: white;
+  background-color: var(--bg-secondary);
+  transition: background-color 0.3s ease;
 }
 
 .loading-state,
@@ -219,7 +221,7 @@ const handleOpenSearch = () => {
   justify-content: center;
   padding: 2rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .loading-state {
@@ -242,13 +244,13 @@ const handleOpenSearch = () => {
 .empty-state h2 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .empty-state p {
   margin: 0;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .error-icon {

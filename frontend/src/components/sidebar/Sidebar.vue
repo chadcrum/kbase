@@ -46,11 +46,11 @@ onMounted(() => {
 .sidebar {
   width: 300px;
   height: 100vh;
-  background-color: #f8fafc;
-  border-right: 1px solid #e2e8f0;
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s ease, opacity 0.3s ease;
+  transition: margin-left 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
   flex-shrink: 0;
 }
 

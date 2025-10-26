@@ -107,9 +107,9 @@ onMounted(() => {
 }
 
 .login-card {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 20px 25px -5px var(--shadow), 0 10px 10px -5px var(--shadow);
   padding: 2rem;
   width: 100%;
   max-width: 400px;
@@ -118,13 +118,13 @@ onMounted(() => {
 .login-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary);
   text-align: center;
   margin: 0 0 0.5rem 0;
 }
 
 .login-subtitle {
-  color: #6b7280;
+  color: var(--text-secondary);
   text-align: center;
   margin: 0 0 2rem 0;
   font-size: 1rem;
@@ -162,23 +162,25 @@ onMounted(() => {
 
 .checkbox-label {
   font-size: 0.875rem;
-  color: #374151;
+  color: var(--text-primary);
   cursor: pointer;
   user-select: none;
 }
 
 .form-label {
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
   font-size: 0.875rem;
 }
 
 .form-input {
   padding: 0.75rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--border-color-subtle);
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.2s ease;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .form-input:focus {
@@ -192,7 +194,7 @@ onMounted(() => {
 }
 
 .form-input:disabled {
-  background-color: #f9fafb;
+  background-color: var(--bg-tertiary);
   cursor: not-allowed;
 }
 

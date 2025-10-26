@@ -6,6 +6,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import loader from '@monaco-editor/loader'
 import { detectLanguage } from '@/utils/languageDetection'
+import { useThemeStore } from '@/stores/theme'
 import type * as Monaco from 'monaco-editor'
 
 // Props
@@ -27,6 +28,9 @@ const emit = defineEmits<{
   'save': [value: string]
 }>()
 
+// Store
+const themeStore = useThemeStore()
+
 // Refs
 const editorContainer = ref<HTMLElement | null>(null)
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
@@ -35,6 +39,13 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null
 
 // Debounce delay for auto-save (1 second)
 const AUTO_SAVE_DELAY = 1000
+
+// Helper to set theme based on dark mode
+const setEditorTheme = () => {
+  if (!editor || !monaco) return
+  const theme = themeStore.isDarkMode ? 'vs-dark' : 'vs-light'
+  monaco.editor.setTheme(theme)
+}
 
 // Initialize Monaco editor
 onMounted(async () => {
@@ -47,11 +58,12 @@ onMounted(async () => {
     // Detect language from file extension
     const language = detectLanguage(props.path)
 
-    // Create editor instance
+    // Create editor instance with theme matching app theme
+    const initialTheme = themeStore.isDarkMode ? 'vs-dark' : 'vs-light'
     editor = monaco.editor.create(editorContainer.value, {
       value: props.modelValue,
       language,
-      theme: 'vs-dark',
+      theme: initialTheme,
       automaticLayout: true,
       fontSize: 14,
       lineNumbers: 'on',
@@ -127,6 +139,11 @@ watch(() => props.path, (newPath) => {
   if (model) {
     monaco.editor.setModelLanguage(model, language)
   }
+})
+
+// Watch for theme changes
+watch(() => themeStore.isDarkMode, () => {
+  setEditorTheme()
 })
 
 // Cleanup on unmount

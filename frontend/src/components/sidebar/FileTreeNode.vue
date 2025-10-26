@@ -562,7 +562,7 @@ const handleDrop = async (event: DragEvent) => {
 }
 
 .node-item:hover {
-  background-color: #f3f4f6;
+  background-color: var(--bg-tertiary);
 }
 
 .node-item.is-directory {
@@ -570,7 +570,7 @@ const handleDrop = async (event: DragEvent) => {
 }
 
 .node-item.is-file {
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .expand-icon,
@@ -589,7 +589,7 @@ const handleDrop = async (event: DragEvent) => {
 }
 
 .item-count {
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 0.75rem;
   font-weight: normal;
   margin-left: 0.25rem;
@@ -597,17 +597,17 @@ const handleDrop = async (event: DragEvent) => {
 }
 
 .children {
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid var(--border-color-subtle);
   margin-left: 0.75rem;
 }
 
 /* Hover effects */
 .node-item.is-directory:hover {
-  background-color: #eff6ff;
+  background-color: var(--bg-tertiary);
 }
 
 .node-item.is-file:hover {
-  background-color: #f9fafb;
+  background-color: var(--bg-tertiary);
 }
 
 /* Drag and drop states */
@@ -617,8 +617,8 @@ const handleDrop = async (event: DragEvent) => {
 }
 
 .node-item.is-drag-over {
-  background-color: #dbeafe;
-  border-color: #3b82f6;
+  background-color: var(--bg-tertiary);
+  border-color: #667eea;
 }
 
 /* Rename input */
@@ -630,7 +630,8 @@ const handleDrop = async (event: DragEvent) => {
   font-size: inherit;
   font-family: inherit;
   outline: none;
-  background: white;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .rename-input:focus {

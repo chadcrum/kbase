@@ -7,11 +7,17 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 
-// Initialize authentication on app startup
+// Initialize stores
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 
 onMounted(async () => {
+  // Initialize theme first (sync operation)
+  themeStore.initializeTheme()
+  
+  // Then initialize authentication
   await authStore.initializeAuth()
 })
 </script>
@@ -22,6 +28,34 @@ onMounted(async () => {
   box-sizing: border-box;
 }
 
+/* CSS Variables for Light Mode */
+:root {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --border-color: #e2e8f0;
+  --border-color-subtle: #e5e7eb;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --code-bg: #f3f4f6;
+}
+
+/* CSS Variables for Dark Mode */
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --border-color: #334155;
+  --border-color-subtle: #475569;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --code-bg: #1e293b;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -29,7 +63,9 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #app {
@@ -67,16 +103,16 @@ button:focus {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bg-tertiary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--border-color);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--text-tertiary);
 }
 </style>
 

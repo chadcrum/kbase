@@ -88,12 +88,80 @@ vault/                           # Mounted Docker volume
 - Plain text password verification (suitable for personal use)
 - Bearer token authentication scheme
 - FastAPI dependency injection for route protection
+- Configurable token expiration (default: 7 days, extended to 30 days with "Remember Me")
 
 **Auth Endpoints** (`backend/app/api/v1/endpoints/auth.py`):
 
 - `POST /api/v1/auth/login` - Authenticate with password, return JWT token
+  - Accepts optional `remember_me` flag for extended token expiration
+  - Default token expiration: 7 days (10,080 minutes)
+  - With `remember_me=true`: 30 days token expiration
 - `GET /api/v1/auth/verify` - Verify token validity
 - All other endpoints require valid JWT token in Authorization header
+
+**Persistent Session Management**:
+
+- JWT tokens stored in browser localStorage for persistent sessions
+- Token automatically loaded on app initialization
+- Token verification on first navigation to restore session state
+- Automatic logout on token expiration (401 response)
+- Router guard prevents multiple auth initializations
+- Session persists across:
+  - Page refreshes
+  - Browser restarts
+  - New tabs/windows (same browser)
+  - Until token expiration or explicit logout
+
+**Frontend Authentication Flow**:
+
+1. User logs in with password and optional "Remember Me" checkbox
+2. Backend returns JWT token with appropriate expiration (7 or 30 days)
+3. Frontend stores token in localStorage (`kbase_token` key)
+4. API client automatically attaches token to all requests
+5. On app load, router guard calls `initializeAuth()` to verify stored token
+6. If token is valid, user is authenticated automatically
+7. If token is invalid/expired, user is redirected to login
+8. On logout (via logout button in ViewerToolbar), token is removed from localStorage, auth state is cleared, and user is redirected to login page
+
+**Backend Health Monitoring**:
+
+The application includes comprehensive backend connectivity monitoring to provide user feedback when the backend server is unavailable.
+
+**Health Check System** (`frontend/src/composables/useBackendHealth.ts`):
+- Monitors backend connectivity status in real-time
+- Distinguishes between network errors (backend down) and authentication errors (backend up, invalid token)
+- Tracks dismissal state to prevent immediate re-showing of warnings
+- Provides manual retry functionality for connection testing
+- Auto-dismisses warnings when backend comes back online
+
+**API Client Integration** (`frontend/src/api/client.ts`):
+- Response interceptor detects network errors (ECONNREFUSED, ENOTFOUND, ETIMEDOUT, etc.)
+- Automatically marks backend as offline for network errors
+- Preserves authentication error handling for 401 responses
+- Updates health status on successful API responses
+
+**Warning Banner Component** (`frontend/src/components/common/BackendWarning.vue`):
+- Fixed position banner at top of page with warning styling (amber/orange theme)
+- Shows "Cannot connect to backend server" message with retry button
+- Dismissible with X button (stores dismissal timestamp)
+- Auto-hides when backend reconnects
+- Reappears on next failed request after dismissal (5-second cooldown)
+- Responsive design for mobile and desktop
+
+**Integration Points**:
+- **Login View**: Shows warning if backend is unreachable during login attempts
+- **Main Editor (AppLayout)**: Monitors backend health during normal operation
+- **Separate from Auth Errors**: Backend warnings don't replace login-specific error messages
+- **Immediate Detection**: Health check runs on page load and during API calls
+
+**Logout Button**:
+
+- Located in the ViewerToolbar at the top right of the application
+- Positioned to the right of the Search button
+- Icon-based button with door emoji (🚪) and "Logout" text
+- Styled consistently with other toolbar buttons (white background, purple hover effect)
+- On click, triggers `authStore.logout()` and redirects to `/login` route
+- Provides easy access to logout functionality from anywhere in the application
 
 ### 4. Core Backend Services
 
@@ -178,7 +246,7 @@ frontend/src/
   - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting
   - `TipTapEditor.vue`: TipTap WYSIWYG markdown editor with auto-save and rich text features
   - `TipTapToolbar.vue`: Rich formatting toolbar for TipTap with buttons for bold, italic, headings, lists, code blocks, etc.
-  - `ViewerToolbar.vue`: Toolbar with icon-based view mode toggle and save status
+  - `ViewerToolbar.vue`: Toolbar with icon-based view mode toggle, search button, logout button, and save status
   - `NoteViewer.vue`: Orchestrates dual-editor system with bidirectional sync
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
@@ -323,7 +391,7 @@ The application uses Pydantic Settings for type-safe configuration management wi
 **Optional Environment Variables**:
 - `HOST` - Server host (default: `0.0.0.0`)
 - `PORT` - Server port (default: `8000`)
-- `ACCESS_TOKEN_EXPIRE_MINUTES` - Token expiration time (default: `30`)
+- `ACCESS_TOKEN_EXPIRE_MINUTES` - Token expiration time (default: `10080` = 7 days)
 - `ALGORITHM` - JWT signing algorithm (default: `HS256`)
 - `APP_NAME` - Application name (default: `KBase`)
 - `APP_VERSION` - Application version (default: `0.1.0`)
@@ -488,6 +556,13 @@ The TipTap editor provides a rich WYSIWYG markdown editing experience with bidir
    - Proper vertical alignment of checkboxes and text
    - Support for nested task lists
    - Checkbox state persists to markdown as `[ ]` or `[x]`
+   - **Robust HTML Conversion** (Fixed):
+     - Flexible regex pattern handles checkbox input tags with attributes in any order
+     - Properly converts `marked` library output to TipTap's TaskItem format
+     - Sets `data-checked="true"` for checked items, `data-checked="false"` for unchecked
+     - Handles both boolean and string values in serialization
+     - Mixed lists (checkboxes + regular bullets) are properly preserved
+     - Checkboxes remain functional after file navigation and reload
    
 7. **Formatting Toolbar**:
    - `TipTapToolbar.vue`: Rich formatting toolbar integrated into TipTap editor
@@ -591,11 +666,18 @@ The file explorer provides comprehensive file and directory management through a
    - Checks for `../` and `..\\` patterns to prevent directory traversal
    - Allows absolute paths starting with `/` within the vault scope
    - Uses `os.path.commonpath()` to verify paths remain within vault boundaries
-2. **JWT Security**: Bearer tokens stored in localStorage, 30-minute expiry
+2. **JWT Security**: 
+   - Bearer tokens stored in browser localStorage
+   - Default token expiration: 7 days (10,080 minutes)
+   - Extended expiration with "Remember Me": 30 days
+   - Tokens automatically verified on app initialization
+   - Expired tokens trigger automatic logout and redirect to login
+   - Suitable for personal use; consider httpOnly cookies for multi-user environments
 3. **Password Security**: Plain text storage in environment variables (suitable for personal use)
 4. **File Upload**: Validate image types, size limits, sanitize filenames
 5. **CORS**: Configure properly for frontend-backend communication
 6. **Token Validation**: All protected endpoints validate JWT tokens
+7. **Session Persistence**: Tokens persist across page refreshes and browser restarts until expiration
 
 ## PWA Features
 

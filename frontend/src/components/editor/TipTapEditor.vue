@@ -50,41 +50,29 @@ const TabExtension = Extension.create({
   addKeyboardShortcuts() {
     return {
       'Tab': () => {
-        const { state } = this.editor
-        const { selection } = state
-        const { $from } = selection
-        
-        // Check if we're in a list
-        if ($from.parent.type.name === 'listItem' || $from.parent.type.name === 'taskItem') {
-          // Try to sink list items (indent)
-          if (this.editor.commands.sinkListItem('listItem')) {
-            return true
-          }
-          if (this.editor.commands.sinkListItem('taskItem')) {
-            return true
-          }
+        // Try list commands first - they return false if not applicable
+        if (this.editor.commands.sinkListItem('listItem')) {
+          return true
+        }
+        if (this.editor.commands.sinkListItem('taskItem')) {
+          return true
         }
         
-        // If not in a list, insert tab character (4 spaces)
+        // Fallback: insert spaces for regular text
         return this.editor.commands.insertContent('    ')
       },
       'Shift-Tab': () => {
-        const { state } = this.editor
-        const { selection } = state
-        const { $from } = selection
-        
-        // Check if we're in a list
-        if ($from.parent.type.name === 'listItem' || $from.parent.type.name === 'taskItem') {
-          // Try to lift list items (outdent)
-          if (this.editor.commands.liftListItem('listItem')) {
-            return true
-          }
-          if (this.editor.commands.liftListItem('taskItem')) {
-            return true
-          }
+        // Try list commands first - they return false if not applicable
+        if (this.editor.commands.liftListItem('listItem')) {
+          return true
+        }
+        if (this.editor.commands.liftListItem('taskItem')) {
+          return true
         }
         
         // For regular text, remove up to 4 spaces before cursor
+        const { state } = this.editor
+        const { selection } = state
         const { $anchor } = selection
         const textBefore = $anchor.parent.textContent.slice(0, $anchor.parentOffset)
         const match = textBefore.match(/[ ]{1,4}$/)
@@ -113,19 +101,28 @@ const markdownToHtml = async (markdown: string): Promise<string> => {
   let html = await marked.parse(markdown)
   
   // Convert task list items to TipTap format
+  // This regex handles input elements with attributes in any order
   html = html.replace(
-    /<li>\s*<input\s+(?:checked\s+)?(?:disabled\s+)?type="checkbox"(?:\s+checked)?(?:\s+disabled)?>\s*(.+?)<\/li>/gi,
-    (match, content) => {
-      const checked = match.includes('checked')
-      return `<li data-type="taskItem" data-checked="${checked}">${content}</li>`
+    /<li>(<input[^>]*type=["']?checkbox["']?[^>]*>)\s*([\s\S]*?)<\/li>/gi,
+    (match, inputTag, content) => {
+      // Check if the checkbox is checked by looking for the checked attribute
+      const checked = /checked/i.test(inputTag)
+      // TipTap TaskItem expects data-checked to be "true" for checked, "false" for unchecked
+      return `<li data-type="taskItem" data-checked="${checked}">${content.trim()}</li>`
     }
   )
   
   // Wrap task lists in proper container
+  // Only wrap ULs that contain ONLY taskItem elements (no mixed lists)
   html = html.replace(
-    /<ul>\s*(<li data-type="taskItem"[\s\S]*?<\/li>\s*)+<\/ul>/gi,
-    (match) => {
-      return match.replace('<ul>', '<ul data-type="taskList">')
+    /<ul>(\s*)(<li data-type="taskItem"[\s\S]*?<\/li>(\s*<li data-type="taskItem"[\s\S]*?<\/li>)*)\s*<\/ul>/gi,
+    (match, ws1, content) => {
+      // Verify there are no regular <li> tags mixed in
+      const tempDiv = match.substring(4, match.length - 5) // Remove <ul> and </ul>
+      if (!/<li(?!\s+data-type="taskItem")/.test(tempDiv)) {
+        return `<ul data-type="taskList">${ws1}${content}</ul>`
+      }
+      return match
     }
   )
   
@@ -141,7 +138,9 @@ const editorToMarkdown = (node: ProseMirrorNode): string => {
     node.forEach((child) => {
       if (child.type.name === 'taskList') {
         child.forEach((taskItem) => {
-          const checked = taskItem.attrs.checked ? 'x' : ' '
+          // Handle both boolean and string values for checked attribute
+          const isChecked = taskItem.attrs.checked === true || taskItem.attrs.checked === 'true'
+          const checked = isChecked ? 'x' : ' '
           markdown += `- [${checked}] `
           // Extract text from paragraph inside task item
           taskItem.forEach((content) => {
@@ -240,7 +239,13 @@ const editor = useEditor({
   content: '',
   editable: !props.readonly,
   extensions: [
-    StarterKit,
+    StarterKit.configure({
+      // Don't include the BulletList from StarterKit to avoid conflicts with TaskList
+      bulletList: {
+        keepMarks: true,
+        keepAttributes: false,
+      },
+    }),
     TaskList,
     TaskItem.configure({
       nested: true,
@@ -428,7 +433,7 @@ onBeforeUnmount(() => {
 :deep(.tiptap ul[data-type="taskList"] li) {
   display: flex;
   align-items: center;
-  margin: 0.25em 0;
+  margin: 0.05em 0;
 }
 
 :deep(.tiptap ul[data-type="taskList"] li > label) {
@@ -447,6 +452,12 @@ onBeforeUnmount(() => {
 :deep(.tiptap ul[data-type="taskList"] li > div) {
   flex: 1;
   line-height: 1.6;
+}
+
+/* Strikethrough for checked task items */
+:deep(.tiptap ul[data-type="taskList"] li[data-checked="true"] > div) {
+  text-decoration: line-through;
+  color: #9ca3af;
 }
 
 /* Nested task lists */
@@ -494,6 +505,125 @@ onBeforeUnmount(() => {
 /* Strike through */
 :deep(.tiptap s) {
   text-decoration: line-through;
+}
+
+/* List styling for proper nesting and tight spacing */
+:deep(.tiptap ul), :deep(.tiptap ol) {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  padding-left: 1.5em; /* Indentation for nested lists */
+}
+
+:deep(.tiptap li) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Task list specific: SIMPLE approach */
+/* FINAL SOLUTION: Target the actual TipTap DOM structure */
+:deep(.tiptap ul[data-type="taskList"]) {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+:deep(.tiptap ul[data-type="taskList"] ul[data-type="taskList"]) {
+  padding-left: 0.05em; /* Ultra-minimal indent for nested task lists (0.5 space worth) */
+}
+
+/* Target the actual li elements (not data-type="taskItem") */
+:deep(.tiptap ul[data-type="taskList"] li) {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  padding-left: 30px; /* Space for absolutely positioned checkbox */
+  min-height: 1.5em;
+  line-height: 1.1; /* Tight line height */
+}
+
+/* Target the actual label elements */
+:deep(.tiptap ul[data-type="taskList"] li > label) {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  margin: 0;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  vertical-align: top;
+}
+
+:deep(.tiptap ul[data-type="taskList"] li > label input[type="checkbox"]) {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  vertical-align: top;
+}
+
+/* Target the actual div elements */
+:deep(.tiptap ul[data-type="taskList"] li > div) {
+  margin-left: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0;
+  min-height: 1.2em;
+  vertical-align: top;
+}
+
+/* CRITICAL: Prevent nested content from affecting parent positioning */
+:deep(.tiptap ul[data-type="taskList"] li ul) {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 0.05em; /* Ultra-minimal indent for nested task lists */
+}
+
+/* Ultra-tight vertical spacing for list items */
+:deep(.tiptap ul[data-type="taskList"] li > div) {
+  line-height: 1.1; /* Tight line height */
+}
+
+/* Target paragraph elements inside list items for ultra-tight spacing */
+:deep(.tiptap ul[data-type="taskList"] li p) {
+  margin: 0;
+  padding: 0;
+  line-height: 1.1;
+}
+
+/* Target any text content inside list items */
+:deep(.tiptap ul[data-type="taskList"] li > div > p) {
+  margin: 0;
+  padding: 0;
+  line-height: 1.1;
+}
+
+/* Tight spacing for bullet and numbered lists (NOT task lists) */
+:deep(.tiptap ul:not([data-type="taskList"]) li) {
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: 1.1;
+}
+
+:deep(.tiptap ol li) {
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: 1.1;
+}
+
+:deep(.tiptap ul:not([data-type="taskList"]) li p) {
+  margin: 0;
+  padding: 0;
+  line-height: 1.1;
+}
+
+:deep(.tiptap ol li p) {
+  margin: 0;
+  padding: 0;
+  line-height: 1.1;
 }
 </style>
 

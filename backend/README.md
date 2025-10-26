@@ -61,7 +61,7 @@ A minimal FastAPI backend for the KBase note-taking application.
 ## API Endpoints
 
 ### Authentication
-- `POST /api/v1/auth/login` - Authenticate and get JWT token
+- `POST /api/v1/auth/login` - Authenticate and get JWT token (accepts optional `remember_me` flag)
 - `GET /api/v1/auth/verify` - Verify token validity
 
 ### Notes (Protected)
@@ -103,7 +103,7 @@ The application uses environment variables for configuration:
 - `VAULT_PATH` (required): Path to the note vault directory (supports tilde expansion, e.g., `~/kbase-vault`)
 - `SECRET_KEY` (required): Secret key for JWT token signing
 - `PASSWORD` (required): Plain text password for authentication
-- `ACCESS_TOKEN_EXPIRE_MINUTES` (optional): Token expiration time (default: 30)
+- `ACCESS_TOKEN_EXPIRE_MINUTES` (optional): Token expiration time in minutes (default: 10080 = 7 days)
 - `HOST` (optional): Server host (default: 0.0.0.0)
 - `PORT` (optional): Server port (default: 8000)
 - `APP_NAME` (optional): Application name (default: KBase)
@@ -115,7 +115,11 @@ The application uses environment variables for configuration:
 - **JWT Authentication**: All API endpoints (except public ones) require valid JWT tokens
 - **Password Security**: Plain text password stored in environment variables (suitable for personal use)
 - **Path Security**: All file paths are validated to prevent directory traversal attacks
-- **Token Security**: JWT tokens expire after 30 minutes by default
+- **Token Security**: 
+  - JWT tokens expire after 7 days by default (10,080 minutes)
+  - Extended to 30 days when "Remember Me" option is used during login
+  - Tokens stored in browser localStorage for persistent sessions
+  - Automatic session restoration on page refresh
 - **File Type Validation**: Only markdown files (`.md`, `.markdown`) are supported
 - **Path Normalization**: Paths are normalized and checked against the vault directory
 
@@ -148,10 +152,15 @@ uv run python -m app.main
 To use the API, you need to authenticate first:
 
 ```bash
-# Login to get a JWT token
+# Login to get a JWT token (7-day expiration)
 curl -X POST "http://localhost:8000/api/v1/auth/login" \
      -H "Content-Type: application/json" \
      -d '{"password": "your-password"}'
+
+# Login with "Remember Me" (30-day expiration)
+curl -X POST "http://localhost:8000/api/v1/auth/login" \
+     -H "Content-Type: application/json" \
+     -d '{"password": "your-password", "remember_me": true}'
 
 # Use the token in subsequent requests
 curl -X GET "http://localhost:8000/api/v1/notes/" \

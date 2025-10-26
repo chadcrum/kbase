@@ -6,7 +6,6 @@
         :file-name="getNoteTitle(selectedNote.path)"
         :file-path="selectedNote.path"
         :view-mode="viewMode"
-        :save-status="saveStatus"
         @update:view-mode="viewMode = $event"
         @open-search="handleOpenSearch"
       />
@@ -29,6 +28,14 @@
           :disabled="viewMode !== 'wysiwyg'"
           @save="handleSave"
         />
+      </div>
+      
+      <!-- Floating Save Status -->
+      <div v-if="saveStatus" class="floating-save-status" :class="saveStatus">
+        <span v-if="saveStatus === 'saving'" class="status-icon spinner">⏳</span>
+        <span v-else-if="saveStatus === 'saved'" class="status-icon">✓</span>
+        <span v-else-if="saveStatus === 'error'" class="status-icon">⚠️</span>
+        <span class="status-text">{{ saveStatusText }}</span>
       </div>
     </div>
     
@@ -77,6 +84,19 @@ const selectedNote = computed(() => vaultStore.selectedNote)
 const isLoading = computed(() => vaultStore.isLoading)
 const hasError = computed(() => vaultStore.hasError)
 const error = computed(() => vaultStore.error)
+
+const saveStatusText = computed(() => {
+  switch (saveStatus.value) {
+    case 'saving':
+      return 'Saving...'
+    case 'saved':
+      return 'Saved'
+    case 'error':
+      return 'Save failed'
+    default:
+      return ''
+  }
+})
 
 // Watch for note changes to update editable content
 watch(selectedNote, (newNote) => {
@@ -273,10 +293,62 @@ const handleOpenSearch = () => {
   pointer-events: none;
 }
 
+/* Floating save status indicator */
+.floating-save-status {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.floating-save-status.saving {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.floating-save-status.saved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.floating-save-status.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.floating-save-status .status-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.floating-save-status .status-icon.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.floating-save-status .status-text {
+  white-space: nowrap;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .note-viewer {
     font-size: 0.875rem;
+  }
+  
+  .floating-save-status {
+    bottom: 16px;
+    right: 16px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
   }
 }
 </style>

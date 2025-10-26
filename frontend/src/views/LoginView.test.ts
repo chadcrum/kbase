@@ -113,7 +113,10 @@ describe('LoginView', () => {
       const form = wrapper.find('form')
       await form.trigger('submit')
       
-      expect(mockAuthStore.login).toHaveBeenCalledWith({ password: 'test-password' })
+      expect(mockAuthStore.login).toHaveBeenCalledWith({ 
+        password: 'test-password',
+        remember_me: false
+      })
     })
 
     it('should redirect to home page on successful login', async () => {
@@ -162,6 +165,36 @@ describe('LoginView', () => {
       await form.trigger('submit')
       
       expect(mockAuthStore.clearError).toHaveBeenCalled()
+    })
+
+    it('should call login with remember_me true when checkbox is checked', async () => {
+      mockAuthStore.login.mockResolvedValue(true)
+      wrapper = createWrapper()
+      
+      const passwordInput = wrapper.find('input[type="password"]')
+      await passwordInput.setValue('test-password')
+      
+      const rememberMeCheckbox = wrapper.find('input[type="checkbox"]')
+      await rememberMeCheckbox.setValue(true)
+      
+      const form = wrapper.find('form')
+      await form.trigger('submit')
+      
+      expect(mockAuthStore.login).toHaveBeenCalledWith({ 
+        password: 'test-password',
+        remember_me: true
+      })
+    })
+
+    it('should render remember me checkbox', () => {
+      wrapper = createWrapper()
+      
+      const rememberMeCheckbox = wrapper.find('input[type="checkbox"]')
+      expect(rememberMeCheckbox.exists()).toBe(true)
+      
+      const rememberMeLabel = wrapper.find('label[for="remember-me"]')
+      expect(rememberMeLabel.exists()).toBe(true)
+      expect(rememberMeLabel.text()).toContain('Remember me')
     })
   })
 

@@ -1,7 +1,9 @@
 """Authentication API tests."""
 
+from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
+from jose import jwt
 
 
 class TestAuthentication:
@@ -130,6 +132,66 @@ class TestAuthentication:
             headers={"Authorization": f"Bearer {token}"}
         )
         assert verify_response.status_code == 200
+
+    def test_login_without_remember_me(self, auth_client: TestClient):
+        """Test login without remember_me field uses default expiration (7 days)."""
+        response = auth_client.post(
+            "/api/v1/auth/login",
+            json={"password": "test-password"}
+        )
+        
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+        
+        # Decode token to check expiration (using test secret key)
+        payload = jwt.decode(token, "test-secret-key-for-jwt-signing", algorithms=["HS256"])
+        exp = payload["exp"]
+        now = datetime.now(timezone.utc).timestamp()
+        
+        # Token should expire in approximately 7 days (allow 1 minute tolerance)
+        days_7_seconds = 7 * 24 * 60 * 60
+        time_diff = exp - now
+        assert days_7_seconds - 60 < time_diff < days_7_seconds + 60
+
+    def test_login_with_remember_me_false(self, auth_client: TestClient):
+        """Test login with remember_me=false uses default expiration (7 days)."""
+        response = auth_client.post(
+            "/api/v1/auth/login",
+            json={"password": "test-password", "remember_me": False}
+        )
+        
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+        
+        # Decode token to check expiration (using test secret key)
+        payload = jwt.decode(token, "test-secret-key-for-jwt-signing", algorithms=["HS256"])
+        exp = payload["exp"]
+        now = datetime.now(timezone.utc).timestamp()
+        
+        # Token should expire in approximately 7 days (allow 1 minute tolerance)
+        days_7_seconds = 7 * 24 * 60 * 60
+        time_diff = exp - now
+        assert days_7_seconds - 60 < time_diff < days_7_seconds + 60
+
+    def test_login_with_remember_me_true(self, auth_client: TestClient):
+        """Test login with remember_me=true uses extended expiration (30 days)."""
+        response = auth_client.post(
+            "/api/v1/auth/login",
+            json={"password": "test-password", "remember_me": True}
+        )
+        
+        assert response.status_code == 200
+        token = response.json()["access_token"]
+        
+        # Decode token to check expiration (using test secret key)
+        payload = jwt.decode(token, "test-secret-key-for-jwt-signing", algorithms=["HS256"])
+        exp = payload["exp"]
+        now = datetime.now(timezone.utc).timestamp()
+        
+        # Token should expire in approximately 30 days (allow 1 minute tolerance)
+        days_30_seconds = 30 * 24 * 60 * 60
+        time_diff = exp - now
+        assert days_30_seconds - 60 < time_diff < days_30_seconds + 60
 
 
 class TestAuthIntegration:

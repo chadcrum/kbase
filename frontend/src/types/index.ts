@@ -1,6 +1,7 @@
 // API Response Types
 export interface LoginRequest {
   password: string
+  remember_me?: boolean
 }
 
 export interface LoginResponse {

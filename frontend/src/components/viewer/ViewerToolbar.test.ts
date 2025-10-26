@@ -3,6 +3,14 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import ViewerToolbar from './ViewerToolbar.vue'
 
+// Mock Vue Router
+const mockPush = vi.fn()
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: mockPush
+  })
+}))
+
 // Mock the vault store
 vi.mock('@/stores/vault', () => ({
   useVaultStore: vi.fn(() => ({
@@ -106,55 +114,42 @@ describe('ViewerToolbar', () => {
     expect(wrapper.emitted('update:viewMode')?.[0]).toEqual(['wysiwyg'])
   })
 
-  it('displays saving status', () => {
+  it('renders search and logout buttons', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md',
-        viewMode: 'editor',
-        saveStatus: 'saving'
+        viewMode: 'editor'
       }
     })
 
-    expect(wrapper.text()).toContain('Saving...')
-    expect(wrapper.find('.save-status').classes()).toContain('saving')
+    expect(wrapper.text()).toContain('Search')
+    expect(wrapper.text()).toContain('Logout')
+    expect(wrapper.find('.search-btn').exists()).toBe(true)
+    expect(wrapper.find('.logout-btn').exists()).toBe(true)
   })
 
-  it('displays saved status', () => {
+  it('handles search button click', async () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md',
-        viewMode: 'editor',
-        saveStatus: 'saved'
+        viewMode: 'editor'
       }
     })
 
-    expect(wrapper.text()).toContain('Saved')
-    expect(wrapper.find('.save-status').classes()).toContain('saved')
+    await wrapper.find('.search-btn').trigger('click')
+    expect(wrapper.emitted('openSearch')).toBeTruthy()
   })
 
-  it('displays error status', () => {
+  it('handles logout button click', async () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md',
-        viewMode: 'editor',
-        saveStatus: 'error'
+        viewMode: 'editor'
       }
     })
 
-    expect(wrapper.text()).toContain('Save failed')
-    expect(wrapper.find('.save-status').classes()).toContain('error')
-  })
-
-  it('does not display save status when null', () => {
-    const wrapper = mount(ViewerToolbar, {
-      props: {
-        fileName: 'test.md',
-        viewMode: 'editor',
-        saveStatus: null
-      }
-    })
-
-    expect(wrapper.find('.save-status').exists()).toBe(false)
+    await wrapper.find('.logout-btn').trigger('click')
+    expect(mockPush).toHaveBeenCalledWith('/login')
   })
 })
 

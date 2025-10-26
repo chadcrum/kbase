@@ -493,7 +493,7 @@ describe('FileTreeNode', () => {
       
       const itemCount = wrapper.find('.item-count')
       expect(itemCount.exists()).toBe(true)
-      expect(itemCount.text()).toBe('(2)')
+      expect(itemCount.text()).toBe('2')
     })
 
     it('should recursively count nested items', () => {
@@ -524,7 +524,7 @@ describe('FileTreeNode', () => {
       // Should count: file1.md (1) + subfolder (1) + file2.md (1) + file3.md (1) = 4
       const itemCount = wrapper.find('.item-count')
       expect(itemCount.exists()).toBe(true)
-      expect(itemCount.text()).toBe('(4)')
+      expect(itemCount.text()).toBe('4')
     })
 
     it('should handle deeply nested directories', () => {
@@ -559,7 +559,7 @@ describe('FileTreeNode', () => {
       
       // Should count: level1 (1) + level2 (1) + deep.md (1) = 3
       const itemCount = wrapper.find('.item-count')
-      expect(itemCount.text()).toBe('(3)')
+      expect(itemCount.text()).toBe('3')
     })
 
     it('should not display count for empty directories', () => {
@@ -651,7 +651,7 @@ describe('FileTreeNode', () => {
       
       // Count: file1.md (1) + dir1 (1) + file2.md (1) + file3.md (1) + dir2 (1) = 5
       const itemCount = wrapper.find('.item-count')
-      expect(itemCount.text()).toBe('(5)')
+      expect(itemCount.text()).toBe('5')
     })
   })
 })

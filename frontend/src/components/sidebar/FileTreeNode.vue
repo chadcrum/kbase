@@ -42,7 +42,7 @@
       <span v-else class="node-name" @dblclick="startRename">{{ node.name }}</span>
       
       <!-- Item count for directories -->
-      <span v-if="node.type === 'directory' && itemCount > 0" class="item-count">({{ itemCount }})</span>
+      <span v-if="node.type === 'directory' && itemCount > 0" class="item-count">{{ itemCount }}</span>
     </div>
     
     <!-- Children (for directories) -->
@@ -79,6 +79,30 @@
       @confirm="handleDeleteConfirm"
       @cancel="showDeleteConfirm = false"
     />
+
+    <!-- Input Dialog for Create Folder -->
+    <InputDialog
+      :is-open="showCreateFolderDialog"
+      title="Create New Folder"
+      message="Enter the folder name:"
+      placeholder="folder-name"
+      confirm-text="Create"
+      :validator="validateFolderName"
+      @confirm="createFolderInDirectory"
+      @cancel="showCreateFolderDialog = false"
+    />
+
+    <!-- Input Dialog for Create Note -->
+    <InputDialog
+      :is-open="showCreateFileDialog"
+      title="Create New Note"
+      message="Enter the note name (with .md extension):"
+      placeholder="note-name.md"
+      confirm-text="Create"
+      :validator="validateFileName"
+      @confirm="createNoteInDirectory"
+      @cancel="showCreateFileDialog = false"
+    />
   </div>
 </template>
 
@@ -87,6 +111,7 @@ import { computed, ref, nextTick } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import ContextMenu, { type ContextMenuItem } from './ContextMenu.vue'
 import ConfirmDialog from '../common/ConfirmDialog.vue'
+import InputDialog from '../common/InputDialog.vue'
 import type { FileTreeNode as FileTreeNodeType } from '@/types'
 
 // Props
@@ -118,6 +143,8 @@ const isRenaming = ref(false)
 const newName = ref('')
 const renameInput = ref<HTMLInputElement | null>(null)
 const dragHoverTimer = ref<number | null>(null)
+const showCreateFolderDialog = ref(false)
+const showCreateFileDialog = ref(false)
 
 // Computed properties
 const hasChildren = computed(() => {
@@ -139,9 +166,17 @@ const isAtRoot = computed(() => {
 })
 
 const contextMenuItems = computed((): ContextMenuItem[] => {
-  const items: ContextMenuItem[] = [
-    { label: 'Rename', icon: '✏️', action: 'rename' }
-  ]
+  const items: ContextMenuItem[] = []
+  
+  // Add "Create Directory" and "Create Note" options for directories
+  if (isDirectory.value) {
+    items.push(
+      { label: 'Create Directory', icon: '📁', action: 'create-folder' },
+      { label: 'Create Note', icon: '📄', action: 'create-note' }
+    )
+  }
+  
+  items.push({ label: 'Rename', icon: '✏️', action: 'rename' })
   
   // Only show "Move to Root" if not already at root
   if (!isAtRoot.value) {
@@ -202,6 +237,12 @@ const handleContextMenu = (event: MouseEvent) => {
 
 const handleContextMenuAction = async (action: string) => {
   switch (action) {
+    case 'create-folder':
+      showCreateFolderDialog.value = true
+      break
+    case 'create-note':
+      showCreateFileDialog.value = true
+      break
     case 'rename':
       startRename()
       break
@@ -281,6 +322,121 @@ const handleMoveToRoot = async () => {
     await vaultStore.moveDirectory(props.node.path, '/')
   } else {
     await vaultStore.moveFile(props.node.path, '/')
+  }
+}
+
+// Validation functions
+/**
+ * Validates folder name to prevent path traversal and invalid characters
+ * @param name - The folder name to validate
+ * @returns Error message if invalid, null if valid
+ */
+const validateFolderName = (name: string): string | null => {
+  // Check for empty name
+  if (!name.trim()) {
+    return 'Folder name cannot be empty'
+  }
+
+  // Check for path traversal
+  if (name.includes('..') || name.includes('/') || name.includes('\\')) {
+    return 'Folder name cannot contain path separators or ..'
+  }
+
+  // Check for invalid characters
+  const invalidChars = /[<>:"|?*]/
+  if (invalidChars.test(name)) {
+    return 'Folder name contains invalid characters'
+  }
+
+  // Check for reserved names (Windows)
+  const reservedNames = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9']
+  if (reservedNames.includes(name.toUpperCase())) {
+    return 'This is a reserved folder name'
+  }
+
+  return null
+}
+
+/**
+ * Validates file name to prevent path traversal and ensure .md extension
+ * @param name - The file name to validate
+ * @returns Error message if invalid, null if valid
+ */
+const validateFileName = (name: string): string | null => {
+  // Check for empty name
+  if (!name.trim()) {
+    return 'File name cannot be empty'
+  }
+
+  // Check for path traversal
+  if (name.includes('..') || name.includes('/') || name.includes('\\')) {
+    return 'File name cannot contain path separators or ..'
+  }
+
+  // Check for invalid characters
+  const invalidChars = /[<>:"|?*]/
+  if (invalidChars.test(name)) {
+    return 'File name contains invalid characters'
+  }
+
+  // Ensure .md extension
+  if (!name.endsWith('.md')) {
+    return 'File name must end with .md extension'
+  }
+
+  // Check for reserved names (Windows)
+  const baseName = name.replace(/\.md$/, '')
+  const reservedNames = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9']
+  if (reservedNames.includes(baseName.toUpperCase())) {
+    return 'This is a reserved file name'
+  }
+
+  return null
+}
+
+// Creation handlers
+/**
+ * Creates a new folder within the current directory
+ * @param folderName - The name of the folder to create
+ */
+const createFolderInDirectory = async (folderName: string) => {
+  // Build the full path for the new folder
+  const newFolderPath = props.node.path === '/' 
+    ? `/${folderName}` 
+    : `${props.node.path}/${folderName}`
+  
+  const success = await vaultStore.createDirectory(newFolderPath)
+  if (success) {
+    showCreateFolderDialog.value = false
+    
+    // Auto-expand the directory to show the newly created folder
+    if (!isExpanded.value) {
+      emit('toggleExpand', props.node.path)
+    }
+  }
+}
+
+/**
+ * Creates a new note within the current directory
+ * @param fileName - The name of the file to create (must end with .md)
+ */
+const createNoteInDirectory = async (fileName: string) => {
+  // Ensure .md extension (already validated, but being defensive)
+  const fullFileName = fileName.endsWith('.md') ? fileName : `${fileName}.md`
+  
+  // Build the full path for the new note
+  const newNotePath = props.node.path === '/' 
+    ? `/${fullFileName}` 
+    : `${props.node.path}/${fullFileName}`
+  
+  const success = await vaultStore.createNote(newNotePath)
+  if (success) {
+    showCreateFileDialog.value = false
+    
+    // Auto-expand the directory to show the newly created note
+    if (!isExpanded.value) {
+      emit('toggleExpand', props.node.path)
+    }
   }
 }
 
@@ -426,7 +582,7 @@ const handleDrop = async (event: DragEvent) => {
 }
 
 .node-name {
-  flex: 1;
+  flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

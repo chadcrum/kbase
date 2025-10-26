@@ -26,12 +26,16 @@ const router = createRouter({
   ]
 })
 
+// Track if auth has been initialized
+let authInitialized = false
+
 // Auth guard
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   
-  // Initialize auth state on first navigation
-  if (!authStore.isAuthenticated && !authStore.isLoading) {
+  // Initialize auth state once on first navigation
+  if (!authInitialized) {
+    authInitialized = true
     await authStore.initializeAuth()
   }
 

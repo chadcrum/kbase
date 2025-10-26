@@ -97,6 +97,25 @@
 
     <div class="toolbar-group">
       <button
+        @click="handleIndent"
+        class="toolbar-btn"
+        title="Indent (Tab)"
+      >
+        → Indent
+      </button>
+      <button
+        @click="handleDeIndent"
+        class="toolbar-btn"
+        title="De-indent (Shift+Tab)"
+      >
+        ← Outdent
+      </button>
+    </div>
+
+    <div class="toolbar-separator"></div>
+
+    <div class="toolbar-group">
+      <button
         @click="editor.chain().focus().toggleBlockquote().run()"
         :class="{ 'is-active': editor.isActive('blockquote') }"
         class="toolbar-btn"
@@ -151,7 +170,49 @@ interface Props {
   editor: Editor | null
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+// Handle indent button click
+const handleIndent = () => {
+  if (!props.editor) return
+  
+  // Try list commands first - they return false if not applicable
+  if (props.editor.commands.sinkListItem('listItem')) {
+    return
+  }
+  if (props.editor.commands.sinkListItem('taskItem')) {
+    return
+  }
+  
+  // Fallback: insert spaces for regular text
+  props.editor.commands.insertContent('    ')
+}
+
+// Handle de-indent button click
+const handleDeIndent = () => {
+  if (!props.editor) return
+  
+  // Try list commands first - they return false if not applicable
+  if (props.editor.commands.liftListItem('listItem')) {
+    return
+  }
+  if (props.editor.commands.liftListItem('taskItem')) {
+    return
+  }
+  
+  // For regular text, remove up to 4 spaces before cursor
+  const { state } = props.editor
+  const { selection } = state
+  const { $anchor } = selection
+  const textBefore = $anchor.parent.textContent.slice(0, $anchor.parentOffset)
+  const match = textBefore.match(/[ ]{1,4}$/)
+  
+  if (match) {
+    const from = $anchor.pos - match[0].length
+    const to = $anchor.pos
+    props.editor.commands.deleteRange({ from, to })
+  }
+}
 </script>
 
 <style scoped>

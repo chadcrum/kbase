@@ -95,8 +95,9 @@ src/
 - `ContextMenu.vue`: Right-click context menu component
 
 ### Common Components
-- `InputDialog.vue`: Reusable input dialog with validation
-- `ConfirmDialog.vue`: Reusable confirmation dialog
+- `InputDialog.vue`: Reusable input dialog with validation and dark mode support
+- `ConfirmDialog.vue`: Reusable confirmation dialog with dark mode support
+- `OmniSearch.vue`: Full-text search modal with dark mode support
 
 ### Note Display
 - `NoteViewer.vue`: Monaco editor for all file types

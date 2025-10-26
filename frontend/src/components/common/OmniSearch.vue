@@ -229,9 +229,9 @@ const scrollSelectedIntoView = () => {
 }
 
 .omni-search-modal {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px var(--shadow);
   width: 90%;
   max-width: 600px;
   max-height: 70vh;
@@ -244,7 +244,7 @@ const scrollSelectedIntoView = () => {
   display: flex;
   align-items: center;
   padding: 1rem;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--border-color);
   gap: 0.75rem;
 }
 
@@ -259,12 +259,12 @@ const scrollSelectedIntoView = () => {
   border: none;
   outline: none;
   background: transparent;
-  color: #1f2937;
+  color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .search-input::placeholder {
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .loading-spinner {
@@ -295,18 +295,18 @@ const scrollSelectedIntoView = () => {
 }
 
 .result-item.selected {
-  background: linear-gradient(to right, #dbeafe, #bfdbfe);
-  border-left: 3px solid #3b82f6;
+  background: var(--bg-tertiary);
+  border-left: 3px solid #667eea;
   padding-left: calc(0.75rem - 3px);
 }
 
 .result-item:hover {
-  background: linear-gradient(to right, #eef2ff, #e0e7ff);
+  background: var(--bg-tertiary);
   transform: translateX(2px);
 }
 
 .result-item.selected:hover {
-  background: linear-gradient(to right, #bfdbfe, #93c5fd);
+  background: var(--border-color);
 }
 
 .result-icon {
@@ -322,7 +322,7 @@ const scrollSelectedIntoView = () => {
 .result-name {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -330,7 +330,7 @@ const scrollSelectedIntoView = () => {
 
 .result-path {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   white-space: nowrap;
   overflow: hidden;
@@ -351,14 +351,14 @@ const scrollSelectedIntoView = () => {
   gap: 0.5rem;
   font-size: 0.75rem;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  border-left: 2px solid #e0e7ff;
+  border-left: 2px solid var(--border-color);
 }
 
 .snippet-line-number {
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-weight: 600;
   min-width: 2.5rem;
   text-align: right;
@@ -367,7 +367,7 @@ const scrollSelectedIntoView = () => {
 }
 
 .snippet-content {
-  color: #475569;
+  color: var(--text-secondary);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -385,14 +385,14 @@ const scrollSelectedIntoView = () => {
 .no-results {
   padding: 2rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
 .search-hint {
   padding: 2rem;
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 0.9rem;
 }
 
@@ -424,17 +424,17 @@ const scrollSelectedIntoView = () => {
 }
 
 .results-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
   border-radius: 4px;
 }
 
 .results-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--border-color);
   border-radius: 4px;
 }
 
 .results-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--text-tertiary);
 }
 
 /* Responsive design */

@@ -63,45 +63,51 @@ describe('ThemeStore', () => {
 
   describe('initializeTheme', () => {
     it('should use system preference when no user preference exists', () => {
-      // Mock system prefers dark
-      matchMediaMock.mockReturnValueOnce({
+      // Mock system prefers dark - need to mock multiple calls to matchMedia
+      const mockMediaQuery = {
         matches: true,
         addEventListener: vi.fn(),
         removeEventListener: vi.fn()
-      })
+      }
+      matchMediaMock.mockReturnValue(mockMediaQuery)
       
       expect(localStorage.getItem('kbase_theme_mode')).toBeNull()
       
       themeStore.initializeTheme()
       
       expect(themeStore.isDarkMode).toBe(true)
+      matchMediaMock.mockClear()
     })
 
     it('should use light mode when system prefers light and no user preference', () => {
-      matchMediaMock.mockReturnValueOnce({
+      const mockMediaQuery = {
         matches: false,
         addEventListener: vi.fn(),
         removeEventListener: vi.fn()
-      })
+      }
+      matchMediaMock.mockReturnValue(mockMediaQuery)
       
       themeStore.initializeTheme()
       
       expect(themeStore.isDarkMode).toBe(false)
+      matchMediaMock.mockClear()
     })
 
     it('should use stored user preference over system preference', () => {
       localStorage.setItem('kbase_theme_mode', 'dark')
       
-      matchMediaMock.mockReturnValueOnce({
+      const mockMediaQuery = {
         matches: false, // System prefers light
         addEventListener: vi.fn(),
         removeEventListener: vi.fn()
-      })
+      }
+      matchMediaMock.mockReturnValue(mockMediaQuery)
       
       themeStore.initializeTheme()
       
       // Should use stored preference (dark) not system preference (light)
       expect(themeStore.isDarkMode).toBe(true)
+      matchMediaMock.mockClear()
     })
 
     it('should set data-theme attribute on documentElement', () => {
@@ -112,26 +118,30 @@ describe('ThemeStore', () => {
         writable: true
       })
       
-      matchMediaMock.mockReturnValueOnce({
+      const mockMediaQuery = {
         matches: false,
         addEventListener: vi.fn(),
         removeEventListener: vi.fn()
-      })
+      }
+      matchMediaMock.mockReturnValue(mockMediaQuery)
       
       themeStore.initializeTheme()
       
       expect(setAttributeSpy).toHaveBeenCalled()
+      matchMediaMock.mockClear()
     })
   })
 
   describe('toggleTheme', () => {
     beforeEach(() => {
-      matchMediaMock.mockReturnValueOnce({
+      const mockMediaQuery = {
         matches: false,
         addEventListener: vi.fn(),
         removeEventListener: vi.fn()
-      })
+      }
+      matchMediaMock.mockReturnValue(mockMediaQuery)
       themeStore.initializeTheme()
+      matchMediaMock.mockClear()
     })
 
     it('should toggle from light to dark mode', () => {
@@ -183,17 +193,20 @@ describe('ThemeStore', () => {
   describe('cleanup', () => {
     it('should remove event listener on cleanup', () => {
       const removeEventListenerSpy = vi.fn()
+      const addEventListenerSpy = vi.fn()
       
-      matchMediaMock.mockReturnValueOnce({
+      const mockMediaQuery = {
         matches: false,
-        addEventListener: vi.fn(),
+        addEventListener: addEventListenerSpy,
         removeEventListener: removeEventListenerSpy
-      })
+      }
+      matchMediaMock.mockReturnValue(mockMediaQuery)
       
       themeStore.initializeTheme()
       themeStore.cleanup()
       
       expect(removeEventListenerSpy).toHaveBeenCalled()
+      matchMediaMock.mockClear()
     })
   })
 
@@ -202,32 +215,36 @@ describe('ThemeStore', () => {
       localStorage.setItem('kbase_theme_mode', 'dark')
       const addEventListenerSpy = vi.fn()
       
-      matchMediaMock.mockReturnValueOnce({
+      const mockMediaQuery = {
         matches: false,
         addEventListener: addEventListenerSpy,
         removeEventListener: vi.fn()
-      })
+      }
+      matchMediaMock.mockReturnValue(mockMediaQuery)
       
       themeStore.initializeTheme()
       
       // Should not add listener when user has preference
       // (This tests the logic indirectly by checking the state)
       expect(themeStore.isDarkMode).toBe(true)
+      matchMediaMock.mockClear()
     })
 
     it('should watch system preference when no user preference exists', () => {
       const addEventListenerSpy = vi.fn()
       
-      matchMediaMock.mockReturnValueOnce({
+      const mockMediaQuery = {
         matches: false,
         addEventListener: addEventListenerSpy,
         removeEventListener: vi.fn()
-      })
+      }
+      matchMediaMock.mockReturnValue(mockMediaQuery)
       
       themeStore.initializeTheme()
       
       // Should add listener when no user preference
       expect(addEventListenerSpy).toHaveBeenCalled()
+      matchMediaMock.mockClear()
     })
   })
 })

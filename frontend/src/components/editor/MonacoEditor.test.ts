@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import MonacoEditor from './MonacoEditor.vue'
 
 // Mock monaco loader
@@ -34,7 +35,7 @@ global.ResizeObserver = ResizeObserverMock as any
 
 describe('MonacoEditor', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    setActivePinia(createPinia())
   })
 
   afterEach(() => {

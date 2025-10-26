@@ -5,11 +5,9 @@ import type { FileTreeNode, NoteData } from '@/types'
 
 export type SortBy = 'name' | 'created' | 'modified'
 export type SortOrder = 'asc' | 'desc'
-export type MilkdownViewMode = 'both' | 'source' | 'preview'
 
 const SORT_BY_KEY = 'kbase_sort_by'
 const SORT_ORDER_KEY = 'kbase_sort_order'
-const MILKDOWN_VIEW_MODE_KEY = 'kbase_milkdown_view_mode'
 
 export const useVaultStore = defineStore('vault', () => {
   // State
@@ -24,9 +22,6 @@ export const useVaultStore = defineStore('vault', () => {
   // Sort state - load from localStorage
   const sortBy = ref<SortBy>((localStorage.getItem(SORT_BY_KEY) as SortBy) || 'name')
   const sortOrder = ref<SortOrder>((localStorage.getItem(SORT_ORDER_KEY) as SortOrder) || 'asc')
-  
-  // Milkdown view mode state - load from localStorage
-  const milkdownViewMode = ref<MilkdownViewMode>((localStorage.getItem(MILKDOWN_VIEW_MODE_KEY) as MilkdownViewMode) || 'both')
   
   // Sidebar visibility state
   const isSidebarCollapsed = ref(false)
@@ -359,12 +354,6 @@ export const useVaultStore = defineStore('vault', () => {
     setSortOrder(newOrder)
   }
 
-  // Milkdown view mode actions
-  const setMilkdownViewMode = (newViewMode: MilkdownViewMode) => {
-    milkdownViewMode.value = newViewMode
-    localStorage.setItem(MILKDOWN_VIEW_MODE_KEY, newViewMode)
-  }
-
   // Collapse all action
   const collapseAll = () => {
     expandedPaths.value.clear()
@@ -390,7 +379,6 @@ export const useVaultStore = defineStore('vault', () => {
     saveError,
     sortBy,
     sortOrder,
-    milkdownViewMode,
     isSidebarCollapsed,
     // Getters
     hasError,
@@ -423,7 +411,6 @@ export const useVaultStore = defineStore('vault', () => {
     setSortBy,
     setSortOrder,
     toggleSortOrder,
-    setMilkdownViewMode,
     // Collapse all action
     collapseAll,
     // Sidebar actions

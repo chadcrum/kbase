@@ -7,8 +7,8 @@ WORKDIR /app/frontend
 # Copy package files for dependency installation
 COPY frontend/package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies (including dev dependencies for build)
+RUN npm ci
 
 # Copy frontend source code
 COPY frontend/ ./
@@ -33,7 +33,7 @@ RUN pip install uv
 COPY backend/ ./
 
 # Install Python dependencies
-RUN uv sync --frozen
+RUN uv sync
 
 # Copy built frontend assets from frontend-builder stage
 COPY --from=frontend-builder /app/frontend/dist ./dist

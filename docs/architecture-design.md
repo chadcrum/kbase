@@ -22,8 +22,7 @@
 - **Build Tool**: Vite
 - **HTTP Client**: Axios
 - **UI**: Custom CSS (no component library initially)
-- **Code Editor**: Monaco Editor (VS Code editor)
-- **Markdown Editor**: Milkdown (split-pane markdown editor with source + preview)
+- **Code Editor**: Monaco Editor (VS Code editor) for all file types
 - **Future**: WebSocket Client, PWA features
 
 ### Infrastructure
@@ -211,8 +210,7 @@ frontend/src/
 │   │   ├── ConfirmDialog.vue       # Reusable confirmation dialog
 │   │   └── InputDialog.vue         # Reusable input dialog for user input
 │   ├── editor/
-│   │   ├── MonacoEditor.vue        # Monaco code editor wrapper
-│   │   └── MilkdownEditor.vue      # Milkdown split-pane markdown editor
+│   │   └── MonacoEditor.vue        # Monaco code editor wrapper
 │   ├── layout/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
@@ -222,8 +220,8 @@ frontend/src/
 │   │   ├── FileTreeNode.vue        # Individual tree node
 │   │   └── Sidebar.vue             # Sidebar container
 │   └── viewer/
-│       ├── NoteViewer.vue          # Note viewer with editor/preview toggle
-│       └── ViewerToolbar.vue       # Toolbar with view mode toggle
+│       ├── NoteViewer.vue          # Note viewer with Monaco editor
+│       └── ViewerToolbar.vue       # Toolbar with search and theme controls
 ├── stores/
 │   ├── auth.ts                     # JWT & login state
 │   └── vault.ts                    # File tree & note update state
@@ -242,10 +240,9 @@ frontend/src/
 **Component Structure**:
 
 - **Editor Components**:
-  - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting
-  - `MilkdownEditor.vue`: Milkdown split-pane markdown editor with source + preview, auto-save, and rich text features
-  - `ViewerToolbar.vue`: Toolbar with icon-based view mode toggle, search button, logout button, and save status
-  - `NoteViewer.vue`: Orchestrates editor system with Milkdown for markdown files and Monaco for other files
+  - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting for all file types
+  - `ViewerToolbar.vue`: Toolbar with search button, logout button, and save status
+  - `NoteViewer.vue`: Orchestrates Monaco editor for all file types
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar container
@@ -358,20 +355,11 @@ frontend/src/
     - Prevents path traversal (no `../` or absolute paths)
     - Blocks reserved system names (CON, PRN, AUX, etc.)
     - Validates against invalid characters
-- **Dual-Editor System**: Milkdown for markdown files, Monaco for non-markdown files
-  - **Markdown Mode (Milkdown)**: Split-pane editor with markdown source and live preview
-    - Auto-save functionality (1 second debounce)
-    - Task list support with interactive checkboxes
-    - Tab/Shift-Tab for list indentation
-    - Pane visibility controls (both/source only/preview only)
-    - User preference persistence for pane layout
-  - **Code Mode (Monaco)**: Full-featured code editor with syntax highlighting for all non-markdown files
+- **Monaco Editor**: Full-featured code editor with syntax highlighting for all file types
     - Auto-save functionality (1 second debounce)
     - Syntax highlighting for 30+ languages
     - Dark theme matching VS Code
     - Language detection from file extensions
-  - **Smart Defaults**: Automatically selects Milkdown for .md files, Monaco for other file types
-  - **Icon-Based Toggle**: Single toggle button with dynamic icon - shows `</>` when in Monaco (Code) mode, `Md` when in Milkdown (Markdown) mode
 - **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
 - **Sidebar Toggle**: Collapsible file explorer for maximizing editor space
   - Toggle button in toolbar (left side, before file name)
@@ -465,7 +453,7 @@ services:
 
 **Monaco Editor Integration**:
 
-The Monaco editor provides a professional code editing experience with syntax highlighting and auto-save.
+The Monaco editor provides a professional code editing experience with syntax highlighting and auto-save for all file types.
 
 1. **Component Architecture**:
    - `MonacoEditor.vue`: Wraps Monaco editor with Vue lifecycle
@@ -492,13 +480,7 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - Tab size: 2 spaces
    - No custom toolbar (Monaco's built-in commands accessible via keyboard shortcuts)
    
-5. **View Mode Toggle**:
-   - ViewerToolbar provides toggle between "Editor" and "Preview" modes
-   - Editor mode: Full Monaco editor for editing
-   - Preview mode: Formatted text with metadata display
-   - Mode state managed in NoteViewer component
-   
-6. **Save Status Flow**:
+5. **Save Status Flow**:
    ```
    User types → Debounce (1s) → Emit 'save' event → 
    NoteViewer sets status='saving' → Call updateNote API →
@@ -506,75 +488,11 @@ The Monaco editor provides a professional code editing experience with syntax hi
    Error: status='error' (5s) → Clear status
    ```
 
-7. **Performance Optimizations**:
+6. **Performance Optimizations**:
    - Monaco library loaded only once and cached
    - Editor instance reused when switching files
    - ResizeObserver for efficient layout updates
    - Automatic cleanup on component unmount
-
-**Milkdown Split-Pane Editor Integration**:
-
-The Milkdown editor provides a modern markdown editing experience with split-pane view (source | preview) for `.md` files while keeping Monaco for non-markdown files.
-
-1. **Component Architecture**:
-   - `MilkdownEditor.vue`: Wraps Milkdown editor with Vue 3 Composition API
-   - Uses `@milkdown/vue` composable for seamless Vue integration
-   - Handles editor initialization, content synchronization, and cleanup
-   - Matches Monaco's API for seamless integration (same props and events)
-   
-2. **Auto-Save Implementation**:
-   - Debounced save (1000ms delay after last edit, matching Monaco)
-   - Emits `save` event with markdown content to parent component
-   - Parent (NoteViewer) calls vault store's `updateNote` action
-   - Visual feedback via ViewerToolbar (saving/saved/error states)
-   
-3. **Split-Pane Architecture**:
-   - **Source Pane**: Live markdown editing with syntax highlighting
-   - **Preview Pane**: Real-time rendered markdown using `marked` library
-   - **Resizable**: Users can drag to adjust pane sizes
-   - **Pane Controls**: Three-state toggle (both/source only/preview only)
-   - **Preference Persistence**: User's pane layout preference saved to localStorage
-   
-4. **Milkdown Configuration**:
-   - **Nord Theme**: Modern, clean theme for both light and dark modes
-   - **CommonMark Preset**: Core markdown functionality
-   - **GFM Preset**: GitHub Flavored Markdown including task lists
-   - **Listener Plugin**: Handles content changes and auto-save
-   - **Custom Tab Plugin**: Tab/Shift-Tab for list indentation
-   
-5. **Task List Support**:
-   - Interactive checkboxes with click-to-toggle functionality
-   - Proper markdown serialization: `- [ ]` and `- [x]`
-   - Nested task list support
-   - Checkbox state persists across file navigation
-   
-6. **Pane Visibility Management**:
-   - **Vault Store Integration**: `milkdownViewMode` state with localStorage persistence
-   - **Three States**: `'both'`, `'source'`, `'preview'`
-   - **Default Behavior**: Show both panes on first visit
-   - **User Control**: Pane control buttons in editor header
-   
-7. **Editor Styling**:
-   - Clean, minimal interface with app theme integration
-   - Prose-friendly typography with proper heading sizes
-   - Code blocks with syntax highlighting
-   - Proper spacing for paragraphs, lists, and blockquotes
-   - Responsive design for mobile and desktop
-   
-8. **Default Editor Selection**:
-   - Milkdown is default for `.md` files (markdown-first editing experience)
-   - Monaco is default for all other file types (code-first editing)
-   - Selection happens automatically in NoteViewer when file changes
-   - Users can toggle between editors at any time via toolbar
-   
-9. **View Mode Toggle**:
-   - ViewerToolbar provides single icon-based toggle button between editors
-   - Toggle button icon changes to reflect current active editor:
-     - When Monaco is active: Shows `</>` icon (click to switch to Milkdown)
-     - When Milkdown is active: Shows `Md` icon (click to switch to Monaco)
-   - Tooltips indicate the mode being switched to ("Switch to Markdown" / "Switch to Code")
-   - Clean, minimal design with active state highlighting
-   - Same save status display for both editors
 
 **File Explorer CRUD Operations**:
 

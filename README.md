@@ -29,7 +29,6 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Monaco Editor**: Full-featured code editor with VS Code experience
 - **Syntax Highlighting**: Support for 30+ programming languages
 - **Auto-Save**: Automatic saving with 1-second debounce
-- **Dual View Modes**: Toggle between editor and preview modes
 - **Save Status**: Visual feedback for saving/saved/error states
 
 ### Security & Performance

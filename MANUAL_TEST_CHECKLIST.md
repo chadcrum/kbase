@@ -1,121 +1,80 @@
-# Manual Test Checklist - Editor Sync Simplification
+# Manual Test Checklist - Monaco Editor
 
 ## Test Environment
 - Frontend dev server running on: http://localhost:5173
 - Backend server running on: http://localhost:8000
 
-## Critical Tests for Editor Sync
+## Critical Tests for Monaco Editor
 
-### Test 1: Bullet List Text Preservation (Previously Broken)
+### Test 1: Monaco Editor for Markdown Files
 **Steps:**
-1. Open any `.md` file (starts in TipTap WYSIWYG editor)
-2. Create a bullet list:
-   ```
-   - First item with text
-   - Second item with text
-   - Third item with text
-   ```
-3. Click the "Code" (`</>`) button to switch to Monaco editor
-4. **Verify:** All text in bullet points is visible and preserved
-
-**Expected Result:** ✅ All text appears correctly in Monaco
-**Previous Bug:** ❌ Bullets remained but text disappeared
-
----
-
-### Test 2: Checkbox List Text Preservation (Previously Broken)
-**Steps:**
-1. Open any `.md` file (starts in TipTap WYSIWYG editor)
-2. Create a checkbox list:
-   ```
-   - [ ] Unchecked item with text
-   - [x] Checked item with text
-   - [ ] Another unchecked item
-   ```
-3. Click the "Code" (`</>`) button to switch to Monaco editor
-4. **Verify:** All text in checkbox items is visible and preserved
-
-**Expected Result:** ✅ All text appears correctly with checkboxes in Monaco
-**Previous Bug:** ❌ Checkboxes remained but text disappeared
-
----
-
-### Test 3: Monaco to TipTap Sync
-**Steps:**
-1. Open any `.md` file
-2. Switch to Monaco editor (Code view)
-3. Type markdown content:
+1. Open any `.md` file (opens in Monaco editor)
+2. Type some content with markdown formatting:
    ```markdown
    # Heading
    
-   This is a paragraph with **bold** and *italic* text.
+   This is **bold** text and *italic* text.
    
    - List item 1
    - List item 2
    ```
-4. Wait for auto-save (1 second)
-5. Click the "Markdown" (`Md`) button to switch to TipTap
-6. **Verify:** Content renders correctly with proper formatting
+3. **Verify:** Syntax highlighting works correctly
+4. **Verify:** Auto-save works (see "Saved" status in toolbar)
 
-**Expected Result:** ✅ All content appears with correct formatting in TipTap
-
----
-
-### Test 4: Rapid Editor Switching (Stress Test)
-**Steps:**
-1. Open any `.md` file with some content
-2. Quickly switch between editors 10 times:
-   - Click Code → Markdown → Code → Markdown (repeat)
-3. **Verify:** No errors in console, content remains intact
-
-**Expected Result:** ✅ Smooth switching, no data loss, no console errors
-**Previous Issue:** ⚠️ Race conditions could cause issues with rapid switching
+**Expected Result:** ✅ Monaco editor provides syntax highlighting and auto-save
 
 ---
 
-### Test 5: Unsaved Changes Preservation
+### Test 2: Monaco Editor for Code Files
 **Steps:**
-1. Open any `.md` file
-2. In TipTap, type: "Changes in TipTap"
-3. Immediately switch to Monaco (before auto-save)
-4. **Verify:** Text "Changes in TipTap" appears in Monaco
-5. Type more text in Monaco: " and more in Monaco"
-6. Switch back to TipTap
-7. **Verify:** Full text "Changes in TipTap and more in Monaco" appears
+1. Open any non-markdown file (e.g., `.js`, `.py`, `.json`)
+2. Type code content
+3. **Verify:** Appropriate syntax highlighting for file type
+4. **Verify:** Auto-save works correctly
 
-**Expected Result:** ✅ All unsaved changes preserved in both directions
+**Expected Result:** ✅ Syntax highlighting matches file type
 
 ---
 
-### Test 6: Multiple Files Switch
+### Test 3: Auto-Save Functionality
 **Steps:**
-1. Open file A, make changes in TipTap
+1. Open any file
+2. Make changes to content
+3. Wait 1 second without typing
+4. **Verify:** "Saving..." status appears briefly
+5. **Verify:** "Saved" status appears and remains for 2 seconds
+6. Reload the page
+7. **Verify:** Changes were persisted
+
+**Expected Result:** ✅ Auto-save works with proper status feedback
+
+---
+
+### Test 4: Rapid Typing (Debounce Test)
+**Steps:**
+1. Open any file
+2. Type rapidly for several seconds
+3. **Verify:** No excessive API calls (check Network tab)
+4. Stop typing and wait 1 second
+5. **Verify:** Auto-save triggers once
+
+**Expected Result:** ✅ Debouncing prevents excessive saves
+
+---
+
+### Test 5: Multiple Files Switch
+**Steps:**
+1. Open file A, make changes
 2. Switch to file B via file explorer
-3. Switch to Monaco editor
-4. Make changes in Monaco
-5. Switch back to file A
-6. **Verify:** Original changes in file A are preserved
-7. Switch back to file B
-8. **Verify:** Changes in file B are preserved
+3. Make changes in file B
+4. Switch back to file A
+5. **Verify:** Original changes in file A are preserved
 
 **Expected Result:** ✅ Each file maintains its content independently
 
 ---
 
-### Test 7: Auto-Save Works in Both Editors
-**Steps:**
-1. Open any `.md` file
-2. In TipTap, make changes and wait 1 second
-3. **Verify:** "Saved" status appears in toolbar
-4. Switch to Monaco
-5. Make changes and wait 1 second
-6. **Verify:** "Saved" status appears in toolbar
-
-**Expected Result:** ✅ Auto-save works correctly in both editors
-
----
-
-### Test 8: Complex Content (Comprehensive)
+### Test 6: Complex Content (Comprehensive)
 **Steps:**
 1. Create a new note with ALL markdown elements:
    ```markdown
@@ -140,9 +99,8 @@
    Code block with content
    ```
    ```
-2. Switch between editors multiple times
-3. **Verify:** All elements render correctly in both views
-4. **Verify:** No text is lost anywhere
+2. Save and reload
+3. **Verify:** All content is preserved correctly
 
 **Expected Result:** ✅ All markdown elements preserved perfectly
 
@@ -150,87 +108,66 @@
 
 ## Performance Checks
 
-### Test 9: Editor Switching Speed
+### Test 7: Editor Loading Speed
 **Steps:**
 1. Open a large file (>1000 lines)
-2. Switch from TipTap to Monaco
-3. Note the switching speed
+2. Note the loading speed
 
-**Expected Result:** ✅ **Faster** than before (no remounting delay)
-**Improvement:** Should be near-instantaneous
+**Expected Result:** ✅ Fast loading with Monaco
 
 ---
 
-### Test 10: Memory Usage
+### Test 8: Memory Usage
 **Steps:**
 1. Open DevTools → Performance Monitor
-2. Switch between editors 20 times
-3. **Verify:** No memory leaks (memory should stabilize)
+2. Open multiple files
+3. **Verify:** No memory leaks
 
-**Expected Result:** ✅ Stable memory usage, no leaks
+**Expected Result:** ✅ Stable memory usage
 
 ---
 
 ## Regression Tests
 
-### Test 11: Read-Only Mode Still Works
+### Test 9: Read-Only Mode
 **Steps:**
-1. Verify readonly files cannot be edited in either editor
+1. Open a read-only file (if applicable)
+2. **Verify:** Editor is disabled
 
 **Expected Result:** ✅ Readonly mode respected
 
 ---
 
-### Test 12: Language Detection (Monaco)
+### Test 10: Language Detection
 **Steps:**
-1. Open a `.js` file (should default to Monaco)
-2. **Verify:** Syntax highlighting works
-3. Switch to TipTap
-4. **Verify:** Content still editable
-5. Switch back to Monaco
-6. **Verify:** Syntax highlighting restored
+1. Open files with different extensions (.md, .js, .py, .json)
+2. **Verify:** Appropriate syntax highlighting for each
 
 **Expected Result:** ✅ Language detection works correctly
-
----
-
-## Bug Verification
-
-### ✅ Fixed: List Text Disappearing
-- **Before:** Creating lists in TipTap and switching to Monaco caused text to disappear
-- **After:** Text correctly preserved in all list types
-
-### ✅ Fixed: Race Conditions
-- **Before:** Rapid switching could cause content loss or errors
-- **After:** Smooth, reliable switching with no issues
-
-### ✅ Fixed: Complex Flag Management
-- **Before:** 100+ lines of complex flag logic prone to edge cases
-- **After:** Simple, reliable disabled prop mechanism
 
 ---
 
 ## Console Verification
 
 **During all tests, verify:**
-- ❌ No errors in browser console
-- ❌ No warnings about v-model or watchers
-- ❌ No "Maximum update depth exceeded" errors
+- ✅ No errors in browser console
+- ✅ No warnings about v-model or watchers
+- ✅ No "Maximum update depth exceeded" errors
 
 ---
 
 ## Summary
 
-All tests should pass with the new v-show architecture. The key improvements are:
+All tests should pass with the Monaco-only editor setup. Key features:
 
-1. **Reliability:** No more data loss
-2. **Simplicity:** 100 lines of complexity removed
-3. **Performance:** Faster switching (no remounting)
-4. **Maintainability:** Much easier to understand and debug
+1. **Syntax Highlighting:** Works for all supported file types
+2. **Auto-Save:** 1-second debounce with visual feedback
+3. **Performance:** Fast loading and efficient memory usage
+4. **Reliability:** Content preserved across file switches
 
 If any test fails, check:
-1. Is the disabled prop correctly passed?
-2. Is the disabled check present in all update handlers?
-3. Are both editors properly mounted?
-4. Is v-show (not v-if) being used?
+1. Is the Monaco editor properly initialized?
+2. Are save events being emitted correctly?
+3. Is the API responding correctly?
+4. Is localStorage working properly?
 

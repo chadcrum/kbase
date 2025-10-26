@@ -99,11 +99,10 @@ Successfully implemented Monaco editor (VS Code editor) integration with auto-sa
 - **Error**: Red indicator for 5 seconds after failed save
 - Visual feedback in toolbar
 
-### 4. Dual View Modes
-- **Editor Mode**: Full Monaco editor for editing files
-- **Preview Mode**: Formatted text display with metadata
-- Easy toggle between modes via toolbar buttons
-- Active mode highlighted in toolbar
+### 4. Monaco Editor for All Files
+- **Single Editor**: Monaco editor for all file types
+- **Syntax Highlighting**: Automatic language detection
+- **Consistent Experience**: Same editor for all files
 
 ### 5. Language Detection
 - Automatic detection from file extension
@@ -174,13 +173,9 @@ HomeView
       └── NoteViewer
           ├── ViewerToolbar
           │   ├── File name/path
-          │   ├── View mode toggle
           │   └── Save status
-          ├── MonacoEditor (if viewMode === 'editor')
-          │   └── Monaco instance
-          └── Preview (if viewMode === 'preview')
-              ├── Metadata (size, modified)
-              └── Content display
+          └── MonacoEditor
+              └── Monaco instance
 ```
 
 ### State Management
@@ -218,10 +213,9 @@ All documentation has been updated per project requirements:
 
 ### For Users
 1. Open a file from the sidebar
-2. Click "Editor" to edit with Monaco
-3. Start typing - changes auto-save after 1 second
-4. Watch save status in toolbar
-5. Click "Preview" to see formatted view
+2. Start typing - changes auto-save after 1 second
+3. Watch save status in toolbar
+4. Syntax highlighting provides visual feedback
 
 ### For Developers
 - Monaco editor component is reusable

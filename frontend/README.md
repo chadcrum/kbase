@@ -13,7 +13,6 @@ A Vue 3 frontend for the KBase note-taking application, providing a clean interf
   - Inline rename (double-click)
   - Delete confirmation dialogs
 - **Monaco Editor**: Full-featured code editor with auto-save and syntax highlighting
-- **Dual View Modes**: Toggle between editor and preview modes
 - **Responsive Design**: Works on desktop and mobile devices
 - **Comprehensive Testing**: 170+ tests with high coverage
 
@@ -96,11 +95,12 @@ src/
 - `ContextMenu.vue`: Right-click context menu component
 
 ### Common Components
-- `InputDialog.vue`: Reusable input dialog with validation
-- `ConfirmDialog.vue`: Reusable confirmation dialog
+- `InputDialog.vue`: Reusable input dialog with validation and dark mode support
+- `ConfirmDialog.vue`: Reusable confirmation dialog with dark mode support
+- `OmniSearch.vue`: Full-text search modal with dark mode support
 
 ### Note Display
-- `NoteViewer.vue`: Read-only markdown content viewer
+- `NoteViewer.vue`: Monaco editor for all file types
 - `vault.ts` store: File tree state and note selection
 
 ## Testing

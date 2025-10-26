@@ -27,8 +27,7 @@ describe('ViewerToolbar', () => {
   it('renders file name', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
-        fileName: 'test.md',
-        viewMode: 'editor'
+        fileName: 'test.md'
       }
     })
 
@@ -39,86 +38,17 @@ describe('ViewerToolbar', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md',
-        filePath: 'folder/test.md',
-        viewMode: 'editor'
+        filePath: 'folder/test.md'
       }
     })
 
     expect(wrapper.text()).toContain('folder/test.md')
   })
 
-  it('renders single toggle button with icon', () => {
-    const wrapper = mount(ViewerToolbar, {
-      props: {
-        fileName: 'test.md',
-        viewMode: 'editor'
-      }
-    })
-
-    const button = wrapper.find('.toggle-btn')
-    expect(button.exists()).toBe(true)
-    expect(button.find('.icon-text').exists()).toBe(true)
-  })
-
-  it('shows </> icon when in editor mode', () => {
-    const wrapper = mount(ViewerToolbar, {
-      props: {
-        fileName: 'test.md',
-        viewMode: 'editor'
-      }
-    })
-
-    const iconText = wrapper.find('.icon-text')
-    expect(iconText.text()).toBe('</>')
-  })
-
-  it('shows Md icon when in wysiwyg mode', () => {
-    const wrapper = mount(ViewerToolbar, {
-      props: {
-        fileName: 'test.md',
-        viewMode: 'wysiwyg'
-      }
-    })
-
-    const iconText = wrapper.find('.icon-text')
-    expect(iconText.text()).toBe('Md')
-  })
-
-  it('toggles from wysiwyg to editor when clicked', async () => {
-    const wrapper = mount(ViewerToolbar, {
-      props: {
-        fileName: 'test.md',
-        viewMode: 'wysiwyg'
-      }
-    })
-
-    const button = wrapper.find('.toggle-btn')
-    await button.trigger('click')
-
-    expect(wrapper.emitted('update:viewMode')).toBeTruthy()
-    expect(wrapper.emitted('update:viewMode')?.[0]).toEqual(['editor'])
-  })
-
-  it('toggles from editor to wysiwyg when clicked', async () => {
-    const wrapper = mount(ViewerToolbar, {
-      props: {
-        fileName: 'test.md',
-        viewMode: 'editor'
-      }
-    })
-
-    const button = wrapper.find('.toggle-btn')
-    await button.trigger('click')
-
-    expect(wrapper.emitted('update:viewMode')).toBeTruthy()
-    expect(wrapper.emitted('update:viewMode')?.[0]).toEqual(['wysiwyg'])
-  })
-
   it('renders search and logout buttons', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
-        fileName: 'test.md',
-        viewMode: 'editor'
+        fileName: 'test.md'
       }
     })
 
@@ -131,8 +61,7 @@ describe('ViewerToolbar', () => {
   it('handles search button click', async () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
-        fileName: 'test.md',
-        viewMode: 'editor'
+        fileName: 'test.md'
       }
     })
 
@@ -143,8 +72,7 @@ describe('ViewerToolbar', () => {
   it('handles logout button click', async () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
-        fileName: 'test.md',
-        viewMode: 'editor'
+        fileName: 'test.md'
       }
     })
 

@@ -17,10 +17,10 @@ KBase is a web-based note-taking application inspired by Obsidian and Joplin, de
 - Directory structure preserved and browsable
 - No database dependency - filesystem is the source of truth
 
-### Dual Editor Experience
-- WYSIWYG markdown editor (primary)
-- Code editor with syntax highlighting (secondary)
-- Easy toggle between editor modes
+### Editor Experience
+- Monaco code editor with syntax highlighting (primary)
+- Supports all file types with language detection
+- Auto-save functionality with visual feedback
 
 ### Search and Discovery
 - Omni-search modal (Ctrl+K)

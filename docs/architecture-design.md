@@ -22,8 +22,7 @@
 - **Build Tool**: Vite
 - **HTTP Client**: Axios
 - **UI**: Custom CSS (no component library initially)
-- **Code Editor**: Monaco Editor (VS Code editor)
-- **WYSIWYG Editor**: TipTap (Markdown-based rich text editor)
+- **Code Editor**: Monaco Editor (VS Code editor) for all file types
 - **Future**: WebSocket Client, PWA features
 
 ### Infrastructure
@@ -211,9 +210,7 @@ frontend/src/
 │   │   ├── ConfirmDialog.vue       # Reusable confirmation dialog
 │   │   └── InputDialog.vue         # Reusable input dialog for user input
 │   ├── editor/
-│   │   ├── MonacoEditor.vue        # Monaco code editor wrapper
-│   │   ├── TipTapEditor.vue        # TipTap WYSIWYG markdown editor
-│   │   └── TipTapToolbar.vue       # Formatting toolbar for TipTap editor
+│   │   └── MonacoEditor.vue        # Monaco code editor wrapper
 │   ├── layout/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
@@ -223,8 +220,8 @@ frontend/src/
 │   │   ├── FileTreeNode.vue        # Individual tree node
 │   │   └── Sidebar.vue             # Sidebar container
 │   └── viewer/
-│       ├── NoteViewer.vue          # Note viewer with editor/preview toggle
-│       └── ViewerToolbar.vue       # Toolbar with view mode toggle
+│       ├── NoteViewer.vue          # Note viewer with Monaco editor
+│       └── ViewerToolbar.vue       # Toolbar with search and theme controls
 ├── stores/
 │   ├── auth.ts                     # JWT & login state
 │   └── vault.ts                    # File tree & note update state
@@ -243,11 +240,9 @@ frontend/src/
 **Component Structure**:
 
 - **Editor Components**:
-  - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting
-  - `TipTapEditor.vue`: TipTap WYSIWYG markdown editor with auto-save and rich text features
-  - `TipTapToolbar.vue`: Rich formatting toolbar for TipTap with buttons for bold, italic, headings, lists, code blocks, etc.
-  - `ViewerToolbar.vue`: Toolbar with icon-based view mode toggle, search button, logout button, and save status
-  - `NoteViewer.vue`: Orchestrates dual-editor system with bidirectional sync
+  - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting for all file types
+  - `ViewerToolbar.vue`: Toolbar with search button, logout button, and save status
+  - `NoteViewer.vue`: Orchestrates Monaco editor for all file types
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar container
@@ -290,6 +285,9 @@ frontend/src/
   - **Theme Application**: Applies `data-theme` attribute to document root
   - **Monaco Integration**: Monaco editor theme matches app theme (vs-dark in dark mode, vs-light in light mode)
   - **CSS Variables**: Uses CSS custom properties for consistent theming across all components
+    - **Variable System**: Light and dark theme variables defined in `App.vue`
+    - **Modal Components**: All modals (ConfirmDialog, InputDialog, OmniSearch) use CSS variables
+    - **Automatic Switching**: Components automatically adapt when `[data-theme="dark"]` is applied
 
 **Key Features** (Current MVP):
 
@@ -300,6 +298,8 @@ frontend/src/
   - **Persistence**: User preference saved in localStorage across sessions
   - **System Sync**: Watches system preference changes when no manual override set
   - **Consistent Theming**: All components use CSS variables for theme switching
+    - **Modal Dark Mode**: ConfirmDialog, InputDialog, and OmniSearch fully support dark mode
+    - **CSS Variables**: `--bg-primary`, `--bg-secondary`, `--text-primary`, `--text-secondary`, `--border-color`
   - **Monaco Editor**: Theme matches app (vs-dark in dark mode, vs-light in light mode)
   - **Smooth Transitions**: 0.3s ease transitions between theme changes
   - **Toggle Icons**: Moon icon (🌙) in dark mode, sun icon (☀️) in light mode
@@ -360,23 +360,11 @@ frontend/src/
     - Prevents path traversal (no `../` or absolute paths)
     - Blocks reserved system names (CON, PRN, AUX, etc.)
     - Validates against invalid characters
-- **Dual-Editor System**: Toggle between Monaco code editor and TipTap WYSIWYG editor
-  - **Code Mode (Monaco)**: Full-featured code editor with syntax highlighting for all text-based files
+- **Monaco Editor**: Full-featured code editor with syntax highlighting for all file types
     - Auto-save functionality (1 second debounce)
     - Syntax highlighting for 30+ languages
     - Dark theme matching VS Code
     - Language detection from file extensions
-  - **Markdown Mode (TipTap)**: WYSIWYG rich text editor for markdown files
-    - Auto-save functionality (1 second debounce, matching Monaco)
-    - Rich text editing with live preview
-    - Task list support with interactive checkboxes
-      - Improved vertical alignment for better readability
-      - Checkbox and text properly centered on the same baseline
-    - Tab/Shift-Tab for list indentation
-    - Custom markdown serialization
-    - Bidirectional sync with Monaco editor
-  - **Smart Defaults**: Automatically selects TipTap for .md files, Monaco for other file types
-  - **Icon-Based Toggle**: Single toggle button with dynamic icon - shows `</>` when in Monaco (Code) mode, `Md` when in TipTap (Markdown) mode
 - **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
 - **Sidebar Toggle**: Collapsible file explorer for maximizing editor space
   - Toggle button in toolbar (left side, before file name)
@@ -470,7 +458,7 @@ services:
 
 **Monaco Editor Integration**:
 
-The Monaco editor provides a professional code editing experience with syntax highlighting and auto-save.
+The Monaco editor provides a professional code editing experience with syntax highlighting and auto-save for all file types.
 
 1. **Component Architecture**:
    - `MonacoEditor.vue`: Wraps Monaco editor with Vue lifecycle
@@ -497,13 +485,7 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - Tab size: 2 spaces
    - No custom toolbar (Monaco's built-in commands accessible via keyboard shortcuts)
    
-5. **View Mode Toggle**:
-   - ViewerToolbar provides toggle between "Editor" and "Preview" modes
-   - Editor mode: Full Monaco editor for editing
-   - Preview mode: Formatted text with metadata display
-   - Mode state managed in NoteViewer component
-   
-6. **Save Status Flow**:
+5. **Save Status Flow**:
    ```
    User types → Debounce (1s) → Emit 'save' event → 
    NoteViewer sets status='saving' → Call updateNote API →
@@ -511,110 +493,11 @@ The Monaco editor provides a professional code editing experience with syntax hi
    Error: status='error' (5s) → Clear status
    ```
 
-7. **Performance Optimizations**:
+6. **Performance Optimizations**:
    - Monaco library loaded only once and cached
    - Editor instance reused when switching files
    - ResizeObserver for efficient layout updates
    - Automatic cleanup on component unmount
-
-**TipTap WYSIWYG Editor Integration**:
-
-The TipTap editor provides a rich WYSIWYG markdown editing experience with bidirectional sync to the Monaco code editor.
-
-1. **Component Architecture**:
-   - `TipTapEditor.vue`: Wraps TipTap editor with Vue Composition API
-   - Initialized with markdown content and converts to/from markdown on save
-   - Handles editor initialization, content synchronization, and cleanup
-   - Matches Monaco's API for seamless integration (same props and events)
-   
-2. **Auto-Save Implementation**:
-   - Debounced save (1000ms delay after last edit, matching Monaco)
-   - Emits `save` event with markdown content to parent component
-   - Parent (NoteViewer) calls vault store's `updateNote` action
-   - Visual feedback via ViewerToolbar (saving/saved/error states)
-   
-3. **Bidirectional Sync** (Simplified v-show Architecture):
-   - Both editors share the same `editableContent` ref in NoteViewer via v-model
-   - Uses `v-show` instead of `v-if` to keep both editors mounted simultaneously
-   - Hidden editor has `disabled` prop set to `true`
-   - Eliminates lifecycle complexity - no mount/unmount when switching editors
-   - **Critical Fix**: `disabled` prop only prevents EMITTING, not RECEIVING updates
-     - ✅ **Watchers**: No `disabled` check - both editors always receive updates
-     - ✅ **Event Handlers**: Check `disabled` - only active editor emits changes
-     - ✅ **Result**: Both editors stay perfectly in sync at all times
-   - Simple, reliable sync with no complex flags or async timing issues:
-     - Both editors receive ALL updates via watchers (always in sync)
-     - Only active editor emits changes (prevents infinite loops)
-     - Content comparison prevents redundant updates (simple `!==` check)
-     - No `isUpdatingFromEditor`, `isSettingContent`, or `lastEmittedContent` flags needed
-   - Fixed markdown serialization bug: List items now correctly extract text from paragraph nodes
-   - Significantly reduced code complexity (~100 lines of flag management removed)
-   - Seamless switching preserves all unsaved changes in both directions
-   - Faster editor switching since no remounting is needed
-   - **Zero data loss**: Text in lists, checkboxes, and all content types fully preserved
-   
-4. **TipTap Extensions**:
-   - **StarterKit**: Core functionality (headings, bold, italic, lists, code, blockquotes, etc.)
-   - **TaskList**: Container for checkbox lists
-   - **TaskItem**: Interactive checkboxes with nested support
-   - **Placeholder**: Shows "Start writing..." hint in empty editor
-   - **Custom Tab Extension**: Keyboard shortcuts for list indentation
-     - Tab: Indent list items (sink)
-     - Shift-Tab: Outdent list items (lift)
-     - Works with both regular lists and task lists
-   
-5. **Markdown Support**:
-   - Custom markdown serializer for proper task list conversion
-   - Converts between TipTap's internal format and markdown string
-   - Preserves markdown syntax for checkboxes: `- [ ]` and `- [x]`
-   - Maintains compatibility with standard markdown files
-   
-6. **Checkbox Features**:
-   - Interactive checkboxes with click-to-toggle functionality
-   - Proper vertical alignment of checkboxes and text
-   - Support for nested task lists
-   - Checkbox state persists to markdown as `[ ]` or `[x]`
-   - **Robust HTML Conversion** (Fixed):
-     - Flexible regex pattern handles checkbox input tags with attributes in any order
-     - Properly converts `marked` library output to TipTap's TaskItem format
-     - Sets `data-checked="true"` for checked items, `data-checked="false"` for unchecked
-     - Handles both boolean and string values in serialization
-     - Mixed lists (checkboxes + regular bullets) are properly preserved
-     - Checkboxes remain functional after file navigation and reload
-   
-7. **Formatting Toolbar**:
-   - `TipTapToolbar.vue`: Rich formatting toolbar integrated into TipTap editor
-   - Formatting options grouped logically with visual separators:
-     - **Text Formatting**: Bold, Italic, Strikethrough, Inline Code
-     - **Headings**: H1, H2, H3
-     - **Lists**: Bullet List, Numbered List, Task List
-     - **Blocks**: Blockquote, Code Block, Horizontal Rule
-     - **History**: Undo, Redo
-   - Active state highlighting for current formatting
-   - Tooltips with keyboard shortcuts
-   - Clean, modern design matching the overall app aesthetic
-   
-8. **Editor Styling**:
-   - Clean, minimal interface with white background
-   - Prose-friendly typography with proper heading sizes
-   - Code blocks with dark theme (matching Monaco aesthetic)
-   - Proper spacing for paragraphs, lists, and blockquotes
-   - Responsive design for mobile and desktop
-   
-9. **Default Editor Selection**:
-   - TipTap is default for `.md` files (markdown-first editing experience)
-   - Monaco is default for all other file types (code-first editing)
-   - Selection happens automatically in NoteViewer when file changes
-   - Users can toggle between editors at any time via toolbar
-   
-10. **View Mode Toggle**:
-   - ViewerToolbar provides single icon-based toggle button between editors
-   - Toggle button icon changes to reflect current active editor:
-     - When Monaco is active: Shows `</>` icon (click to switch to TipTap)
-     - When TipTap is active: Shows `Md` icon (click to switch to Monaco)
-   - Tooltips indicate the mode being switched to ("Switch to Markdown" / "Switch to Code")
-   - Clean, minimal design with active state highlighting
-   - Same save status display for both editors
 
 **File Explorer CRUD Operations**:
 
@@ -766,4 +649,144 @@ The file explorer provides comprehensive file and directory management through a
 - **UI Load Time**: 10+ seconds → <1 second (10x faster)  
 - **Memory Usage**: 40x reduction with lazy loading
 - **Large Vault Support**: Tested with 4000+ files
+
+## Deployment Architecture
+
+### Docker Containerization
+
+KBase is deployed as a single Docker container containing both frontend and backend services, optimized for production deployment.
+
+**Container Structure**:
+
+```
+kbase-container/
+├── /app/
+│   ├── backend/              # FastAPI application
+│   │   ├── app/              # Python application code
+│   │   ├── requirements.txt  # Python dependencies
+│   │   └── pyproject.toml   # Project configuration
+│   └── dist/                 # Built frontend assets
+│       ├── index.html        # SPA entry point
+│       ├── assets/           # CSS, JS, images
+│       └── favicon.ico       # App icon
+└── /app/vault/               # Mounted volume for notes
+```
+
+**Multi-Stage Build Process**:
+
+1. **Frontend Builder Stage** (`node:18-alpine`):
+   - Installs Node.js dependencies
+   - Builds Vue.js frontend with Vite
+   - Outputs optimized static assets to `/app/frontend/dist`
+
+2. **Production Stage** (`python:3.11-slim`):
+   - Installs Python dependencies with uv
+   - Copies built frontend assets to `/app/dist`
+   - Configures FastAPI to serve static files
+   - Creates non-root user for security
+   - Exposes port 8000
+
+**Static File Serving**:
+
+- FastAPI serves frontend assets at root path (`/`)
+- API routes (`/api/v1/*`) take precedence over static files
+- SPA routing handled by serving `index.html` for non-API routes
+- Assets served from `/assets/` path for optimal caching
+
+### CI/CD Pipeline
+
+**GitHub Actions Workflow** (`.github/workflows/docker-publish.yml`):
+
+1. **Trigger**: Push to `main` branch (when PRs merge)
+2. **Build Process**:
+   - Checkout code
+   - Set up Docker Buildx for multi-platform builds
+   - Login to GitHub Container Registry (GHCR)
+   - Extract metadata and generate tags
+   - Build and push Docker image
+
+3. **Image Tagging Strategy**:
+   - `latest`: Always points to latest main branch
+   - `sha-{commit-hash}`: Specific commit for reproducibility
+   - Multi-platform: `linux/amd64` and `linux/arm64`
+
+4. **Registry Configuration**:
+   - **Registry**: `ghcr.io` (GitHub Container Registry)
+   - **Visibility**: Public (anyone can pull)
+   - **Authentication**: Uses `GITHUB_TOKEN` automatically
+   - **Permissions**: `packages: write`, `contents: read`
+
+**Deployment Workflow**:
+
+```mermaid
+graph LR
+    A[PR Merged to Main] --> B[GitHub Actions Triggered]
+    B --> C[Build Multi-Stage Docker Image]
+    C --> D[Push to GHCR]
+    D --> E[Update Package Visibility]
+    E --> F[Deploy Summary Generated]
+```
+
+### Production Deployment
+
+**Container Configuration**:
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  kbase:
+    image: ghcr.io/yourusername/kbase:latest
+    container_name: kbase
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./vault:/app/vault
+    environment:
+      - VAULT_PATH=/app/vault
+      - SECRET_KEY=your-secret-key
+      - PASSWORD=your-password
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+**Required Environment Variables**:
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `VAULT_PATH` | Yes | Path to notes directory inside container | `/app/vault` |
+| `SECRET_KEY` | Yes | JWT signing key | `a1b2c3d4e5f6...` |
+| `PASSWORD` | Yes | Login password | `my-secure-password` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | No | Token expiration (default: 10080) | `10080` |
+| `HOST` | No | Server host (default: 0.0.0.0) | `0.0.0.0` |
+| `PORT` | No | Server port (default: 8000) | `8000` |
+
+**Security Considerations**:
+
+- **Non-root User**: Container runs as `kbase` user for security
+- **Health Checks**: Built-in health monitoring via `/health` endpoint
+- **Volume Mounts**: Vault directory mounted as volume for data persistence
+- **Environment Variables**: Sensitive data passed via environment variables
+- **Network Security**: Container exposes only port 8000
+
+**Production Recommendations**:
+
+1. **Reverse Proxy**: Use nginx or traefik for HTTPS termination
+2. **SSL/TLS**: Configure SSL certificates for secure communication
+3. **Backups**: Regular backups of vault directory
+4. **Updates**: Pull new images regularly for security updates
+5. **Monitoring**: Set up logging and monitoring for container health
+6. **Resource Limits**: Configure CPU and memory limits for container
+
+**Scaling Considerations**:
+
+- **Single Instance**: Current architecture designed for single-user deployment
+- **Data Persistence**: Vault directory must be shared across container restarts
+- **Session Management**: JWT tokens stored client-side (no server-side session state)
+- **File Locking**: No built-in file locking for concurrent access
+- **Future Scaling**: Architecture supports horizontal scaling with shared storage
 

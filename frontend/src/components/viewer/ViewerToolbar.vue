@@ -11,15 +11,7 @@
     </div>
     
     <div class="toolbar-center">
-      <div class="view-toggle">
-        <button
-          class="toggle-btn"
-          @click="toggleViewMode"
-          :title="viewMode === 'editor' ? 'Switch to Markdown' : 'Switch to Code'"
-        >
-          <span class="icon-text">{{ viewMode === 'wysiwyg' ? 'Md' : '</>'}}</span>
-        </button>
-      </div>
+      <!-- View toggle removed - only Monaco editor now -->
     </div>
     
     <div class="toolbar-right">
@@ -55,7 +47,6 @@ const router = useRouter()
 interface Props {
   fileName: string
   filePath?: string
-  viewMode: 'editor' | 'wysiwyg'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -64,16 +55,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Emits
 const emit = defineEmits<{
-  'update:viewMode': [mode: 'editor' | 'wysiwyg']
   'openSearch': []
 }>()
 
 // Methods
-const toggleViewMode = () => {
-  const newMode = props.viewMode === 'editor' ? 'wysiwyg' : 'editor'
-  emit('update:viewMode', newMode)
-}
-
 const openSearch = () => {
   emit('openSearch')
 }
@@ -192,46 +177,6 @@ const themeToggleTitle = computed(() => {
 
 .toolbar-center {
   flex: 0 0 auto;
-}
-
-.view-toggle {
-  display: flex;
-  gap: 0;
-}
-
-.toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: #667eea;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  min-width: 56px;
-  box-shadow: 0 1px 3px var(--shadow);
-}
-
-.toggle-btn:hover {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-}
-
-.toggle-btn:active {
-  transform: scale(0.98);
-}
-
-.toggle-btn .icon-text {
-  font-size: 1.125rem;
-  line-height: 1;
-  font-weight: 700;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
 }
 
 .toolbar-right {

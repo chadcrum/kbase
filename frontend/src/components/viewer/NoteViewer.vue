@@ -5,27 +5,14 @@
       <ViewerToolbar
         :file-name="getNoteTitle(selectedNote.path)"
         :file-path="selectedNote.path"
-        :view-mode="viewMode"
-        @update:view-mode="viewMode = $event"
         @open-search="handleOpenSearch"
       />
       
       <!-- Monaco Editor View -->
-      <div v-show="viewMode === 'editor'" class="editor-view">
+      <div class="editor-view">
         <MonacoEditor
           v-model="editableContent"
           :path="selectedNote.path"
-          :disabled="viewMode !== 'editor'"
-          @save="handleSave"
-        />
-      </div>
-      
-      <!-- TipTap WYSIWYG View -->
-      <div v-show="viewMode === 'wysiwyg'" class="wysiwyg-view">
-        <TipTapEditor
-          v-model="editableContent"
-          :path="selectedNote.path"
-          :disabled="viewMode !== 'wysiwyg'"
           @save="handleSave"
         />
       </div>
@@ -63,7 +50,6 @@ import { computed, ref, watch } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import ViewerToolbar from './ViewerToolbar.vue'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
-import TipTapEditor from '@/components/editor/TipTapEditor.vue'
 
 // Emits
 const emit = defineEmits<{
@@ -74,7 +60,6 @@ const emit = defineEmits<{
 const vaultStore = useVaultStore()
 
 // State
-const viewMode = ref<'editor' | 'wysiwyg'>('wysiwyg')
 const editableContent = ref('')
 const saveStatus = ref<'saving' | 'saved' | 'error' | null>(null)
 let saveStatusTimeout: ReturnType<typeof setTimeout> | null = null
@@ -102,8 +87,6 @@ const saveStatusText = computed(() => {
 watch(selectedNote, (newNote) => {
   if (newNote) {
     editableContent.value = newNote.content
-    // Set default view mode: wysiwyg for .md files, editor for others
-    viewMode.value = newNote.path.endsWith('.md') ? 'wysiwyg' : 'editor'
   } else {
     editableContent.value = ''
   }
@@ -202,14 +185,6 @@ const handleOpenSearch = () => {
   background-color: #1e1e1e;
 }
 
-.wysiwyg-view {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background-color: var(--bg-secondary);
-  transition: background-color 0.3s ease;
-}
 
 .loading-state,
 .error-state,
@@ -287,13 +262,6 @@ const handleOpenSearch = () => {
   }
 }
 
-/* Hide inactive editors properly to prevent layout issues */
-.editor-view[style*="display: none"],
-.wysiwyg-view[style*="display: none"] {
-  visibility: hidden;
-  position: absolute;
-  pointer-events: none;
-}
 
 /* Floating save status indicator */
 .floating-save-status {

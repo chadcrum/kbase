@@ -128,7 +128,7 @@ extensions: [
 ### Manual Testing Steps:
 1. Start the application (frontend and backend)
 2. Create a new note or open an existing markdown file
-3. Switch to WYSIWYG mode (TipTap editor)
+3. Edit in Monaco editor (now the only editor)
 4. Create checkboxes using the toolbar or by typing `- [ ]` and `- [x]`
 5. Wait for auto-save (1 second)
 6. Navigate to another file

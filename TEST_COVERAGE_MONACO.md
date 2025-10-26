@@ -33,11 +33,9 @@ Location: `frontend/src/components/viewer/ViewerToolbar.test.ts`
 
 - ✅ Renders file name
 - ✅ Renders file path when provided
-- ✅ Renders editor and preview toggle buttons
-- ✅ Applies active class to editor button when in editor mode
-- ✅ Applies active class to preview button when in preview mode
-- ✅ Emits update:viewMode when editor button is clicked
-- ✅ Emits update:viewMode when preview button is clicked
+- ✅ Renders search and logout buttons
+- ✅ Handles search button click
+- ✅ Handles logout button click
 - ✅ Displays saving status
 - ✅ Displays saved status
 - ✅ Displays error status

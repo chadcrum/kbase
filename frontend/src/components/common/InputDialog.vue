@@ -143,9 +143,9 @@ onUnmounted(() => {
 }
 
 .modal-container {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 25px var(--shadow);
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
@@ -156,14 +156,14 @@ onUnmounted(() => {
 
 .modal-header {
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -174,17 +174,19 @@ onUnmounted(() => {
 
 .modal-message {
   margin: 0 0 1rem 0;
-  color: #4b5563;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
 .modal-input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.875rem;
   font-family: inherit;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   transition: border-color 0.2s ease;
 }
 
@@ -202,7 +204,7 @@ onUnmounted(() => {
 
 .modal-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
@@ -238,12 +240,12 @@ onUnmounted(() => {
 }
 
 .btn-secondary {
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background-color: #e5e7eb;
+  background-color: var(--border-color);
 }
 
 /* Transition animations */

@@ -1,0 +1,125 @@
+---
+description: "Feature development workflow with TDD and documentation requirements"
+alwaysApply: true
+---
+
+# Feature Development Workflow
+
+Consolidates TDD workflow, documentation requirements, and native solution preferences.
+
+## Overview
+
+Follow this workflow for all new features and major changes.
+
+## 1. Documentation First
+
+For major changes, create documentation in [docs/](mdc:docs/) first:
+- Use template at [docs/templates/feature-requirement.md](mdc:docs/templates/feature-requirement.md)
+- Include summary, motivation, user stories, acceptance criteria
+- Include test plan (unit/integration/e2e)
+- Include architecture/design notes and risks
+- Link to doc in your first commit message
+
+See [20-docs-major-changes.md](mdc:.cursor/rules/10-docs-major-changes.md) for details.
+
+## 2. Test-Driven Development (TDD)
+
+Follow TDD workflow from [.cursor/rules/20-tdd-workflow.md](mdc:.cursor/rules/20-tdd-workflow.md):
+
+1. Write minimal failing test(s)
+2. Run tests to confirm failure
+3. Implement code to satisfy tests
+4. Run tests to confirm pass
+5. Refactor while keeping tests green
+6. Update documentation
+
+Stack-specific guidance:
+- **Backend**: See [.cursor/rules/22-tdd-python-fastapi.md](mdc:.cursor/rules/22-tdd-python-fastapi.md)
+- **Frontend**: See [.cursor/rules/21-tdd-typescript-react.md](mdc:.cursor/rules/21-tdd-typescript-react.md)
+
+### Step 1: Write Failing Test
+```typescript
+// Example: Frontend
+describe('Search functionality', () => {
+  it('filters notes by search term', () => {
+    const wrapper = mount(NoteList, {
+      props: { searchTerm: 'test' }
+    })
+    expect(wrapper.findAll('.note')).toHaveLength(2)
+  })
+})
+```
+
+```python
+# Example: Backend
+def test_search_returns_filtered_results(client):
+    """Test that search returns filtered results."""
+    response = client.get("/api/v1/notes/search?q=test")
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+```
+
+### Step 2: Run Tests
+Verify tests fail (this confirms your test is correct).
+
+### Step 3: Implement Minimum Code
+Write the minimum code needed to pass the test.
+
+### Step 4: Run Tests
+Verify tests pass.
+
+### Step 5: Refactor
+Improve code quality while keeping tests green.
+
+### Step 6: Repeat
+Continue the cycle for each feature increment.
+
+## 3. Commit Sequence
+
+Structure commits following TDD:
+- `test: add failing test for <feature>`
+- `feat: implement <feature> to satisfy tests`
+- `refactor: cleanup without changing behavior`
+- `docs: update documentation for <feature>`
+
+## Evidence in PRs
+
+- First commit shows failing tests with explanation
+- Subsequent commits make tests pass
+- Refactor commits keep tests green
+- Documentation links included in relevant commits
+
+## 4. Integration Testing
+
+After unit tests pass:
+- Test with real API endpoints
+- Test with frontend components
+- Run E2E tests for user workflows
+- Test error conditions and edge cases
+
+## 5. Documentation Updates
+
+Keep documentation updated as solution evolves:
+- Update [docs/architecture-design.md](mdc:docs/architecture-design.md)
+- Update [docs/api-endpoints.md](mdc:docs/api-endpoints.md)
+- Update relevant feature docs
+- Update [README.md](mdc:README.md) if needed
+
+## Framework-Specific TDD
+
+- **Backend**: See [22-tdd-python-fastapi.md](mdc:.cursor/rules/22-tdd-python-fastapi.md)
+- **Frontend**: See [21-tdd-typescript-react.md](mdc:.cursor/rules/21-tdd-typescript-react.md)
+
+## Prefer Native Solutions
+
+Before implementing custom solutions, check [30-native-framework-solutions.md](mdc:.cursor/rules/30-native-framework-solutions.md):
+- Research native framework solutions first
+- Evaluate native options before custom implementations
+- Document why custom solution was chosen if needed
+
+## Quick Reference
+
+See existing feature docs in [.cursor/plans/](mdc:.cursor/plans/) for examples:
+- Search: [omni-search-mvp-6e346452.plan.md](mdc:.cursor/plans/omni-search-mvp-6e346452.plan.md)
+- Editor: [MONACO_IMPLEMENTATION_SUMMARY.md](mdc:.cursor/plans/MONACO_IMPLEMENTATION_SUMMARY.md)
+- UI: [ui-enhancements-d78d0da7.plan.md](mdc:.cursor/plans/ui-enhancements-d78d0da7.plan.md)

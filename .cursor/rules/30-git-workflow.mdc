@@ -1,0 +1,102 @@
+---
+alwaysApply: true
+---
+
+# Git Workflow and Commit Standards
+
+## Conventional Commits
+
+Use conventional commit format: `type(scope): description`
+
+### Commit Types
+
+- `feat` - New feature
+- `fix` - Bug fix
+- `docs` - Documentation only
+- `style` - Code style changes (formatting, etc.)
+- `refactor` - Code refactoring without behavior change
+- `test` - Adding or updating tests
+- `chore` - Maintenance tasks
+- `perf` - Performance improvements
+
+### Scope
+
+Use relevant scope:
+- `api` - API endpoints
+- `auth` - Authentication
+- `ui` - User interface
+- `backend` - Backend changes
+- `frontend` - Frontend changes
+- `tests` - Test changes
+- `docs` - Documentation
+
+### Examples
+
+```bash
+feat(api): add note search endpoint
+fix(auth): resolve JWT token validation issue
+docs(api): update endpoint documentation
+perf(cache): optimize file metadata caching
+test(auth): add authentication tests
+refactor(ui): extract sidebar component
+```
+
+## Branch Naming
+
+Use descriptive branch names:
+- `feature/note-search`
+- `fix/auth-bug`
+- `docs/api-update`
+- `perf/caching`
+- `refactor/file-service`
+
+## Pre-Commit Checklist
+
+Before every commit, verify:
+
+1. ✅ All tests pass (`npm run test`)
+2. ✅ Code follows style guidelines
+3. ✅ **Documentation is updated** (see [02-documentation-requirements.mdc](mdc:.cursor/rules/02-documentation-requirements.mdc))
+4. ✅ Security considerations addressed
+5. ✅ Performance impact assessed
+6. ✅ Commit message follows convention
+
+## Commit Message Guidelines
+
+- First line: Summary (50 chars max)
+- Blank line
+- Body: Detailed explanation (wrap at 72 chars)
+- Reference issues: "Closes #123"
+- Reference docs: "See docs/templates/feature-requirement.md"
+
+Example:
+```
+feat(api): add note search endpoint
+
+Implement full-text search across all notes in the vault.
+Returns search results with highlighted snippets sorted by
+relevance.
+
+Features:
+- Search by content
+- Fuzzy matching
+- Snippet highlighting
+- Sorted results
+
+Closes #42
+See docs/templates/omni-search.md
+```
+
+## Emergency Procedures
+
+**If documentation is missing:**
+- STOP the commit process
+- Update ALL relevant documentation immediately
+- Re-run pre-commit checklist
+- Only proceed after documentation is complete
+
+**If tests fail:**
+- Fix all failing tests before committing
+- Add tests for new functionality
+- Maintain 80%+ coverage
+- Document test changes

@@ -1,0 +1,95 @@
+---
+globs: "backend/**/*.py"
+---
+
+# Python Backend Standards
+
+## Code Style
+
+- Follow **PEP 8** style guidelines
+- Line length: 88 characters (configured in [pyproject.toml](mdc:backend/pyproject.toml))
+- Use **ruff** for linting
+- Use **black**-compatible formatting
+
+## Type Hints
+
+- Use type hints for ALL function parameters and return values
+- Example:
+```python
+def get_file_content(file_path: str) -> str:
+    """Get content of a file."""
+    pass
+```
+
+## Docstrings
+
+- Write comprehensive docstrings for all public functions and classes
+- Use Google-style docstrings
+- Example:
+```python
+def authenticate_user(password: str) -> dict[str, str]:
+    """Authenticate user and return JWT token.
+    
+    Args:
+        password: Plain text password for authentication
+        
+    Returns:
+        Dictionary containing access_token and token_type
+        
+    Raises:
+        HTTPException: If password is invalid
+    """
+```
+
+## Function Guidelines
+
+- Keep functions small and focused (max 50 lines)
+- Use meaningful variable and function names
+- Use dependency injection for services (see [backend/app/core/auth.py](mdc:backend/app/core/auth.py))
+- Extract complex logic into service classes
+
+## Project Structure
+
+Follow the existing structure in [backend/app/](mdc:backend/app/):
+- `api/v1/endpoints/` - API route handlers
+- `services/` - Business logic services
+- `core/` - Core configuration and utilities
+- `models/` - Pydantic models
+
+## Service Layer Pattern
+
+Extract business logic into service classes (see [backend/app/services/](mdc:backend/app/services/)):
+```python
+class FileService:
+    """Service for file operations."""
+    
+    def __init__(self, vault_path: str):
+        self.vault_path = vault_path
+    
+    def get_content(self, file_path: str) -> str:
+        """Get file content with validation."""
+        # Implementation here
+```
+
+## Authentication
+
+Use JWT authentication with httpOnly cookies (see [backend/app/core/auth.py](mdc:backend/app/core/auth.py)):
+- Use `get_current_user` dependency in protected endpoints
+- Validate tokens on every protected endpoint
+- Support token refresh mechanism
+
+## Error Handling
+
+- Always handle exceptions gracefully
+- Return meaningful error messages
+- Use proper HTTP status codes (400, 401, 403, 404, 500)
+- Include error context for debugging
+- Example:
+```python
+try:
+    result = operation()
+except FileNotFoundError:
+    raise HTTPException(status_code=404, detail="File not found")
+except PermissionError:
+    raise HTTPException(status_code=403, detail="Permission denied")
+```

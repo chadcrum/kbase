@@ -1,0 +1,104 @@
+---
+globs: "frontend/src/**/*.test.ts,frontend/src/**/*.spec.ts,frontend/e2e/**/*.ts"
+---
+
+# Frontend Testing Standards
+
+Follow TDD workflow from [20-tdd-workflow.md](mdc:.cursor/rules/20-tdd-workflow.md). Note: This project uses Vue 3, not React. Adapt patterns from [21-tdd-typescript-react.md](mdc:.cursor/rules/21-tdd-typescript-react.md) to Vue Testing Library.
+
+## Test Types
+
+- **Unit Tests**: Vitest for component/service testing
+- **E2E Tests**: Playwright for full user workflows
+- Place unit tests next to source: `Component.test.ts`
+- Place e2e tests in [frontend/e2e/](mdc:frontend/e2e/)
+
+## Vitest Configuration
+
+Configuration in [frontend/vitest.config.ts](mdc:frontend/vitest.config.ts):
+- Use jsdom environment for DOM tests
+- Test file patterns: `*.test.ts`, `*.spec.ts`
+- Setup file: [frontend/tests/setup.ts](mdc:frontend/tests/setup.ts)
+
+## Unit Test Pattern
+
+```typescript
+import { describe, it, expect } from 'vitest'
+import { mount } from '@vue/test-utils'
+import MyComponent from './MyComponent.vue'
+
+describe('MyComponent', () => {
+  it('renders correctly', () => {
+    const wrapper = mount(MyComponent, {
+      props: {
+        title: 'Test Title'
+      }
+    })
+    expect(wrapper.text()).toContain('Test Title')
+  })
+})
+```
+
+## Store Testing
+
+Test Pinia stores (see [frontend/src/stores/](mdc:frontend/src/stores/)):
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { useVaultStore } from './vault'
+
+describe('useVaultStore', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+  
+  it('loads notes', async () => {
+    const store = useVaultStore()
+    await store.loadNotes()
+    expect(store.notes).toBeDefined()
+  })
+})
+```
+
+## Component Testing
+
+- Test component rendering
+- Test user interactions (clicks, inputs)
+- Test computed properties
+- Test component props and emits
+- Example from [frontend/src/components/](mdc:frontend/src/components/)
+
+## E2E Testing with Playwright
+
+Configuration in [frontend/playwright.config.ts](mdc:frontend/playwright.config.ts):
+- Use Page Object Model (see [frontend/e2e/pages/](mdc:frontend/e2e/pages/))
+- Test critical user workflows
+- Test authentication flows
+- Test file operations
+
+Example from [frontend/e2e/specs/](mdc:frontend/e2e/specs/):
+```typescript
+import { test, expect } from '@playwright/test'
+import { HomePage } from '../pages/HomePage'
+
+test('user can create and edit notes', async ({ page }) => {
+  const homePage = new HomePage(page)
+  await homePage.goto()
+  await homePage.createNote('test.md')
+  // Test implementation
+})
+```
+
+## Test Helpers
+
+Use helpers from [frontend/e2e/helpers/](mdc:frontend/e2e/helpers/):
+- `auth.ts` - Authentication helpers
+- `backend.ts` - Backend API helpers
+- `vault.ts` - Vault management helpers
+
+## Coverage Requirements
+
+- Maintain 80%+ test coverage
+- Test all new features
+- Include edge cases
+- Test error conditions

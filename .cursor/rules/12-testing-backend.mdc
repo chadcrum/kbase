@@ -1,0 +1,103 @@
+---
+globs: "backend/tests/**/*.py"
+---
+
+# Backend Testing Standards
+
+Follow TDD workflow from [20-tdd-workflow.md](mdc:.cursor/rules/20-tdd-workflow.md). For Python/FastAPI specifics, see [22-tdd-python-fastapi.md](mdc:.cursor/rules/22-tdd-python-fastapi.md).
+
+## Test Organization
+
+- Place tests in [backend/tests/](mdc:backend/tests/) directory
+- Match test file structure to source structure
+- Use descriptive test names: `test_function_name_scenario`
+- Group related tests in classes
+- Test file naming: `test_*.py`
+
+## Pytest Configuration
+
+Configuration is in [backend/pyproject.toml](mdc:backend/pyproject.toml):
+- Use pytest fixtures for common test data
+- Use markers for test categorization
+- Run tests: `uv run pytest -v`
+
+## Test Structure
+
+```python
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+class TestNotesEndpoint:
+    """Test suite for notes endpoints."""
+    
+    def test_get_notes_returns_list(self):
+        """Test that GET /api/v1/notes returns a list."""
+        response = client.get("/api/v1/notes/")
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+    
+    def test_get_nonexistent_note_returns_404(self):
+        """Test that GET non-existent note returns 404."""
+        response = client.get("/api/v1/notes/nonexistent.md")
+        assert response.status_code == 404
+```
+
+## Fixtures
+
+Use conftest.py for shared fixtures (see [backend/tests/conftest.py](mdc:backend/tests/conftest.py)):
+```python
+@pytest.fixture
+def vault_path(tmp_path):
+    """Create temporary vault directory."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    return str(vault)
+
+@pytest.fixture
+def test_client(vault_path, monkeypatch):
+    """Create test client with test vault."""
+    monkeypatch.setenv("VAULT_PATH", vault_path)
+    from app.main import app
+    return TestClient(app)
+```
+
+## Security Testing
+
+- Test path traversal protection (see [backend/tests/test_notes_auth.py](mdc:backend/tests/test_notes_auth.py))
+- Test authentication on protected endpoints
+- Test authorization boundaries
+- Test input validation
+
+## Coverage Requirements
+
+- Maintain 80%+ test coverage
+- Test error conditions and edge cases
+- Test both success and failure scenarios
+- Include integration tests for API endpoints
+
+## Testing Patterns
+
+### Test Authentication
+```python
+def test_protected_endpoint_requires_auth(client):
+    """Test that protected endpoint requires authentication."""
+    response = client.get("/api/v1/notes/")
+    assert response.status_code == 401
+
+def test_protected_endpoint_with_token(client, auth_token):
+    """Test that protected endpoint works with token."""
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    response = client.get("/api/v1/notes/", headers=headers)
+    assert response.status_code == 200
+```
+
+### Test Error Handling
+```python
+def test_invalid_input_returns_400(client):
+    """Test that invalid input returns 400."""
+    response = client.post("/api/v1/notes/", json={"invalid": "data"})
+    assert response.status_code == 400
+```

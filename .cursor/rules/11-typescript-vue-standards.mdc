@@ -1,0 +1,104 @@
+---
+globs: "frontend/**/*.ts,frontend/**/*.vue"
+---
+
+# TypeScript/Vue 3 Standards
+
+**Note**: This project uses Vue 3 (not React). For TDD patterns, see [21-tdd-typescript-react.md](mdc:.cursor/rules/21-tdd-typescript-react.md) and adapt to Vue testing patterns.
+
+## TypeScript Configuration
+
+- Use **strict mode** (see [frontend/tsconfig.json](mdc:frontend/tsconfig.json))
+- Avoid `any` types - use proper types or `unknown`
+- Use type inference where possible
+- Define interfaces for all data structures
+
+## Vue 3 Composition API
+
+- Use **Composition API** exclusively (no Options API)
+- Example component structure:
+```vue
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import type { Ref } from 'vue'
+
+interface Props {
+  title: string
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<{
+  (e: 'update', value: string): void
+}>()
+
+const count = ref<number>(0)
+const doubled = computed(() => count.value * 2)
+</script>
+
+<template>
+  <div>
+    <h1>{{ props.title }}</h1>
+    <p>{{ doubled }}</p>
+  </div>
+</template>
+```
+
+## Component Organization
+
+Follow structure in [frontend/src/components/](mdc:frontend/src/components/):
+- `common/` - Shared UI components
+- `editor/` - Editor-specific components
+- `layout/` - Layout components
+- `sidebar/` - Sidebar components
+- `viewer/` - Viewer components
+
+## Pinia State Management
+
+Use Pinia for state management (see [frontend/src/stores/](mdc:frontend/src/stores/)):
+- Define typed stores with `defineStore`
+- Use actions for state mutations
+- Use getters for computed state
+- Example:
+```typescript
+import { defineStore } from 'pinia'
+
+export const useVaultStore = defineStore('vault', () => {
+  const notes = ref<Note[]>([])
+  
+  const noteCount = computed(() => notes.value.length)
+  
+  async function loadNotes() {
+    // Implementation
+  }
+  
+  return { notes, noteCount, loadNotes }
+})
+```
+
+## API Client Pattern
+
+Use centralized API client (see [frontend/src/api/client.ts](mdc:frontend/src/api/client.ts)):
+- Axios-based client
+- Interceptors for auth tokens
+- Type-safe endpoints
+- Error handling
+
+## Type Definitions
+
+Define types in [frontend/src/types/](mdc:frontend/src/types/):
+- Use TypeScript interfaces
+- Export types from index file
+- Avoid inline types in components
+
+## Component Naming
+
+- Use PascalCase for component files
+- Use kebab-case in templates: `<note-editor />`
+- Use PascalCase for component imports
+
+## Props & Emits
+
+- Always define props and emits with TypeScript
+- Use `defineProps<T>()` and `defineEmits<T>()`
+- Provide default values when appropriate
+- Validate required props

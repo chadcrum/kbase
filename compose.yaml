@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   kbase:
-    image: ghcr.io/chadcrum/kbase:sha-037dc1c
+    image: ghcr.io/chadcrum/kbase:latest
     container_name: kbase
     ports:
       - "8000:8000"
@@ -16,7 +16,7 @@ services:
       SECRET_KEY: "change-this-to-a-secure-random-key-$(openssl rand -hex 32)"
       
       # Required: Plain text password for authentication
-      PASSWORD: "winston"
+      PASSWORD: your-password-here
       
       # Optional: Access token expiration (default: 10080 = 7 days)
       # ACCESS_TOKEN_EXPIRE_MINUTES: 10080
@@ -29,7 +29,7 @@ services:
     volumes:
       # Map local vault directory to container
       # Change './kbase-vault' to your actual vault location
-      - ./kbase-vault:/app/vault
+      - ~/kbase-vault:/app/vault
     
     restart: unless-stopped
     

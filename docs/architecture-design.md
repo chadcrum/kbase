@@ -663,9 +663,10 @@ workbox: {
 ### Mobile Responsiveness
 
 **Mobile Optimizations** (`frontend/src/components/*`):
-- **Sidebar**: Overlay mode on mobile (< 768px)
-  - Fixed position with backdrop
-  - Swipe-to-close gesture support
+- **Sidebar**: Side-by-side layout on mobile (< 768px)
+  - 240px fixed width when open
+  - Maintains inline flex layout for both panes visibility
+  - Slides out left when collapsed (translateX(-100%))
   - Touch-friendly 44px minimum touch targets
 - **Monaco Editor**: Mobile-optimized settings
   - Disabled line numbers on mobile

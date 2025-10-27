@@ -33,16 +33,14 @@ const vaultStore = useVaultStore()
   transition: background-color 0.3s ease;
 }
 
-/* Responsive design */
+/* Responsive design - maintain side-by-side on mobile */
 @media (max-width: 768px) {
   .app-layout {
-    flex-direction: column;
-    position: relative;
+    /* Keep flex row layout for side-by-side panes */
   }
   
   .main-content {
-    height: 100vh;
-    width: 100%;
+    /* Natural flex sizing alongside sidebar */
   }
 }
 

@@ -68,22 +68,17 @@ onMounted(() => {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Mobile responsive - overlay mode */
+/* Mobile responsive - side-by-side layout */
 @media (max-width: 768px) {
   .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 80%;
-    max-width: 300px;
-    z-index: 2000;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    width: 240px;
+    position: relative;
+    /* Keep inline flex item for side-by-side layout */
   }
 
   .sidebar.collapsed {
     transform: translateX(-100%);
-    margin-left: 0;
+    margin-left: -240px;
   }
 }
 

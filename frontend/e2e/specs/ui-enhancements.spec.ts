@@ -11,6 +11,7 @@ import { createVault, destroyVault } from '../helpers/vault'
  * 2. Sidebar toggle functionality
  * 3. Omni search sorting by modified date
  * 4. TipTap checkbox alignment (visual regression)
+ * 5. Mobile side-by-side layout
  */
 
 test.describe('UI Enhancements', () => {
@@ -388,6 +389,104 @@ test.describe('UI Enhancements', () => {
       // Verify save status
       const saveStatus = page.locator('.save-status')
       await expect(saveStatus).toBeVisible()
+    })
+  })
+
+  test.describe('Mobile Side-by-Side Layout', () => {
+    test('should display both panes side-by-side on mobile', async ({ page, viewport }) => {
+      // Set mobile viewport
+      await page.setViewportSize({ width: 375, height: 667 })
+      
+      // Select a file
+      const note1 = page.locator('.node-item:has-text("note1.md")').first()
+      await note1.click()
+      await page.waitForSelector('.viewer-toolbar')
+      
+      // Sidebar should be visible
+      const sidebar = page.locator('.sidebar')
+      await expect(sidebar).toBeVisible()
+      
+      // Note viewer should also be visible
+      const noteViewer = page.locator('.note-viewer')
+      await expect(noteViewer).toBeVisible()
+      
+      // Both should be in the layout simultaneously
+      const appLayout = page.locator('.app-layout')
+      const sidebarWidth = await sidebar.evaluate(el => el.offsetWidth)
+      const viewerWidth = await noteViewer.evaluate(el => el.offsetWidth)
+      
+      // Sidebar should be 240px on mobile
+      expect(sidebarWidth).toBe(240)
+      
+      // Viewer should take remaining space
+      expect(viewerWidth).toBeGreaterThan(100)
+    })
+
+    test('should collapse sidebar sliding left on mobile', async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 667 })
+      
+      const note1 = page.locator('.node-item:has-text("note1.md")').first()
+      await note1.click()
+      await page.waitForSelector('.viewer-toolbar')
+      
+      const sidebar = page.locator('.sidebar')
+      const toggleButton = page.locator('.sidebar-toggle-btn')
+      
+      // Initially visible
+      await expect(sidebar).toBeVisible()
+      
+      // Click to collapse
+      await toggleButton.click()
+      await page.waitForTimeout(400)
+      
+      // Sidebar should be collapsed (translated left)
+      await expect(sidebar).toHaveClass(/collapsed/)
+      
+      // Note viewer should still be accessible
+      const noteViewer = page.locator('.note-viewer')
+      await expect(noteViewer).toBeVisible()
+    })
+
+    test('should keep note pane toolbar accessible when sidebar is open', async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 667 })
+      
+      const note1 = page.locator('.node-item:has-text("note1.md")').first()
+      await note1.click()
+      await page.waitForSelector('.viewer-toolbar')
+      
+      // Toolbar should be visible and functional
+      const searchBtn = page.locator('.search-btn')
+      const themeBtn = page.locator('.theme-toggle-btn')
+      const logoutBtn = page.locator('.logout-btn')
+      
+      await expect(searchBtn).toBeVisible()
+      await expect(themeBtn).toBeVisible()
+      await expect(logoutBtn).toBeVisible()
+      
+      // Buttons should be clickable
+      await expect(searchBtn).toBeEnabled()
+    })
+
+    test('should maintain layout at different mobile viewport widths', async ({ page }) => {
+      const viewportWidths = [320, 375, 414, 768]
+      
+      for (const width of viewportWidths) {
+        await page.setViewportSize({ width, height: 667 })
+        await page.reload()
+        await login(page)
+        await page.waitForSelector('.file-tree')
+        
+        const note1 = page.locator('.node-item:has-text("note1.md")').first()
+        await note1.click()
+        await page.waitForSelector('.viewer-toolbar')
+        
+        // Both panes should be visible
+        const sidebar = page.locator('.sidebar')
+        const noteViewer = page.locator('.note-viewer')
+        
+        await expect(sidebar).toBeVisible()
+        await expect(noteViewer).toBeVisible()
+      }
     })
   })
 })

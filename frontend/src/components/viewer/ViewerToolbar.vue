@@ -319,7 +319,7 @@ const themeToggleTitle = computed(() => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100vw - 200px);
+    max-width: calc(100vw - 260px); /* Account for sidebar width when open */
   }
 }
 </style>

@@ -1,24 +1,3 @@
-<!-- OPENSPEC:START -->
-# OpenSpec Instructions
-
-These instructions are for AI assistants working in this project.
-
-Always open `@/openspec/AGENTS.md` when the request:
-- Mentions planning or proposals (words like proposal, spec, change, plan)
-- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
-
-Use `@/openspec/AGENTS.md` to learn:
-- How to create and apply change proposals
-- Spec format and conventions
-- Project structure and guidelines
-
-Keep this managed block so 'openspec update' can refresh the instructions.
-
-<!-- OPENSPEC:END -->
-
----
-
 # KBase - AI Agent Guide
 
 Welcome to the KBase development workspace. This guide provides AI agents with essential information and links to navigate the codebase and development workflows.
@@ -51,7 +30,6 @@ kbase/
 │   ├── src/            # Source code
 │   └── e2e/            # End-to-end tests
 ├── docs/                # Architecture and technical documentation
-├── openspec/            # Spec-driven development specifications
 └── kbase-vault/         # Sample note vault
 ```
 
@@ -59,82 +37,17 @@ For detailed project documentation, see [README.md](README.md).
 
 ---
 
-## Development Workflows
+## Development Workflow
 
-KBase uses structured workflows for different types of changes. Choose the appropriate workflow based on your task:
+Follow standard development practices for all changes. For major changes (new features, significant UX changes, API changes, architecture changes):
+1. Create documentation in `docs/` using the template at `docs/templates/feature-requirement.md`
+2. Include a link to the doc in your first commit message
+3. Implement the changes
+4. Keep the doc updated as the solution evolves
+5. Write tests for new functionality
+6. Update relevant documentation
 
-### When to Use Which Workflow
-
-| Task Type | Workflow | Reference |
-|-----------|----------|-----------|
-| **Bug Fix** (restore intended behavior) | Direct TDD fix | `.cursor/rules/20-tdd-workflow.md` |
-| **New Feature** | OpenSpec proposal → Implementation | `openspec/AGENTS.md` |
-| **Breaking Change** | OpenSpec proposal | `openspec/AGENTS.md` |
-| **Architecture Change** | OpenSpec proposal | `openspec/AGENTS.md` |
-| **Documentation Update** | Direct update | `.cursor/rules/10-docs-major-changes.md` |
-| **Typo/Formatting** | Direct fix | No special workflow |
-
----
-
-## OpenSpec Workflow (Features & Changes)
-
-> **IMPORTANT**: OpenSpec is the authoritative source for spec-driven development.  
-> See `openspec/AGENTS.md` for complete instructions. This section is a brief overview only.
-
-For **new features**, **breaking changes**, or **architectural modifications**, use the OpenSpec spec-driven development workflow.
-
-### When to use OpenSpec
-
-**Always use OpenSpec for**:
-- New features or capabilities
-- Breaking changes (API, schema, behavior)
-- Architecture changes
-- Major performance optimizations
-- Security pattern updates
-
-**Never use OpenSpec for**:
-- Bug fixes (restore intended behavior)
-- Typos, formatting, comments
-- Dependency updates (non-breaking)
-- Configuration changes
-- Tests for existing behavior
-
-> Refer to the decision tree in `openspec/AGENTS.md` for detailed guidance.
-
-### Quick Reference
-
-- **Complete workflow**: See `openspec/AGENTS.md`
-- **Project conventions**: See `openspec/project.md`
-- **Current specs**: `openspec/specs/` (what IS built)
-- **Proposals**: `openspec/changes/` (what SHOULD change)
-
-### Essential Commands
-
-```bash
-openspec list                  # Show active proposals
-openspec list --specs          # Show all capabilities
-openspec show <item>           # Display details
-openspec validate <item>       # Validate changes
-openspec archive <change-id>   # Mark proposal complete
-```
-
----
-
-## TDD Workflow (Bug Fixes & Small Changes)
-
-For **bug fixes** and **small incremental changes**, follow the Test-Driven Development workflow.
-
-### Key Files
-- **Workflow**: `.cursor/rules/20-tdd-workflow.md` - Core TDD process
-- **TypeScript Guide**: `.cursor/rules/21-tdd-typescript-react.md` - Frontend TDD
-- **Python Guide**: `.cursor/rules/22-tdd-python-fastapi.md` - Backend TDD
-
-### TDD Process
-1. **Red**: Write failing test
-2. **Green**: Implement minimal fix
-3. **Refactor**: Clean up while keeping tests green
-
-See `.cursor/rules/README.md` for the complete workflow overview.
+Reference: `.cursor/rules/10-docs-major-changes.md`
 
 ---
 
@@ -219,24 +132,23 @@ npm run test:frontend     # Frontend only
 ### Common Tasks
 
 **Adding a new API endpoint**:
-1. Check `openspec/specs/` for existing spec
-2. Create OpenSpec proposal if no spec exists
-3. Follow TDD workflow: write test → implement → refactor
+1. If major change, create documentation in `docs/` first
+2. Implement the endpoint
+3. Write tests for the endpoint
 4. Update `docs/api-endpoints.md`
 5. Update `docs/architecture-design.md`
 
 **Adding a new UI feature**:
-1. Check `openspec/specs/` for existing spec
-2. Create OpenSpec proposal if no spec exists
-3. Follow TDD workflow
+1. If major change, create documentation in `docs/` first
+2. Implement the feature
+3. Write tests for the feature
 4. Update relevant documentation
 
 **Fixing a bug**:
 1. Identify root cause
-2. Write failing test (TDD Red phase)
-3. Fix implementation (TDD Green phase)
-4. Refactor if needed (TDD Refactor phase)
-5. Update docs if behavior changed
+2. Write test that reproduces the bug
+3. Fix implementation
+4. Update docs if behavior changed
 
 ---
 
@@ -274,14 +186,14 @@ Reference: `.cursorrules` (lines 139-159)
 **Essential checklist before beginning any task:**
 
 1. **Understand the Context**
-   - [ ] Read relevant specs in `openspec/specs/` (if exists)
-   - [ ] Check pending proposals in `openspec/changes/`
    - [ ] Review related code and documentation
+   - [ ] Understand the existing implementation
+   - [ ] Check for related tests
 
-2. **Choose the Right Workflow**
-   - [ ] New feature? → OpenSpec workflow
-   - [ ] Bug fix? → TDD workflow
-   - [ ] Architecture change? → OpenSpec workflow
+2. **Plan Your Approach**
+   - [ ] Major change? → Create documentation in `docs/` first
+   - [ ] Plan your implementation
+   - [ ] Update documentation as you go
 
 3. **Set Up Development Environment**
    - [ ] Run `npm run install:all`
@@ -298,8 +210,6 @@ Reference: `.cursorrules` (lines 139-159)
 ## Getting Help
 
 **For Workflow Questions**:
-- OpenSpec: See `openspec/AGENTS.md`
-- TDD: See `.cursor/rules/20-tdd-workflow.md`
 - Documentation: See `.cursor/rules/10-docs-major-changes.md`
 
 **For Technical Questions**:
@@ -310,14 +220,13 @@ Reference: `.cursorrules` (lines 139-159)
 **For Rules & Standards**:
 - Core rules: See `.cursorrules`
 - Development workflow: See `.cursor/rules/README.md`
-- Project conventions: See `openspec/project.md`
 
 ---
 
 ## Remember
 
 1. **Documentation is mandatory** - Never commit without updating docs
-2. **Follow the right workflow** - OpenSpec for features, TDD for fixes
+2. **Write tests** - Write tests for new functionality
 3. **Security first** - Always validate inputs and protect against path traversal
 4. **Test coverage** - Maintain 80%+ coverage
 5. **Code quality** - Follow style guidelines and best practices

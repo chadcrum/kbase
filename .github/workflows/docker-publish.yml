@@ -47,16 +47,63 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        build-args: |
+          BUILD_DATE=${{ steps.meta.outputs.created }}
+          VCS_REF=${{ github.sha }}
+        
+    - name: Verify package creation
+      if: success()
+      run: |
+        # Wait for package to be created and verify it exists
+        sleep 10
+        
+        PACKAGE_NAME="${{ github.event.repository.name }}"
+        echo "Verifying package creation: $PACKAGE_NAME"
+        
+        # Check if package exists
+        if gh api "/users/${{ github.repository_owner }}/packages/container/$PACKAGE_NAME" 2>/dev/null; then
+          echo "✅ Package $PACKAGE_NAME exists"
+        else
+          echo "❌ Package $PACKAGE_NAME not found, waiting longer..."
+          sleep 10
+          if gh api "/users/${{ github.repository_owner }}/packages/container/$PACKAGE_NAME" 2>/dev/null; then
+            echo "✅ Package $PACKAGE_NAME exists after additional wait"
+          else
+            echo "❌ Package $PACKAGE_NAME still not found"
+            exit 1
+          fi
+        fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Update package visibility
+      if: success()
       run: |
-        # Make the package public
+        # Wait a moment for the package to be created
+        sleep 15
+        
+        # Extract package name from repository name
+        PACKAGE_NAME="${{ github.event.repository.name }}"
+        
+        # Try to make the package public (handle both user and org repos)
+        if [[ "${{ github.repository_owner }}" == "${{ github.actor }}" ]]; then
+          # Personal repository
+          PACKAGE_URL="/users/${{ github.repository_owner }}/packages/container/$PACKAGE_NAME/settings"
+        else
+          # Organization repository
+          PACKAGE_URL="/orgs/${{ github.repository_owner }}/packages/container/$PACKAGE_NAME/settings"
+        fi
+        
+        echo "Attempting to update package visibility for: $PACKAGE_NAME"
+        echo "Using URL: $PACKAGE_URL"
+        
+        # Make the package public with error handling
         gh api \
           --method PATCH \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          /orgs/${{ github.repository_owner }}/packages/container/${{ github.event.repository.name }}/settings \
-          -f visibility=public
+          "$PACKAGE_URL" \
+          -f visibility=public || echo "Failed to update package visibility - package may already be public or require manual configuration"
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         

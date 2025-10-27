@@ -6,9 +6,13 @@ export class ApiClient {
   private token: string | null = null
   private healthCallback: ((isOnline: boolean) => void) | null = null
 
-  constructor(baseURL: string = import.meta.env.VITE_API_URL || 'http://localhost:8000') {
+  constructor(baseURL: string = import.meta.env.VITE_API_URL || '') {
+    // Use relative URLs when no explicit base URL is provided
+    // This allows the app to work from any domain without rebuilding
+    const apiBase = baseURL || (typeof window !== 'undefined' ? window.location.origin : '');
+    
     this.client = axios.create({
-      baseURL: `${baseURL}/api/v1`,
+      baseURL: apiBase ? `${apiBase}/api/v1` : '/api/v1',
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',

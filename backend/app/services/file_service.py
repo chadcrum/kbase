@@ -474,6 +474,7 @@ class FileService:
                 
                 # Also search filenames using ripgrep --files with case-insensitive glob
                 # This is much faster than Python's rglob
+                # Use --iglob for case-insensitive filename matching
                 files_result = subprocess.run(
                     [
                         'rg',

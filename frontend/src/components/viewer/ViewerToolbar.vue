@@ -17,14 +17,12 @@
     <div class="toolbar-right">
       <button class="search-btn" @click="openSearch" title="Search (Ctrl+P)">
         <span class="search-icon">🔍</span>
-        <span class="search-text">Search</span>
       </button>
       <button class="theme-toggle-btn" @click="toggleTheme" :title="themeToggleTitle">
         <span class="theme-icon">{{ themeIcon }}</span>
       </button>
       <button class="logout-btn" @click="handleLogout" title="Logout">
         <span class="logout-icon">🚪</span>
-        <span class="logout-text">Logout</span>
       </button>
     </div>
   </div>
@@ -191,13 +189,13 @@ const themeToggleTitle = computed(() => {
 .search-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  justify-content: center;
+  gap: 0;
+  padding: 0.4rem 0.5rem;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: #667eea;
   font-size: 0.875rem;
-  font-weight: 600;
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -216,25 +214,19 @@ const themeToggleTitle = computed(() => {
 }
 
 .search-icon {
-  font-size: 1rem;
+  font-size: 0.85rem;
   line-height: 1;
-}
-
-.search-text {
-  font-size: 0.875rem;
-  white-space: nowrap;
 }
 
 .theme-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  padding: 0.4rem 0.5rem;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: #667eea;
-  font-size: 1.25rem;
+  font-size: 0.875rem;
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -253,7 +245,7 @@ const themeToggleTitle = computed(() => {
 }
 
 .theme-icon {
-  font-size: 1.25rem;
+  font-size: 0.85rem;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -263,13 +255,13 @@ const themeToggleTitle = computed(() => {
 .logout-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  justify-content: center;
+  gap: 0;
+  padding: 0.4rem 0.5rem;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: #667eea;
   font-size: 0.875rem;
-  font-weight: 600;
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -288,13 +280,8 @@ const themeToggleTitle = computed(() => {
 }
 
 .logout-icon {
-  font-size: 1rem;
+  font-size: 0.85rem;
   line-height: 1;
-}
-
-.logout-text {
-  font-size: 0.875rem;
-  white-space: nowrap;
 }
 
 /* Responsive design */
@@ -333,18 +320,6 @@ const themeToggleTitle = computed(() => {
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: calc(100vw - 200px);
-  }
-  
-  .search-text,
-  .logout-text {
-    display: none;
-  }
-  
-  .search-btn,
-  .theme-toggle-btn,
-  .logout-btn {
-    min-width: 40px;
-    min-height: 40px;
   }
 }
 </style>

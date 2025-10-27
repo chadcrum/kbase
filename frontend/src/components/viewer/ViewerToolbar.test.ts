@@ -45,17 +45,18 @@ describe('ViewerToolbar', () => {
     expect(wrapper.text()).toContain('folder/test.md')
   })
 
-  it('renders search and logout buttons', () => {
+  it('renders icon-only search and logout buttons', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md'
       }
     })
 
-    expect(wrapper.text()).toContain('Search')
-    expect(wrapper.text()).toContain('Logout')
     expect(wrapper.find('.search-btn').exists()).toBe(true)
     expect(wrapper.find('.logout-btn').exists()).toBe(true)
+    // Verify buttons are icon-only (no text labels)
+    expect(wrapper.find('.search-btn').text()).toBe('🔍')
+    expect(wrapper.find('.logout-btn').text()).toBe('🚪')
   })
 
   it('handles search button click', async () => {

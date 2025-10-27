@@ -34,8 +34,34 @@ app.include_router(api_router, prefix="/api/v1")
 # Serve static files (frontend) if they exist
 static_dir = os.path.join(os.path.dirname(__file__), "..", "dist")
 if os.path.exists(static_dir):
-    # Mount static files at root path
-    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+    # Mount static files at root path with cache headers
+    from starlette.responses import Response
+    
+    class CacheStaticFiles(StaticFiles):
+        async def get_response(self, path: str, scope):
+            response = await super().get_response(path, scope)
+            if isinstance(response, Response):
+                # Cache static assets (JS, CSS, images) for 1 year
+                if path.endswith(('.js', '.css', '.png', '.jpg', '.svg', '.ico', '.woff2', '.webp')):
+                    response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+                # Don't cache HTML or manifest
+                elif path.endswith('.html') or 'manifest' in path:
+                    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+                    response.headers['Pragma'] = 'no-cache'
+                    response.headers['Expires'] = '0'
+            return response
+    
+    app.mount("/assets", CacheStaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+    
+    # Serve manifest files
+    @app.get("/manifest.webmanifest")
+    async def serve_manifest():
+        """Serve the PWA manifest file."""
+        manifest_path = os.path.join(static_dir, "manifest.webmanifest")
+        if os.path.exists(manifest_path):
+            with open(manifest_path, 'r') as f:
+                return Response(content=f.read(), media_type="application/manifest+json")
+        return {"detail": "Manifest not found"}
     
     # Serve index.html for all non-API routes (SPA routing)
     @app.get("/{full_path:path}")
@@ -48,7 +74,9 @@ if os.path.exists(static_dir):
         # Serve index.html for SPA routing
         index_path = os.path.join(static_dir, "index.html")
         if os.path.exists(index_path):
-            return FileResponse(index_path)
+            response = FileResponse(index_path)
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
         else:
             return {"detail": "Frontend not found"}
 

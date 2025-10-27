@@ -50,19 +50,49 @@ onMounted(() => {
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  transition: margin-left 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease, left 0.3s ease;
   flex-shrink: 0;
+  z-index: 1000;
 }
 
 .sidebar.collapsed {
   margin-left: -300px;
   opacity: 0;
+  pointer-events: none;
 }
 
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile responsive - overlay mode */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 80%;
+    max-width: 300px;
+    z-index: 2000;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    margin-left: 0;
+  }
+}
+
+/* Safe area insets on mobile */
+@supports (padding: max(0px)) {
+  .sidebar {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
 }
 </style>
 

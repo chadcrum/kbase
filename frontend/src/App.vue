@@ -1,6 +1,8 @@
 <template>
   <div id="app">
     <RouterView />
+    <InstallPrompt />
+    <UpdatePrompt />
   </div>
 </template>
 
@@ -8,6 +10,8 @@
 import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import InstallPrompt from '@/components/common/InstallPrompt.vue'
+import UpdatePrompt from '@/components/common/UpdatePrompt.vue'
 
 // Initialize stores
 const authStore = useAuthStore()
@@ -71,6 +75,23 @@ body {
 #app {
   height: 100vh;
   overflow: hidden;
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 768px) {
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  #app {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }
 
 /* Utility classes */

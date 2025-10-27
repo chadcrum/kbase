@@ -37,10 +37,21 @@ const vaultStore = useVaultStore()
 @media (max-width: 768px) {
   .app-layout {
     flex-direction: column;
+    position: relative;
   }
   
   .main-content {
-    height: calc(100vh - 200px); /* Adjust based on sidebar height */
+    height: 100vh;
+    width: 100%;
+  }
+}
+
+/* Touch-friendly targets */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 </style>

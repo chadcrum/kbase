@@ -45,6 +45,35 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Smart Dismissal**: Auto-dismisses when backend reconnects, reappears on new failures
 - **Cross-Platform**: Works on both login screen and main editor interface
 
+### Progressive Web App (PWA)
+- **Installable**: Add to home screen on mobile devices and desktop browsers
+- **Offline Support**: Cache static assets and recently accessed notes
+- **Mobile-Optimized**: Full responsive design with touch-friendly interfaces
+- **Update Notifications**: Automatic detection and prompts for app updates
+- **Native Feel**: Standalone mode provides app-like experience
+
+## PWA Installation
+
+### Android (Chrome)
+1. Open KBase in Chrome browser
+2. Tap the menu (☰) button
+3. Select "Add to Home screen" or "Install app"
+4. Confirm installation
+5. Access KBase from your home screen like a native app
+
+### iOS (Safari)
+1. Open KBase in Safari browser
+2. Tap the Share button (□↑)
+3. Select "Add to Home Screen"
+4. Edit the name if desired, then tap "Add"
+5. KBase will appear on your home screen
+
+### Desktop (Chrome/Edge/Firefox)
+1. Look for the install banner at the top of the browser
+2. Click "Install" or use the install icon in the address bar
+3. KBase will open as a standalone window
+4. Access it from your applications menu
+
 ## Quick Start
 
 ### Prerequisites
@@ -483,12 +512,10 @@ The test suite includes:
 
 ## Future Features
 
-- Rich text editor with markdown support
-- WebSocket real-time synchronization
-- Global search functionality with ripgrep
-- Database caching for large vaults
-- PWA capabilities and offline support
+- WebSocket real-time synchronization for live collaboration
 - Image upload and management
+- Advanced markdown features (tables, task lists, etc.)
+- Tags and categories
 
 ## Contributing
 

@@ -441,19 +441,45 @@ const scrollSelectedIntoView = () => {
 @media (max-width: 768px) {
   .omni-search-overlay {
     padding-top: 5vh;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .omni-search-modal {
-    width: 95%;
-    max-height: 80vh;
+    width: 100%;
+    max-height: 85vh;
+    border-radius: 16px 16px 0 0;
   }
 
   .search-input-container {
-    padding: 0.75rem;
+    padding: 1rem;
+  }
+
+  .search-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 12px;
   }
 
   .result-item {
-    padding: 0.6rem;
+    padding: 12px;
+    min-height: 56px;
+  }
+
+  .result-filename {
+    font-size: 15px;
+  }
+
+  .result-snippet {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .result-highlight {
+    padding: 2px 4px;
+  }
+
+  .result-path {
+    font-size: 12px;
   }
 }
 </style>

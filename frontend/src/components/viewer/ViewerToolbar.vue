@@ -302,11 +302,13 @@ const themeToggleTitle = computed(() => {
   .viewer-toolbar {
     flex-wrap: wrap;
     gap: 0.5rem;
+    padding: 0.5rem;
   }
   
   .toolbar-left {
     flex: 1 1 100%;
     order: 1;
+    gap: 0.5rem;
   }
   
   .toolbar-center {
@@ -318,10 +320,31 @@ const themeToggleTitle = computed(() => {
   
   .toolbar-right {
     order: 2;
+    gap: 0.25rem;
   }
   
   .file-path {
     display: none;
+  }
+  
+  .file-name {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100vw - 200px);
+  }
+  
+  .search-text,
+  .logout-text {
+    display: none;
+  }
+  
+  .search-btn,
+  .theme-toggle-btn,
+  .logout-btn {
+    min-width: 40px;
+    min-height: 40px;
   }
 }
 </style>

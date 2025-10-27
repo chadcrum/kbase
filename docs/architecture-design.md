@@ -205,10 +205,17 @@ The application includes comprehensive backend connectivity monitoring to provid
 frontend/src/
 ├── api/
 │   └── client.ts                   # Axios HTTP client with JWT auth
+├── composables/
+│   ├── useBackendHealth.ts         # Backend connectivity monitoring
+│   └── usePWA.ts                   # PWA installation & update management
 ├── components/
 │   ├── common/
+│   │   ├── BackendWarning.vue      # Backend connectivity warning
 │   │   ├── ConfirmDialog.vue       # Reusable confirmation dialog
-│   │   └── InputDialog.vue         # Reusable input dialog for user input
+│   │   ├── InstallPrompt.vue         # PWA install prompt
+│   │   ├── InputDialog.vue         # Reusable input dialog for user input
+│   │   ├── OmniSearch.vue          # Modal search interface
+│   │   └── UpdatePrompt.vue        # PWA update prompt
 │   ├── editor/
 │   │   └── MonacoEditor.vue        # Monaco code editor wrapper
 │   ├── layout/
@@ -224,6 +231,7 @@ frontend/src/
 │       └── ViewerToolbar.vue       # Toolbar with search and theme controls
 ├── stores/
 │   ├── auth.ts                     # JWT & login state
+│   ├── theme.ts                     # Dark mode state
 │   └── vault.ts                    # File tree & note update state
 ├── router/
 │   ├── index.ts                    # Route definitions
@@ -231,6 +239,7 @@ frontend/src/
 ├── types/
 │   └── index.ts                    # TypeScript type definitions
 ├── utils/
+│   ├── highlightSearch.ts          # Search term highlighting
 │   └── languageDetection.ts        # File extension to language mapping
 └── views/
     ├── LoginView.vue               # Login page
@@ -250,10 +259,13 @@ frontend/src/
   - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
   - `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with create and refresh actions
 - **Common Components**:
+  - `BackendWarning.vue`: Dismissible warning banner for backend connectivity issues
   - `ConfirmDialog.vue`: Reusable confirmation modal for destructive actions
   - `InputDialog.vue`: Reusable input dialog with validation for user text input
+  - `InstallPrompt.vue`: PWA install prompt with localStorage persistence
   - `ContextMenu.vue`: Right-click context menu with customizable items
   - `OmniSearch.vue`: Modal search interface with content snippets and line numbers
+  - `UpdatePrompt.vue`: PWA update notification with reload functionality
 
 **State Management (Pinia)**:
 
@@ -582,10 +594,116 @@ The file explorer provides comprehensive file and directory management through a
 
 ## PWA Features
 
-1. **Service Worker**: Cache static assets, API responses
-2. **Manifest**: App name, icons, theme colors
-3. **Offline**: Show cached notes, queue edits for sync
-4. **Install Prompt**: iOS and Android support
+KBase is a fully functional Progressive Web App (PWA) that can be installed on mobile devices and desktop browsers, providing native app-like experiences with offline capabilities.
+
+### Service Worker Strategy
+
+**Caching Strategy** (`frontend/vite.config.ts`):
+- **Register Type**: Prompt-based installation (user-initiated)
+- **Static Assets**: CacheFirst strategy for JS, CSS, images, fonts
+  - Cache: 1 year (immutable)
+  - Fallback: Network first, then cache
+- **API Endpoints**: NetworkFirst strategy with 5-minute cache
+  - Cache: 50 entries, 5 minutes expiration
+  - Benefits: Offline access to recently loaded notes
+
+**Workbox Configuration**:
+```typescript
+workbox: {
+  globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+  runtimeCaching: [
+    {
+      urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+      handler: 'CacheFirst',
+      cacheName: 'google-fonts-cache'
+    },
+    {
+      urlPattern: /\/api\/v1\/.*/i,
+      handler: 'NetworkFirst',
+      cacheName: 'api-cache'
+    }
+  ]
+}
+```
+
+### Manifest Configuration
+
+**Web App Manifest** (`frontend/public/manifest.json`):
+- **Name**: "KBase Note-Taking Application"
+- **Short Name**: "KBase"
+- **Display Mode**: standalone (native app feel)
+- **Theme Color**: #667eea (purple)
+- **Background Color**: #f8fafc (light mode)
+- **Orientation**: any (supports all orientations)
+- **Icons**: 192x192 and 512x512 maskable icons
+
+### Installation & Updates
+
+**Install Prompts** (`frontend/src/composables/usePWA.ts`):
+- Automatic install prompt detection via `beforeinstallprompt` event
+- Smart dismiss logic: 1-week cooldown after dismissal
+- Platform-specific handling (iOS, Android, Desktop)
+- Visual prompts via `InstallPrompt.vue` component
+
+**Update Management**:
+- Service worker update detection
+- Visual update notification via `UpdatePrompt.vue` component
+- One-click update with automatic reload
+- Skip option for non-critical updates
+
+### Offline Support
+
+**Offline Capabilities**:
+- Cached static assets load instantly offline
+- Recently loaded notes accessible offline (5-minute cache)
+- Network status monitoring via `navigator.onLine`
+- Graceful degradation when offline
+- Queue edits for sync when connection restored (future feature)
+
+### Mobile Responsiveness
+
+**Mobile Optimizations** (`frontend/src/components/*`):
+- **Sidebar**: Overlay mode on mobile (< 768px)
+  - Fixed position with backdrop
+  - Swipe-to-close gesture support
+  - Touch-friendly 44px minimum touch targets
+- **Monaco Editor**: Mobile-optimized settings
+  - Disabled line numbers on mobile
+  - Disabled minimap on mobile
+  - Disabled context menu on mobile
+  - Reduced line decorations width
+- **Toolbar**: Compact layout on mobile
+  - Icon-only buttons
+  - Truncated file names
+  - Responsive button sizes
+- **OmniSearch**: Full-screen modal on mobile
+  - Full-width modal with rounded top corners
+  - Larger touch targets (56px minimum)
+  - iOS 16px font size to prevent zoom
+
+**Safe Area Insets**:
+- Support for notched devices (iPhone X+)
+- Dynamic padding based on device safe areas
+- Uses CSS `env(safe-area-inset-*)` variables
+
+### PWA Components
+
+**InstallPrompt.vue** (`frontend/src/components/common/InstallPrompt.vue`):
+- Banner-style install prompt
+- Dismissible with localStorage persistence
+- Platform-specific messaging
+- Slide-up animation
+
+**UpdatePrompt.vue** (`frontend/src/components/common/UpdatePrompt.vue`):
+- Top-aligned update notification
+- Update and Skip actions
+- Smooth animations
+
+**usePWA Composable** (`frontend/src/composables/usePWA.ts`):
+- Centralized PWA logic
+- Installation detection
+- Update management
+- Offline status monitoring
 
 ## Testing Strategy
 

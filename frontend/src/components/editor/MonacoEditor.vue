@@ -58,6 +58,9 @@ onMounted(async () => {
     // Detect language from file extension
     const language = detectLanguage(props.path)
 
+    // Detect if mobile device
+    const isMobile = window.innerWidth <= 768
+    
     // Create editor instance with theme matching app theme
     const initialTheme = themeStore.isDarkMode ? 'vs-dark' : 'vs-light'
     editor = monaco.editor.create(editorContainer.value, {
@@ -65,10 +68,10 @@ onMounted(async () => {
       language,
       theme: initialTheme,
       automaticLayout: true,
-      fontSize: 14,
-      lineNumbers: 'on',
+      fontSize: isMobile ? 14 : 14,
+      lineNumbers: isMobile ? 'off' : 'on',
       minimap: {
-        enabled: true
+        enabled: !isMobile
       },
       scrollBeyondLastLine: false,
       wordWrap: 'on',
@@ -77,8 +80,11 @@ onMounted(async () => {
       insertSpaces: true,
       renderWhitespace: 'selection',
       folding: true,
-      lineDecorationsWidth: 10,
-      lineNumbersMinChars: 4,
+      lineDecorationsWidth: isMobile ? 4 : 10,
+      lineNumbersMinChars: isMobile ? 3 : 4,
+      // Mobile-specific optimizations
+      contextmenu: !isMobile,
+      mouseWheelZoom: !isMobile,
     })
     
     // Listen to content changes
@@ -164,6 +170,13 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   min-height: 400px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .monaco-editor-container {
+    min-height: 300px;
+  }
 }
 </style>
 

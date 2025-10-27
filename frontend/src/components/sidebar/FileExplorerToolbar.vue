@@ -288,7 +288,7 @@ onUnmounted(() => {
 
 .toolbar-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.375rem;
   padding: 0.75rem 1rem;
 }
 
@@ -329,7 +329,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.5rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -349,7 +349,7 @@ onUnmounted(() => {
 }
 
 .toolbar-button .icon {
-  font-size: 1rem;
+  font-size: 0.85rem;
 }
 
 .refresh-button:disabled {
@@ -368,7 +368,7 @@ onUnmounted(() => {
 /* Sort buttons */
 .sort-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.375rem;
   margin-left: auto;
 }
 
@@ -420,6 +420,41 @@ onUnmounted(() => {
 
 .sort-option-label {
   flex: 1;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .toolbar-buttons {
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .toolbar-button {
+    padding: 0.25rem 0.375rem;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .toolbar-button .icon {
+    font-size: 0.75rem;
+  }
+
+  .sort-buttons {
+    gap: 0.25rem;
+  }
+}
+
+/* Touch device accessibility */
+@media (hover: none) and (pointer: coarse) {
+  .toolbar-button {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0.375rem 0.5rem;
+  }
+
+  .toolbar-button .icon {
+    font-size: 0.875rem;
+  }
 }
 </style>
 

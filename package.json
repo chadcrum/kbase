@@ -7,7 +7,7 @@
     "dev": "concurrently -n \"backend,frontend\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && uv run uvicorn app.main:app --reload",
     "dev:frontend": "cd frontend && npm run dev",
-    "kill:dev": "pkill -f 'uvicorn app.main:app' || true && pkill -f 'vite' || true && pkill -f 'concurrently' || true",
+    "kill:dev": "pkill -f 'uvicorn app.main:app' || true && pkill -f 'node' || true && pkill -f 'concurrently' || true",
     "install:all": "cd frontend && npm install && cd ../backend && uv sync && uv pip install -e \".[dev]\"",
     "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "cd backend && uv run pytest -v",

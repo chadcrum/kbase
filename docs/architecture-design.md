@@ -511,6 +511,47 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - ResizeObserver for efficient layout updates
    - Automatic cleanup on component unmount
 
+**Milkdown Editor Integration**:
+
+Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco for markdown files.
+
+1. **Component Architecture**:
+   - `MilkdownEditor.vue`: Wraps Milkdown editor with Vue lifecycle
+   - Uses Milkdown core with CommonMark and GFM presets
+   - Nord theme for consistent styling
+   - Matches MonacoEditor interface for seamless integration
+   
+2. **Editor Selection**:
+   - Editor preference stored per file type in `editorStore` (localStorage)
+   - Default: Monaco (for backward compatibility)
+   - Milkdown only available for markdown (.md) files
+   - Non-markdown files always use Monaco
+   - Toggle button in ViewerToolbar (toolbar-center) for markdown files
+   
+3. **Auto-Save Implementation**:
+   - Same debounced save pattern as Monaco (1000ms delay)
+   - Emits `save` event with markdown content
+   - Milkdown natively saves as markdown (no conversion needed)
+   - Uses same save status UI as Monaco
+   
+4. **Editor Configuration**:
+   - Presets: CommonMark (standard markdown) + GFM (GitHub Flavored Markdown)
+   - Theme: Nord theme with dark/light mode support
+   - Responsive design with mobile optimizations
+   - CSS variables for theme integration
+   
+5. **Content Synchronization**:
+   - Watches for external content changes
+   - Updates editor when modelValue changes
+   - Prevents infinite update loops
+   
+6. **Editor Store** (`stores/editor.ts`):
+   - Manages editor preference: `'monaco' | 'milkdown'`
+   - Persists to localStorage: `kbase_editor_preference`
+   - `getEditorForFile(path)`: Returns appropriate editor for file type
+   - `toggleMarkdownEditor()`: Switches between Monaco and Milkdown
+   - `canUseMilkdown(path)`: Checks if file can use Milkdown
+
 **File Explorer CRUD Operations**:
 
 The file explorer provides comprehensive file and directory management through an intuitive user interface.

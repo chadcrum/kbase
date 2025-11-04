@@ -8,9 +8,16 @@
         @open-search="handleOpenSearch"
       />
       
-      <!-- Monaco Editor View -->
+      <!-- Editor View (Monaco or Milkdown) -->
       <div class="editor-view">
+        <MilkdownEditor
+          v-if="shouldUseMilkdown"
+          v-model="editableContent"
+          :path="selectedNote.path"
+          @save="handleSave"
+        />
         <MonacoEditor
+          v-else
           v-model="editableContent"
           :path="selectedNote.path"
           @save="handleSave"
@@ -48,8 +55,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useVaultStore } from '@/stores/vault'
+import { useEditorStore } from '@/stores/editor'
 import ViewerToolbar from './ViewerToolbar.vue'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
+import MilkdownEditor from '@/components/editor/MilkdownEditor.vue'
 
 // Emits
 const emit = defineEmits<{
@@ -58,6 +67,7 @@ const emit = defineEmits<{
 
 // Store
 const vaultStore = useVaultStore()
+const editorStore = useEditorStore()
 
 // State
 const editableContent = ref('')
@@ -81,6 +91,12 @@ const saveStatusText = computed(() => {
     default:
       return ''
   }
+})
+
+// Determine which editor to use based on file type and preference
+const shouldUseMilkdown = computed(() => {
+  if (!selectedNote.value) return false
+  return editorStore.getEditorForFile(selectedNote.value.path) === 'milkdown'
 })
 
 // Watch for note changes to update editable content
@@ -182,7 +198,7 @@ const handleOpenSearch = () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background-color: #1e1e1e;
+  background-color: var(--bg-primary);
 }
 
 

@@ -11,7 +11,16 @@
     </div>
     
     <div class="toolbar-center">
-      <!-- View toggle removed - only Monaco editor now -->
+      <!-- Editor toggle for markdown files -->
+      <button
+        v-if="isMarkdownFile"
+        class="editor-toggle-btn"
+        @click="toggleEditor"
+        :title="editorToggleTitle"
+      >
+        <span class="editor-icon">{{ editorIcon }}</span>
+        <span class="editor-text">{{ editorText }}</span>
+      </button>
     </div>
     
     <div class="toolbar-right">
@@ -34,11 +43,13 @@ import { useRouter } from 'vue-router'
 import { useVaultStore } from '@/stores/vault'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import { useEditorStore } from '@/stores/editor'
 
 // Store
 const vaultStore = useVaultStore()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
+const editorStore = useEditorStore()
 const router = useRouter()
 
 // Props
@@ -89,6 +100,29 @@ const themeIcon = computed(() => {
 
 const themeToggleTitle = computed(() => {
   return themeStore.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'
+})
+
+// Editor toggle
+const isMarkdownFile = computed(() => {
+  return props.filePath?.endsWith('.md') || false
+})
+
+const toggleEditor = () => {
+  editorStore.toggleMarkdownEditor()
+}
+
+const editorIcon = computed(() => {
+  return editorStore.markdownEditor === 'milkdown' ? '✏️' : '📝'
+})
+
+const editorText = computed(() => {
+  return editorStore.markdownEditor === 'milkdown' ? 'Milkdown' : 'Monaco'
+})
+
+const editorToggleTitle = computed(() => {
+  return editorStore.markdownEditor === 'milkdown'
+    ? 'Switch to Monaco Editor'
+    : 'Switch to Milkdown Editor'
 })
 </script>
 
@@ -175,6 +209,49 @@ const themeToggleTitle = computed(() => {
 
 .toolbar-center {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: #667eea;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.editor-toggle-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.editor-toggle-btn:active {
+  transform: scale(0.98);
+}
+
+.editor-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-text {
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .toolbar-right {

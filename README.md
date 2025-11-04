@@ -27,9 +27,15 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 
 ### Editor
 - **Monaco Editor**: Full-featured code editor with VS Code experience
-- **Syntax Highlighting**: Support for 30+ programming languages
-- **Auto-Save**: Automatic saving with 1-second debounce
+  - Syntax highlighting for 30+ programming languages
+  - Available for all file types
+- **Milkdown Editor**: WYSIWYG markdown editor (optional for .md files)
+  - WYSIWYG editing experience for markdown
+  - CommonMark and GitHub Flavored Markdown support
+  - Toggle between Monaco and Milkdown via toolbar button
+- **Auto-Save**: Automatic saving with 1-second debounce (both editors)
 - **Save Status**: Visual feedback for saving/saved/error states
+- **Editor Preference**: Per-file-type preference stored in localStorage
 
 ### Security & Performance
 - **JWT Authentication**: Secure token-based authentication

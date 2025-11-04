@@ -1,6 +1,3 @@
----
-globs: "backend/**/*.py"
----
 
 # Python Backend Standards
 
@@ -93,3 +90,58 @@ except FileNotFoundError:
 except PermissionError:
     raise HTTPException(status_code=403, detail="Permission denied")
 ```
+
+## Subprocess Usage
+
+### CRITICAL: Explicit Search Path Required
+
+**When using `subprocess.run` with `cwd` parameter, some command-line tools (like ripgrep) require an explicit search path.**
+
+This is a common pitfall that has caused bugs multiple times. When setting `cwd` in `subprocess.run`, always include an explicit search path (e.g., `.`) as the last argument:
+
+```python
+# ❌ WRONG - May return no results
+result = subprocess.run(
+    ['rg', '-i', '-l', 'search_term'],
+    cwd=str(vault_path),
+    capture_output=True,
+    text=True
+)
+
+# ✅ CORRECT - Explicitly search current directory
+result = subprocess.run(
+    ['rg', '-i', '-l', 'search_term', '.'],  # Note the '.' at the end
+    cwd=str(vault_path),
+    capture_output=True,
+    text=True
+)
+```
+
+**Why this matters:** Tools like ripgrep behave differently when `cwd` is set - they may not search the current directory by default without an explicit path argument.
+
+### Path Normalization
+
+**Always use `.resolve()` on Path objects when working with file paths from subprocess output.**
+
+When constructing `Path` objects from subprocess output and comparing them later, always normalize paths using `.resolve()` to ensure consistent path comparison:
+
+```python
+from pathlib import Path
+
+# ❌ WRONG - May cause path mismatch issues
+file_path = vault_path / subprocess_output.strip()
+if file_path in matches_set:  # May fail due to path inconsistency
+    pass
+
+# ✅ CORRECT - Normalize paths for consistent comparison
+file_path = (vault_path / subprocess_output.strip()).resolve()
+if file_path in matches_set:  # Will work correctly
+    pass
+```
+
+**Why this matters:** Paths can be represented in multiple ways (relative vs absolute, symlinks vs resolved), and comparisons may fail if paths aren't normalized. Always call `.resolve()` when:
+- Adding paths to sets for deduplication
+- Comparing paths in conditional logic
+- Storing paths from subprocess output
+
+See [backend/app/services/file_service.py](mdc:backend/app/services/file_service.py) for examples of correct subprocess usage.

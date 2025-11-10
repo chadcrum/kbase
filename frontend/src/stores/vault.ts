@@ -121,9 +121,29 @@ export const useVaultStore = defineStore('vault', () => {
     }
   }
 
+  const expandToPath = (path: string) => {
+    if (!path) return
+
+    // Always keep root expanded
+    expandedPaths.value.add('/')
+
+    const segments = path.split('/').filter(Boolean)
+    if (segments.length <= 1) {
+      return
+    }
+
+    let currentPath = ''
+    for (let i = 0; i < segments.length - 1; i++) {
+      currentPath += `/${segments[i]}`
+      expandedPaths.value.add(currentPath)
+    }
+  }
+
   const selectNote = (path: string) => {
+    expandToPath(path)
+
     if (path === selectedNotePath.value) return
-    
+
     // Clear current selection
     selectedNote.value = null
     

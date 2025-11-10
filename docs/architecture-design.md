@@ -330,6 +330,7 @@ frontend/src/
   - **Keyboard Navigation**: Full keyboard support for power users
     - Arrow keys (↑/↓) navigate through results with wrap-around
     - Enter opens the selected result
+    - Opening a result auto-expands the file explorer to reveal the note and applies the active selection highlight
     - First result auto-selected when results appear
     - Selection resets to first item on new search
     - Visual indication of selected item with blue highlight
@@ -347,6 +348,7 @@ frontend/src/
     - **Default Expansion**: Vault root is auto-expanded to show first-level items by default
     - Provides immediate visibility of top-level files and folders on page load
     - Collapse All action resets nested directories but preserves first-level visibility
+    - **Selection Sync**: Programmatic note selections (e.g., Omni Search) expand ancestor folders, highlight the active file node, and scroll it into view
     - **Directory Item Counts**: Each directory shows total count of nested items (files + subdirectories)
       - Recursive counting of all children at any depth
       - Displayed in lighter color (#9ca3af) with smaller font (0.75rem)

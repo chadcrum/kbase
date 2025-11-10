@@ -1,6 +1,7 @@
 <template>
   <div class="file-tree-node">
     <div
+      ref="nodeItem"
       class="node-item"
       :class="{
         'is-directory': node.type === 'directory',
@@ -8,7 +9,8 @@
         'is-expanded': isExpanded,
         'has-children': hasChildren,
         'is-dragging': isDragging,
-        'is-drag-over': isDragOver
+        'is-drag-over': isDragOver,
+        'is-selected': isSelected
       }"
       :style="{ paddingLeft: level * 16 + 8 + 'px' }"
       :draggable="true"
@@ -107,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue'
+import { computed, ref, nextTick, watch, onMounted } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import ContextMenu, { type ContextMenuItem } from './ContextMenu.vue'
 import ConfirmDialog from '../common/ConfirmDialog.vue'
@@ -145,6 +147,7 @@ const renameInput = ref<HTMLInputElement | null>(null)
 const dragHoverTimer = ref<number | null>(null)
 const showCreateFolderDialog = ref(false)
 const showCreateFileDialog = ref(false)
+const nodeItem = ref<HTMLDivElement | null>(null)
 
 // Computed properties
 const hasChildren = computed(() => {
@@ -163,6 +166,37 @@ const isAtRoot = computed(() => {
   // Check if the item is at root level (only one level deep)
   const pathParts = props.node.path.split('/').filter(Boolean)
   return pathParts.length === 1
+})
+
+const selectedNotePath = computed(() => vaultStore.selectedNotePath)
+
+const isSelected = computed(() => {
+  if (props.node.type !== 'file') {
+    return false
+  }
+  return props.node.path === selectedNotePath.value
+})
+
+const scrollSelectedIntoView = () => {
+  if (!isSelected.value) return
+
+  nextTick(() => {
+    const element = nodeItem.value
+    if (!element) return
+    element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+  })
+}
+
+watch(isSelected, (selected) => {
+  if (selected) {
+    scrollSelectedIntoView()
+  }
+})
+
+onMounted(() => {
+  if (isSelected.value) {
+    scrollSelectedIntoView()
+  }
 })
 
 const contextMenuItems = computed((): ContextMenuItem[] => {
@@ -571,6 +605,15 @@ const handleDrop = async (event: DragEvent) => {
 
 .node-item.is-file {
   color: var(--text-primary);
+}
+
+.node-item.is-selected {
+  background-color: var(--bg-tertiary);
+  border-color: #667eea;
+}
+
+.node-item.is-selected:hover {
+  background-color: var(--bg-tertiary);
 }
 
 .expand-icon,

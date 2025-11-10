@@ -197,6 +197,43 @@ describe('VaultStore', () => {
 
       expect(mockedApiClient.getNote).not.toHaveBeenCalled()
     })
+
+    it('should expand ancestor directories when selecting a nested note', async () => {
+      const mockNote: NoteData = {
+        content: '# Nested Note',
+        path: '/folder/sub/note.md',
+        size: 20,
+        modified: 1234567890
+      }
+
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      vaultStore.selectNote('/folder/sub/note.md')
+
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(vaultStore.expandedPaths.has('/')).toBe(true)
+      expect(vaultStore.expandedPaths.has('/folder')).toBe(true)
+      expect(vaultStore.expandedPaths.has('/folder/sub')).toBe(true)
+    })
+
+    it('should keep root expanded when selecting a root-level note', async () => {
+      const mockNote: NoteData = {
+        content: '# Root Note',
+        path: '/note.md',
+        size: 10,
+        modified: 1234567890
+      }
+
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      vaultStore.selectNote('/note.md')
+
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(vaultStore.expandedPaths.has('/')).toBe(true)
+      expect(vaultStore.expandedPaths.size).toBe(1)
+    })
   })
 
   describe('clearSelection', () => {

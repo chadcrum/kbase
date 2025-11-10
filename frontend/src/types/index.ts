@@ -13,6 +13,10 @@ export interface VerifyResponse {
   valid: boolean
 }
 
+export interface ConfigResponse {
+  auth_enabled: boolean
+}
+
 export interface FileTreeNode {
   name: string
   path: string

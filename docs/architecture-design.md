@@ -77,7 +77,7 @@ vault/                           # Mounted Docker volume
 
 - Pushes file change events: `{type: 'file_changed|created|deleted', path: '...'}`
 - Client subscribes after authentication
-- **Note**: All endpoints except `/`, `/health`, `/docs`, `/redoc` require JWT authentication
+- **Note**: All endpoints except `/`, `/health`, `/docs`, `/redoc`, `/api/v1/config/` require JWT authentication (unless `DISABLE_AUTH=true`)
 
 ### 3. Authentication System
 
@@ -88,6 +88,7 @@ vault/                           # Mounted Docker volume
 - Bearer token authentication scheme
 - FastAPI dependency injection for route protection
 - Configurable token expiration (default: 7 days, extended to 30 days with "Remember Me")
+- Optional authentication disable via `DISABLE_AUTH` environment variable (for development/local use)
 
 **Auth Endpoints** (`backend/app/api/v1/endpoints/auth.py`):
 
@@ -96,7 +97,14 @@ vault/                           # Mounted Docker volume
   - Default token expiration: 7 days (10,080 minutes)
   - With `remember_me=true`: 30 days token expiration
 - `GET /api/v1/auth/verify` - Verify token validity
-- All other endpoints require valid JWT token in Authorization header
+- All other endpoints require valid JWT token in Authorization header (unless `DISABLE_AUTH=true`)
+
+**Config Endpoints** (`backend/app/api/v1/endpoints/config.py`):
+
+- `GET /api/v1/config/` - Get public configuration including authentication status
+  - Returns `auth_enabled` boolean indicating if authentication is required
+  - Always accessible (no authentication required)
+  - Used by frontend to determine authentication requirements
 
 **Persistent Session Management**:
 
@@ -403,16 +411,21 @@ The application uses Pydantic Settings for type-safe configuration management wi
 
 **Required Environment Variables**:
 - `VAULT_PATH` - Path to the note vault directory (supports tilde expansion, e.g., `~/kbase-vault`)
-- `SECRET_KEY` - Secret key for JWT token signing (generate with: `openssl rand -hex 32`)
-- `PASSWORD` - Plain text password for authentication
+- `SECRET_KEY` - Secret key for JWT token signing (required only if authentication is enabled)
+- `PASSWORD` - Plain text password for authentication (required only if authentication is enabled)
 
 **Optional Environment Variables**:
+- `DISABLE_AUTH` - Disable authentication (defaults to `true` in dev mode, `false` in production)
+  - Development mode is detected via: `ENV=development`, `ENVIRONMENT=development`, or `DEBUG=true`
+  - Can be explicitly set to override automatic detection
 - `HOST` - Server host (default: `0.0.0.0`)
 - `PORT` - Server port (default: `8000`)
 - `ACCESS_TOKEN_EXPIRE_MINUTES` - Token expiration time (default: `10080` = 7 days)
 - `ALGORITHM` - JWT signing algorithm (default: `HS256`)
 - `APP_NAME` - Application name (default: `KBase`)
 - `APP_VERSION` - Application version (default: `0.1.0`)
+
+**Note**: `SECRET_KEY` and `PASSWORD` are only required when authentication is enabled (`DISABLE_AUTH=false`).
 
 **Configuration Features**:
 - **Path Validation**: Vault path is validated at startup to ensure it exists and is a directory
@@ -539,6 +552,10 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
    - Theme: Nord theme with dark/light mode support
    - Responsive design with mobile optimizations
    - CSS variables for theme integration
+   - Tab Indentation: Tab key indents selected lines/blocks, Shift+Tab outdents
+     - Lists: Uses native `@milkdown/plugin-indent` plugin for list items
+     - Regular Text: Custom plugin for paragraph indentation (2 spaces per level)
+     - Works with markdown syntax (lists, code blocks, paragraphs)
    
 5. **Content Synchronization**:
    - Watches for external content changes

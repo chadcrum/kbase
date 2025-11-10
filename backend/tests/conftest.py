@@ -31,10 +31,9 @@ def temp_vault() -> Generator[Path, None, None]:
 @pytest.fixture
 def client(temp_vault: Path) -> Generator[TestClient, None, None]:
     """Create a test client with temporary vault."""
-    # Set environment variables (Settings requires secret_key and password)
+    # Set environment variables (explicitly disable auth for tests that don't need it)
     os.environ["VAULT_PATH"] = str(temp_vault)
-    os.environ["SECRET_KEY"] = "test-secret-key-for-jwt-signing"
-    os.environ["PASSWORD"] = "test-password"
+    os.environ["DISABLE_AUTH"] = "true"
     
     # Clear any cached modules to ensure fresh import
     import sys
@@ -50,7 +49,7 @@ def client(temp_vault: Path) -> Generator[TestClient, None, None]:
         yield test_client
     
     # Clean up environment
-    env_vars = ["VAULT_PATH", "SECRET_KEY", "PASSWORD"]
+    env_vars = ["VAULT_PATH", "DISABLE_AUTH"]
     for var in env_vars:
         if var in os.environ:
             del os.environ[var]
@@ -59,8 +58,9 @@ def client(temp_vault: Path) -> Generator[TestClient, None, None]:
 @pytest.fixture
 def auth_client(temp_vault: Path) -> Generator[TestClient, None, None]:
     """Create a test client with authentication configured."""
-    # Set environment variables for authentication
+    # Set environment variables for authentication (explicitly enable auth)
     os.environ["VAULT_PATH"] = str(temp_vault)
+    os.environ["DISABLE_AUTH"] = "false"
     os.environ["SECRET_KEY"] = "test-secret-key-for-jwt-signing"
     os.environ["PASSWORD"] = "test-password"
     
@@ -78,7 +78,7 @@ def auth_client(temp_vault: Path) -> Generator[TestClient, None, None]:
         yield test_client
     
     # Clean up environment
-    env_vars = ["VAULT_PATH", "SECRET_KEY", "PASSWORD"]
+    env_vars = ["VAULT_PATH", "DISABLE_AUTH", "SECRET_KEY", "PASSWORD"]
     for var in env_vars:
         if var in os.environ:
             del os.environ[var]

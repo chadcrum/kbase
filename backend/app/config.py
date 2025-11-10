@@ -5,11 +5,32 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 # Load environment variables from .env file
 load_dotenv()
+
+
+def _is_development_mode() -> bool:
+    """
+    Detect if running in development mode.
+    
+    Checks for common development environment indicators:
+    - ENV=development or ENV=dev
+    - ENVIRONMENT=development or ENVIRONMENT=dev
+    - DEBUG=true or DEBUG=1
+    - Running with uvicorn --reload (detected via environment)
+    """
+    env = os.environ.get("ENV", "").lower()
+    environment = os.environ.get("ENVIRONMENT", "").lower()
+    debug = os.environ.get("DEBUG", "").lower()
+    
+    return (
+        env in ("development", "dev") or
+        environment in ("development", "dev") or
+        debug in ("true", "1", "yes")
+    )
 
 
 class Settings(BaseSettings):
@@ -22,8 +43,11 @@ class Settings(BaseSettings):
     app_version: str = Field(default="0.1.0", description="Application version")
     
     # Authentication settings
-    secret_key: str = Field(..., description="Secret key for JWT token signing")
-    password: str = Field(..., description="Plain text password for authentication")
+    # Default to disabled in development mode, enabled in production
+    # Can be explicitly set via DISABLE_AUTH environment variable
+    disable_auth: Optional[bool] = Field(default=None, description="Disable authentication (defaults to True in dev mode, False in production)")
+    secret_key: str = Field(default="", description="Secret key for JWT token signing (required if auth is enabled)")
+    password: str = Field(default="", description="Plain text password for authentication (required if auth is enabled)")
     access_token_expire_minutes: int = Field(default=10080, description="Access token expiration time in minutes (default: 7 days)")
     algorithm: str = Field(default="HS256", description="JWT signing algorithm")
     
@@ -41,6 +65,21 @@ class Settings(BaseSettings):
             raise ValueError(f"Vault path is not a directory: {v}")
         
         return v.absolute()
+    
+    @model_validator(mode='after')
+    def validate_auth_settings(self):
+        """Validate auth settings and set default based on dev mode if not explicitly set."""
+        # If disable_auth is not explicitly set, default to dev mode detection
+        if self.disable_auth is None:
+            self.disable_auth = _is_development_mode()
+        
+        # Validate auth settings only if auth is enabled
+        if not self.disable_auth:
+            if not self.secret_key:
+                raise ValueError("SECRET_KEY is required when authentication is enabled")
+            if not self.password:
+                raise ValueError("PASSWORD is required when authentication is enabled")
+        return self
     
     model_config = {
         "env_file": ".env",

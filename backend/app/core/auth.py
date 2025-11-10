@@ -9,8 +9,12 @@ from jose import JWTError, jwt
 
 from app.config import settings
 
-# HTTP Bearer token scheme
-security = HTTPBearer()
+# HTTP Bearer token scheme - auto_error is False when auth is disabled
+def get_security():
+    """Get HTTPBearer security scheme with appropriate auto_error setting."""
+    return HTTPBearer(auto_error=not settings.disable_auth)
+
+security = get_security()
 
 
 def verify_password(plain_password: str, stored_password: str) -> bool:
@@ -82,19 +86,34 @@ def authenticate_user(password: str) -> bool:
     return verify_password(password, settings.password)
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> str:
     """
     Dependency to get the current authenticated user.
     
+    When authentication is disabled, returns a default user identifier.
+    When authentication is enabled, validates the JWT token.
+    
     Args:
-        credentials: HTTP Bearer token credentials
+        credentials: HTTP Bearer token credentials (optional if auth is disabled)
         
     Returns:
         str: The authenticated user identifier
         
     Raises:
-        HTTPException: 401 if token is invalid or missing
+        HTTPException: 401 if token is invalid or missing (only when auth is enabled)
     """
+    # If auth is disabled, return a default user identifier
+    if settings.disable_auth:
+        return "user"
+    
+    # Auth is enabled, require valid token
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     token = credentials.credentials
     
     # Verify the token

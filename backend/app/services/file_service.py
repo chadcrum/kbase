@@ -456,7 +456,8 @@ class FileService:
                         '--type-add', 'md:*.md',
                         '--type-add', 'md:*.markdown',
                         '--type', 'md',
-                        phrase
+                        phrase,
+                        '.'  # Explicitly search current directory
                     ],
                     cwd=str(self.vault_path),
                     capture_output=True,
@@ -468,7 +469,7 @@ class FileService:
                 if result.returncode == 0 and result.stdout.strip():
                     for line in result.stdout.strip().split('\n'):
                         if line:
-                            file_path = self.vault_path / line.strip()
+                            file_path = (self.vault_path / line.strip()).resolve()
                             if file_path.exists() and file_path.is_file():
                                 phrase_matches.add(file_path)
                 
@@ -482,7 +483,8 @@ class FileService:
                         '--type-add', 'md:*.md',
                         '--type-add', 'md:*.markdown',
                         '--type', 'md',
-                        '--iglob', f'*{phrase}*'  # case-insensitive glob for filename matching
+                        '--iglob', f'*{phrase}*',  # case-insensitive glob for filename matching
+                        '.'  # Explicitly search current directory
                     ],
                     cwd=str(self.vault_path),
                     capture_output=True,
@@ -494,7 +496,7 @@ class FileService:
                 if files_result.returncode == 0 and files_result.stdout.strip():
                     for line in files_result.stdout.strip().split('\n'):
                         if line:
-                            file_path = self.vault_path / line.strip()
+                            file_path = (self.vault_path / line.strip()).resolve()
                             if file_path.exists() and file_path.is_file():
                                 phrase_matches.add(file_path)
             
@@ -535,7 +537,8 @@ class FileService:
                     '--type-add', 'md:*.md',
                     '--type-add', 'md:*.markdown',
                     '--type', 'md',
-                    combined_pattern
+                    combined_pattern,
+                    '.'  # Explicitly search current directory
                 ],
                 cwd=str(self.vault_path),
                 capture_output=True,
@@ -553,7 +556,7 @@ class FileService:
                             line_number = parts[1]
                             content = parts[2]
                             
-                            file_path = self.vault_path / filename
+                            file_path = (self.vault_path / filename).resolve()
                             
                             # Only include files that matched all phrases
                             if file_path in all_matches:

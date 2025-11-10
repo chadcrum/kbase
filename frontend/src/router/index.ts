@@ -41,6 +41,12 @@ router.beforeEach(async (to, _from, next) => {
 
   const requiresAuth = to.meta.requiresAuth !== false
 
+  // Skip auth checks if authentication is disabled
+  if (!authStore.authEnabled) {
+    next()
+    return
+  }
+
   if (requiresAuth && !authStore.isAuthenticated) {
     // Redirect to login if route requires auth and user is not authenticated
     next('/login')

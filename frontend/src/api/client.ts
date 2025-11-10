@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError } from 'axios'
-import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteData, SearchResponse } from '@/types'
+import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteData, SearchResponse, ConfigResponse } from '@/types'
 
 export class ApiClient {
   private client: AxiosInstance
@@ -48,7 +48,8 @@ export class ApiClient {
         } else if (error.response?.status === 401) {
           // Auth error - backend is up but token is invalid
           this.healthCallback?.(true)
-          // Clear auth state
+          // Only handle auth errors if auth is enabled (check config first)
+          // We'll skip redirect if auth is disabled - this will be handled by the store
           this.logout()
           // Only redirect if not already on login page
           if (window.location.pathname !== '/login') {
@@ -94,6 +95,12 @@ export class ApiClient {
 
   isAuthenticated(): boolean {
     return this.token !== null
+  }
+
+  // Config API
+  async getConfig(): Promise<ConfigResponse> {
+    const response: AxiosResponse<ConfigResponse> = await this.client.get('/config/')
+    return response.data
   }
 
   // Health monitoring

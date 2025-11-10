@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const authEnabled = ref(true) // Default to enabled, will be updated from config
 
   // Getters
   const hasError = computed(() => error.value !== null)
@@ -64,7 +65,28 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const initializeAuth = async (): Promise<boolean> => {
-    return await verifyToken()
+    // First, check if auth is enabled
+    try {
+      const config = await apiClient.getConfig()
+      authEnabled.value = config.auth_enabled
+      
+      // If auth is disabled, automatically authenticate
+      if (!authEnabled.value) {
+        isAuthenticated.value = true
+        return true
+      }
+    } catch (err) {
+      // If config endpoint fails, assume auth is enabled (safe default)
+      console.warn('Failed to fetch config, assuming auth is enabled:', err)
+      authEnabled.value = true
+    }
+    
+    // If auth is enabled, verify token
+    if (authEnabled.value) {
+      return await verifyToken()
+    }
+    
+    return true
   }
 
   return {
@@ -72,6 +94,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isLoading,
     error,
+    authEnabled,
     // Getters
     hasError,
     // Actions

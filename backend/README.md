@@ -101,8 +101,14 @@ uv run pytest -v
 The application uses environment variables for configuration:
 
 - `VAULT_PATH` (required): Path to the note vault directory (supports tilde expansion, e.g., `~/kbase-vault`)
-- `SECRET_KEY` (required): Secret key for JWT token signing
-- `PASSWORD` (required): Plain text password for authentication
+- `DISABLE_AUTH` (optional): Disable authentication (defaults to `true` in dev mode, `false` in production)
+  - Development mode is automatically detected when `ENV=development`, `ENVIRONMENT=development`, or `DEBUG=true`
+  - When authentication is disabled, `SECRET_KEY` and `PASSWORD` are not required
+  - All endpoints become accessible without authentication
+  - Can be explicitly set to override automatic detection
+  - **Warning**: Only use disabled auth for local development, never in production
+- `SECRET_KEY` (required if auth enabled): Secret key for JWT token signing
+- `PASSWORD` (required if auth enabled): Plain text password for authentication
 - `ACCESS_TOKEN_EXPIRE_MINUTES` (optional): Token expiration time in minutes (default: 10080 = 7 days)
 - `HOST` (optional): Server host (default: 0.0.0.0)
 - `PORT` (optional): Server port (default: 8000)

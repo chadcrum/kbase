@@ -6,7 +6,25 @@ This document provides detailed information about all available API endpoints in
 All API endpoints are prefixed with `/api/v1/`
 
 ## Authentication
-All endpoints (except login) require authentication via JWT token in the Authorization header using Bearer scheme.
+All endpoints (except login and config) require authentication via JWT token in the Authorization header using Bearer scheme, unless authentication is disabled via the `DISABLE_AUTH` environment variable.
+
+### Configuration Endpoints (`/api/v1/config/`)
+
+#### Get Config
+- **GET** `/`
+- **Description**: Get public configuration settings including authentication status
+- **Response**:
+```json
+{
+  "auth_enabled": true
+}
+```
+- **Status Codes**: 
+  - 200 (success)
+- **Notes**:
+  - This endpoint is always accessible (no authentication required)
+  - Used by frontend to determine if authentication is required
+  - When `auth_enabled` is `false`, all endpoints are accessible without authentication
 
 ### Authentication Endpoints (`/api/v1/auth/`)
 

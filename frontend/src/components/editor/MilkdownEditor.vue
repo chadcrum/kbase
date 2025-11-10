@@ -1,11 +1,17 @@
 <template>
-  <div ref="editorContainer" class="milkdown-editor-container"></div>
+  <div
+    ref="editorContainer"
+    class="milkdown-editor-container"
+    @mousedown="handleContainerPointerDown"
+    @touchstart="handleContainerPointerDown"
+  ></div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import {
   Editor,
+  editorViewCtx,
   rootCtx,
   defaultValueCtx,
   commandsCtx,
@@ -48,6 +54,25 @@ const editorContainer = ref<HTMLElement | null>(null)
 let editor: Editor | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
 let currentMarkdown = ref<string>(props.modelValue)
+
+const focusEditor = async () => {
+  if (!editor || props.disabled) return
+
+  try {
+    await editor.action((ctx) => {
+      const view = ctx.get(editorViewCtx)
+      if (!view) {
+        return
+      }
+
+      if (!view.hasFocus()) {
+        view.focus()
+      }
+    })
+  } catch (error) {
+    console.error('Failed to focus Milkdown editor:', error)
+  }
+}
 
 // Debounce delay for auto-save (1 second)
 const AUTO_SAVE_DELAY = 1000
@@ -157,6 +182,7 @@ onMounted(async () => {
 
     // Apply theme
     updateTheme()
+    await focusEditor()
   } catch (error) {
     console.error('Failed to initialize Milkdown editor:', error)
   }
@@ -192,6 +218,7 @@ watch(() => props.modelValue, async (newValue) => {
       
       currentMarkdown.value = newValue
       updateTheme()
+      await focusEditor()
     } catch (error) {
       console.error('Failed to update editor content:', error)
     }
@@ -223,6 +250,11 @@ const updateTheme = () => {
   }
 }
 
+const handleContainerPointerDown = () => {
+  if (props.disabled) return
+  void focusEditor()
+}
+
 // Cleanup on unmount
 onBeforeUnmount(() => {
   if (saveTimeout) {
@@ -244,12 +276,17 @@ onBeforeUnmount(() => {
 .milkdown-editor-container {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
   min-height: 400px;
   overflow: auto;
 }
 
 /* Milkdown editor styles */
 .milkdown-editor-container :deep(.milkdown) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   padding: 1rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   font-size: 14px;
@@ -258,12 +295,23 @@ onBeforeUnmount(() => {
   background-color: var(--bg-primary);
 }
 
+.milkdown-editor-container :deep(.milkdown .editor) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 .milkdown-editor-container.dark {
   background-color: var(--bg-primary);
 }
 
 .milkdown-editor-container.light {
   background-color: var(--bg-primary);
+}
+
+.milkdown-editor-container :deep(.milkdown .editor .ProseMirror) {
+  flex: 1;
+  min-height: 100%;
 }
 
 /* Mobile optimizations */

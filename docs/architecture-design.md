@@ -571,6 +571,10 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
    - `toggleMarkdownEditor()`: Switches between Monaco and Milkdown
    - `canUseMilkdown(path)`: Checks if file can use Milkdown
 
+7. **Empty Document Handling**:
+   - The Milkdown container uses a flex layout and ProseMirror `focus` action to keep the editor interactive even when a markdown file is completely empty.
+   - Container pointer listeners redirect clicks and taps to Milkdown, removing the need for placeholder content in newly created notes.
+
 **File Explorer CRUD Operations**:
 
 The file explorer provides comprehensive file and directory management through an intuitive user interface.

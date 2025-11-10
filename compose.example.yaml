@@ -1,0 +1,46 @@
+# Example Docker Compose configuration for KBase.
+# Copy this file to compose.yaml (or compose.yml) and adjust the values
+# before launching the stack.
+version: '3.8'
+
+services:
+  kbase:
+    image: ghcr.io/chadcrum/kbase:latest
+    container_name: kbase
+    build:
+      context: .
+      dockerfile: Containerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Required: Path to the vault directory inside the container.
+      VAULT_PATH: /app/vault
+
+      # Required: Secret key for JWT token signing. Generate with:
+      #   openssl rand -hex 32
+      SECRET_KEY: replace-with-secure-secret
+
+      # Required: Password for authentication.
+      PASSWORD: replace-with-secure-password
+
+      # Optional: Access token expiration (default: 10080 = 7 days).
+      # ACCESS_TOKEN_EXPIRE_MINUTES: 10080
+
+      # Optional: Additional configuration overrides.
+      # APP_NAME: "KBase"
+      # APP_VERSION: "0.1.0"
+      # ALGORITHM: "HS256"
+
+    volumes:
+      # Map your local vault directory to the container.
+      - ./kbase-vault:/app/vault
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+

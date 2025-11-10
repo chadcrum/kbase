@@ -1,40 +1,43 @@
-# KBase Docker Compose Deployment
+# KBase Compose Deployment
 
-This guide explains how to deploy KBase using Docker Compose with the pre-built image from GitHub Container Registry.
+This guide explains how to deploy KBase using the sample `compose.example.yaml`
+configuration. Copy the example file and adjust the values to suit your
+environment before starting the stack.
 
 ## Prerequisites
 
-- Docker Engine 20.10+
+- Docker Engine 20.10+ (or Podman with compose support)
 - Docker Compose 2.0+
 - A local vault directory for your notes
 
 ## Quick Start
 
-1. **Create a vault directory** (if you don't have one already):
+1. **Copy the example compose file**:
+   ```bash
+   cp compose.example.yaml compose.yaml
+   ```
+2. **Create a vault directory** (if you don't have one already):
    ```bash
    mkdir -p ./kbase-vault
    ```
-
-2. **Configure environment variables** by editing `compose.yaml`:
-   - Update `VAULT_PATH: /app/vault` (optional, only if you want to change the internal path)
+3. **Configure environment variables** by editing `compose.yaml`:
+   - Confirm `VAULT_PATH` matches the container mount path (default: `/app/vault`)
    - Generate a secure `SECRET_KEY`:
      ```bash
      openssl rand -hex 32
      ```
    - Set a secure `PASSWORD` for authentication
-
-3. **Start the application**:
+4. **Start the application**:
    ```bash
-   docker compose up -d
+   docker compose -f compose.yaml up -d
    ```
-
-4. **Access KBase** at http://localhost:8000
+5. **Access KBase** at http://localhost:8000
 
 ## Configuration
 
 ### Required Environment Variables
 
-- `VAULT_PATH`: Path to vault inside container (default: `/app/vault`)
+- `VAULT_PATH`: Path to the vault inside the container (default: `/app/vault`)
 - `SECRET_KEY`: Secret key for JWT signing (generate with `openssl rand -hex 32`)
 - `PASSWORD`: Password for authentication
 
@@ -47,7 +50,8 @@ This guide explains how to deploy KBase using Docker Compose with the pre-built 
 
 ### Volume Mounts
 
-The `compose.yaml` maps `./kbase-vault` to `/app/vault` inside the container. You can customize this by modifying the volumes section:
+The example file maps `./kbase-vault` to `/app/vault` inside the container. You
+can customize this by modifying the volumes section:
 
 ```yaml
 volumes:
@@ -58,7 +62,7 @@ volumes:
 
 ### Start the service
 ```bash
-docker compose up -d
+docker compose -f compose.yaml up -d
 ```
 
 ### View logs
@@ -68,22 +72,23 @@ docker compose logs -f
 
 ### Stop the service
 ```bash
-docker compose down
+docker compose -f compose.yaml down
 ```
 
 ### Restart the service
 ```bash
-docker compose restart
+docker compose -f compose.yaml restart
 ```
 
 ### Access the container shell
 ```bash
-docker compose exec kbase bash
+docker compose -f compose.yaml exec kbase bash
 ```
 
 ## Health Check
 
-The container includes a health check that monitors the `/health` endpoint. You can check the status with:
+The container includes a health check that monitors the `/health` endpoint. You
+can check the status with:
 
 ```bash
 docker compose ps
@@ -91,7 +96,7 @@ docker compose ps
 
 ## Security Considerations
 
-1. **Change the SECRET_KEY**: Never use the default value. Generate a secure key.
+1. **Change the SECRET_KEY**: Never use a placeholder value. Generate a secure key.
 2. **Change the PASSWORD**: Use a strong password for authentication.
 3. **Network security**: By default, the service is exposed on port 8000. Consider:
    - Using a reverse proxy (nginx, Traefik)
@@ -101,7 +106,7 @@ docker compose ps
 
 ## Example: Production Deployment with Environment File
 
-Create a `.env` file in the same directory as `compose.yaml`:
+Create a `.env` file in the same directory as your compose file:
 
 ```bash
 # .env
@@ -110,7 +115,7 @@ SECRET_KEY=your-generated-secret-key-here
 PASSWORD=your-secure-password-here
 ```
 
-Then reference variables in your `compose.yaml`:
+Then reference variables in `compose.yaml`:
 
 ```yaml
 environment:
@@ -143,13 +148,13 @@ curl http://localhost:8000/health
 
 ### Cannot access the vault
 
-Ensure the volume mount path matches the VAULT_PATH environment variable.
+Ensure the volume mount path matches the `VAULT_PATH` environment variable.
 
 ## Advanced Configuration
 
 ### Using a custom network
 
-The compose file creates a `kbase-network`. You can add other services to this network:
+Add other services to the same network defined in your compose file:
 
 ```yaml
 services:
@@ -183,7 +188,7 @@ To pull the latest image:
 
 ```bash
 docker compose pull
-docker compose up -d
+docker compose -f compose.yaml up -d
 ```
 
 ## Backing Up Your Vault
@@ -192,12 +197,12 @@ Since your vault is mounted as a volume, it's stored on your host system. To bac
 
 ```bash
 # Stop the container
-docker compose down
+docker compose -f compose.yaml down
 
 # Backup the directory
 tar -czf kbase-vault-backup-$(date +%Y%m%d).tar.gz ./kbase-vault
 
 # Restart the container
-docker compose up -d
+docker compose -f compose.yaml up -d
 ```
 

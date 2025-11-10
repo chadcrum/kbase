@@ -1,5 +1,6 @@
-# Multi-stage Dockerfile for KBase
-# Stage 1: Build frontend
+# Multi-stage Containerfile for KBase
+
+# Stage 1: Build frontend assets
 FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/frontend
@@ -52,3 +53,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Start the application
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+

@@ -132,18 +132,22 @@ Use this workflow when you want Podman to build the image locally and manage the
    mkdir -p "$HOME/kbase-vault"
    echo "# Welcome to KBase" > "$HOME/kbase-vault/welcome.md"
    ```
-2. **Update secrets in `compose.yaml`**:
+2. **Copy the sample compose file**:
+   ```bash
+   cp compose.example.yaml compose.yaml
+   ```
+3. **Update secrets in `compose.yaml`**:
    - Replace the `SECRET_KEY` placeholder with a value from `openssl rand -hex 32`
    - Set a strong `PASSWORD`
-3. **Build the image with Podman Compose**:
+4. **Build the image with Podman Compose**:
    ```bash
    podman-compose -f compose.yaml build
    ```
-4. **Run the stack**:
+5. **Run the stack**:
    ```bash
    podman-compose -f compose.yaml up -d
    ```
-5. **Access KBase** at http://localhost:8000 and sign in with the password you configured.
+6. **Access KBase** at http://localhost:8000 and sign in with the password you configured.
 
 To stop everything later, run:
 ```bash

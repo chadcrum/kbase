@@ -32,6 +32,7 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Milkdown Editor**: WYSIWYG markdown editor (optional for .md files)
   - WYSIWYG editing experience for markdown
   - CommonMark and GitHub Flavored Markdown support
+  - Tab indentation: Tab key indents, Shift+Tab outdents
   - Toggle between Monaco and Milkdown via toolbar button
 - **Auto-Save**: Automatic saving with 1-second debounce (both editors)
 - **Save Status**: Visual feedback for saving/saved/error states
@@ -122,6 +123,33 @@ For the fastest way to get started, you can run both frontend and backend togeth
 
 **Note**: The backend requires a `.env` file with `VAULT_PATH`, `SECRET_KEY`, and `PASSWORD` configured.
 
+### Quick Start (Podman Compose Build)
+
+Use this workflow when you want Podman to build the image locally and manage the container with Compose.
+
+1. **Create a vault directory** (Podman prefers absolute paths):
+   ```bash
+   mkdir -p "$HOME/kbase-vault"
+   echo "# Welcome to KBase" > "$HOME/kbase-vault/welcome.md"
+   ```
+2. **Update secrets in `compose.yaml`**:
+   - Replace the `SECRET_KEY` placeholder with a value from `openssl rand -hex 32`
+   - Set a strong `PASSWORD`
+3. **Build the image with Podman Compose**:
+   ```bash
+   podman-compose -f compose.yaml build
+   ```
+4. **Run the stack**:
+   ```bash
+   podman-compose -f compose.yaml up -d
+   ```
+5. **Access KBase** at http://localhost:8000 and sign in with the password you configured.
+
+To stop everything later, run:
+```bash
+podman-compose -f compose.yaml down
+```
+
 ## Docker Deployment
 
 KBase is available as a pre-built Docker image from GitHub Container Registry (GHCR). This is the easiest way to deploy KBase in production.
@@ -160,11 +188,14 @@ KBase is available as a pre-built Docker image from GitHub Container Registry (G
 | Variable | Required | Description | Example |
 |----------|----------|-------------|---------|
 | `VAULT_PATH` | Yes | Path to your notes directory inside the container | `/app/vault` |
-| `SECRET_KEY` | Yes | JWT signing key (generate with `openssl rand -hex 32`) | `a1b2c3d4e5f6...` |
-| `PASSWORD` | Yes | Login password for the application | `my-secure-password` |
+| `DISABLE_AUTH` | No | Disable authentication (for development/local use only, default: false) | `false` |
+| `SECRET_KEY` | Yes* | JWT signing key (generate with `openssl rand -hex 32`) | `a1b2c3d4e5f6...` |
+| `PASSWORD` | Yes* | Login password for the application | `my-secure-password` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | No | Token expiration time in minutes (default: 10080) | `10080` |
 | `HOST` | No | Server host (default: 0.0.0.0) | `0.0.0.0` |
 | `PORT` | No | Server port (default: 8000) | `8000` |
+
+*Required only if `DISABLE_AUTH=false` (authentication enabled)
 
 ### Docker Compose Example
 
@@ -476,15 +507,22 @@ kbase/
 The backend uses environment variables for configuration:
 
 - `VAULT_PATH` (required): Path to the note vault directory
-- `SECRET_KEY` (required): Secret key for JWT token signing
-- `PASSWORD` (required): Plain text password for authentication
-- `ACCESS_TOKEN_EXPIRE_MINUTES` (optional): Token expiration time (default: 30)
+- `DISABLE_AUTH` (optional): Disable authentication (defaults to `true` in dev mode, `false` in production)
+  - Development mode is automatically detected when `ENV=development`, `ENVIRONMENT=development`, or `DEBUG=true`
+  - When authentication is disabled, `SECRET_KEY` and `PASSWORD` are not required
+  - All endpoints become accessible without authentication
+  - Can be explicitly set to override automatic detection
+  - **Warning**: Only use disabled auth for local development, never in production
+- `SECRET_KEY` (required if auth enabled): Secret key for JWT token signing
+- `PASSWORD` (required if auth enabled): Plain text password for authentication
+- `ACCESS_TOKEN_EXPIRE_MINUTES` (optional): Token expiration time (default: 10080 = 7 days)
 - `HOST` (optional): Server host (default: 0.0.0.0)
 - `PORT` (optional): Server port (default: 8000)
 
 ## Security Features
 
-- JWT Authentication for all API endpoints (except public ones)
+- JWT Authentication for all API endpoints (except public ones, configurable via `DISABLE_AUTH`)
+- Optional authentication disable for development/local use
 - Plain text password storage (suitable for personal use)
 - Path traversal protection
 - File type validation (markdown only)

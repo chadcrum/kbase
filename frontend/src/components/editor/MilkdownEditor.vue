@@ -4,11 +4,21 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import { Editor, rootCtx, defaultValueCtx } from '@milkdown/core'
-import { commonmark } from '@milkdown/preset-commonmark'
+import {
+  Editor,
+  rootCtx,
+  defaultValueCtx,
+  commandsCtx,
+  keymapCtx,
+  KeymapReady,
+} from '@milkdown/core'
+import { commonmark, sinkListItemCommand, liftListItemCommand } from '@milkdown/preset-commonmark'
 import { gfm } from '@milkdown/preset-gfm'
+import { indent } from '@milkdown/plugin-indent'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { nord } from '@milkdown/theme-nord'
+import type { MilkdownPlugin } from '@milkdown/ctx'
+import type { Command } from '@milkdown/prose/state'
 import { useThemeStore } from '@/stores/theme'
 
 // Props
@@ -42,6 +52,64 @@ let currentMarkdown = ref<string>(props.modelValue)
 // Debounce delay for auto-save (1 second)
 const AUTO_SAVE_DELAY = 1000
 
+// Command to insert spaces/tab at cursor
+const insertSpacesCommand: Command = (state, dispatch) => {
+  const { tr, selection } = state
+  if (dispatch) {
+    // Insert 2 spaces
+    tr.insertText('  ', selection.from, selection.to)
+    dispatch(tr)
+  }
+  return true
+}
+
+// Command to remove spaces at start of line
+const removeSpacesCommand: Command = (state, dispatch) => {
+  const { tr, selection, doc } = state
+  const { $from } = selection
+  const lineStart = $from.start()
+
+  // Get text from start of line to cursor
+  const textBefore = doc.textBetween(lineStart, selection.from)
+
+  // Check if line starts with spaces
+  const match = textBefore.match(/^(\s{1,4})/)
+  if (match && dispatch) {
+    const spacesToRemove = Math.min(match[1].length, 2) // Remove up to 2 spaces
+    tr.delete(lineStart, lineStart + spacesToRemove)
+    dispatch(tr)
+    return true
+  }
+  return false
+}
+
+// Text indent keymap plugin
+const textIndentPlugin: MilkdownPlugin = (ctx) => {
+  return async () => {
+    await ctx.wait(KeymapReady)
+    const keymapManager = ctx.get(keymapCtx)
+    const commandManager = ctx.get(commandsCtx)
+    const dispose = keymapManager.addObjectKeymap({
+      Tab: (state, dispatch) => {
+        if (commandManager.call(sinkListItemCommand.key)) {
+          return true
+        }
+        return insertSpacesCommand(state, dispatch)
+      },
+      'Shift-Tab': (state, dispatch) => {
+        if (commandManager.call(liftListItemCommand.key)) {
+          return true
+        }
+        return removeSpacesCommand(state, dispatch)
+      },
+    })
+
+    return () => {
+      dispose()
+    }
+  }
+}
+
 // Handle content change
 const handleContentChange = (markdown: string) => {
   if (props.disabled) return
@@ -67,7 +135,7 @@ onMounted(async () => {
 
   try {
     // Create editor instance
-    editor = Editor.make()
+    editor = await Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, editorContainer.value!)
         ctx.set(defaultValueCtx, props.modelValue)
@@ -79,9 +147,11 @@ onMounted(async () => {
           }
         })
       })
-      .use(nord)
+      .config(nord)
       .use(commonmark)
       .use(gfm)
+      .use(indent)
+      .use(textIndentPlugin)
       .use(listener)
       .create()
 
@@ -93,7 +163,7 @@ onMounted(async () => {
 })
 
 // Update editor content when modelValue changes externally
-watch(() => props.modelValue, (newValue) => {
+watch(() => props.modelValue, async (newValue) => {
   if (!editor || props.disabled) return
 
   // Only update if content actually changed (avoid infinite loops)
@@ -101,7 +171,7 @@ watch(() => props.modelValue, (newValue) => {
     try {
       // Destroy and recreate editor with new content
       editor.destroy()
-      editor = Editor.make()
+      editor = await Editor.make()
         .config((ctx) => {
           ctx.set(rootCtx, editorContainer.value!)
           ctx.set(defaultValueCtx, newValue)
@@ -112,9 +182,11 @@ watch(() => props.modelValue, (newValue) => {
             }
           })
         })
-        .use(nord)
+        .config(nord)
         .use(commonmark)
         .use(gfm)
+        .use(indent)
+        .use(textIndentPlugin)
         .use(listener)
         .create()
       

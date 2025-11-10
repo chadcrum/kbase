@@ -8,6 +8,7 @@ export type SortOrder = 'asc' | 'desc'
 
 const SORT_BY_KEY = 'kbase_sort_by'
 const SORT_ORDER_KEY = 'kbase_sort_order'
+export const LAST_SELECTED_NOTE_KEY = 'kbase_last_note_path'
 
 export const useVaultStore = defineStore('vault', () => {
   // State
@@ -84,6 +85,37 @@ export const useVaultStore = defineStore('vault', () => {
   })
 
   // Actions
+  const noteExistsInTree = (tree: FileTreeNode | null, targetPath: string): boolean => {
+    if (!tree) return false
+    if (tree.path === targetPath) return true
+    if (!tree.children) return false
+
+    return tree.children.some(child => noteExistsInTree(child, targetPath))
+  }
+
+  const restoreLastSelectedNote = async (): Promise<boolean> => {
+    const storedPath = localStorage.getItem(LAST_SELECTED_NOTE_KEY)
+
+    if (!storedPath) {
+      return false
+    }
+
+    if (!noteExistsInTree(fileTree.value, storedPath)) {
+      localStorage.removeItem(LAST_SELECTED_NOTE_KEY)
+      return false
+    }
+
+    expandToPath(storedPath)
+
+    const restored = await loadNote(storedPath)
+
+    if (!restored) {
+      localStorage.removeItem(LAST_SELECTED_NOTE_KEY)
+    }
+
+    return restored
+  }
+
   const loadFileTree = async (): Promise<boolean> => {
     isLoading.value = true
     error.value = null
@@ -93,6 +125,10 @@ export const useVaultStore = defineStore('vault', () => {
       fileTree.value = tree
       // Auto-expand root to show first-level items
       expandedPaths.value.add('/')
+
+      if (!selectedNote.value) {
+        await restoreLastSelectedNote()
+      }
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to load file tree'
@@ -111,6 +147,7 @@ export const useVaultStore = defineStore('vault', () => {
     try {
       const note = await apiClient.getNote(path)
       selectedNote.value = note
+      localStorage.setItem(LAST_SELECTED_NOTE_KEY, path)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to load note'
@@ -154,6 +191,7 @@ export const useVaultStore = defineStore('vault', () => {
   const clearSelection = () => {
     selectedNote.value = null
     error.value = null
+    localStorage.removeItem(LAST_SELECTED_NOTE_KEY)
   }
 
   const toggleExpanded = (path: string) => {
@@ -415,6 +453,7 @@ export const useVaultStore = defineStore('vault', () => {
     isExpanded,
     clearError,
     refresh,
+    restoreLastSelectedNote,
     updateNote,
     clearSaveError,
     // File operations

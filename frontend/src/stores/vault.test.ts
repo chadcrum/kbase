@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useVaultStore } from './vault'
+import { useVaultStore, LAST_SELECTED_NOTE_KEY } from './vault'
 import { apiClient } from '@/api/client'
 import type { FileTreeNode, NoteData } from '@/types'
 
@@ -17,6 +17,38 @@ vi.mock('@/api/client', () => ({
 
 const mockedApiClient = vi.mocked(apiClient)
 
+const createLocalStorageMock = (): Storage => {
+  let store: Record<string, string> = {}
+
+  return {
+    get length() {
+      return Object.keys(store).length
+    },
+    clear() {
+      store = {}
+    },
+    getItem(key: string) {
+      return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null
+    },
+    key(index: number) {
+      const keys = Object.keys(store)
+      return keys[index] ?? null
+    },
+    removeItem(key: string) {
+      delete store[key]
+    },
+    setItem(key: string, value: string) {
+      store[key] = value
+    }
+  }
+}
+
+const localStorageMock = createLocalStorageMock()
+
+beforeAll(() => {
+  vi.stubGlobal('localStorage', localStorageMock)
+})
+
 describe('VaultStore', () => {
   let vaultStore: ReturnType<typeof useVaultStore>
 
@@ -27,6 +59,7 @@ describe('VaultStore', () => {
     
     // Reset all mocks
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
   afterEach(() => {
@@ -121,6 +154,107 @@ describe('VaultStore', () => {
       
       expect(vaultStore.isLoading).toBe(false)
     })
+
+    it('should restore last selected note from localStorage when available', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          {
+            name: 'note1.md',
+            path: '/note1.md',
+            type: 'file'
+          }
+        ]
+      }
+
+      const mockNote: NoteData = {
+        content: '# Restored Note',
+        path: '/note1.md',
+        size: 18,
+        modified: 1234567890
+      }
+
+      localStorage.setItem(LAST_SELECTED_NOTE_KEY, '/note1.md')
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      const result = await vaultStore.loadFileTree()
+
+      expect(result).toBe(true)
+      expect(mockedApiClient.getNotes).toHaveBeenCalled()
+      expect(mockedApiClient.getNote).toHaveBeenCalledWith('/note1.md')
+      expect(vaultStore.selectedNote).toEqual(mockNote)
+      expect(vaultStore.isExpanded('/')).toBe(true)
+      expect(localStorage.getItem(LAST_SELECTED_NOTE_KEY)).toBe('/note1.md')
+    })
+
+    it('should expand ancestor directories when restoring a nested note from storage', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          {
+            name: 'folder',
+            path: '/folder',
+            type: 'directory',
+            children: [
+              {
+                name: 'sub',
+                path: '/folder/sub',
+                type: 'directory',
+                children: [
+                  {
+                    name: 'note.md',
+                    path: '/folder/sub/note.md',
+                    type: 'file'
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+      const mockNote: NoteData = {
+        content: '# Nested Note',
+        path: '/folder/sub/note.md',
+        size: 42,
+        modified: 1234567890
+      }
+
+      localStorage.setItem(LAST_SELECTED_NOTE_KEY, '/folder/sub/note.md')
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      await vaultStore.loadFileTree()
+
+      expect(vaultStore.isExpanded('/')).toBe(true)
+      expect(vaultStore.isExpanded('/folder')).toBe(true)
+      expect(vaultStore.isExpanded('/folder/sub')).toBe(true)
+      expect(vaultStore.selectedNote?.path).toBe('/folder/sub/note.md')
+    })
+
+    it('should remove stored note path if it no longer exists in the tree', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: []
+      }
+
+      localStorage.setItem(LAST_SELECTED_NOTE_KEY, '/missing.md')
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+
+      const result = await vaultStore.loadFileTree()
+
+      expect(result).toBe(true)
+      expect(mockedApiClient.getNote).not.toHaveBeenCalled()
+      expect(localStorage.getItem(LAST_SELECTED_NOTE_KEY)).toBeNull()
+      expect(vaultStore.selectedNote).toBeNull()
+    })
   })
 
   describe('loadNote', () => {
@@ -141,6 +275,21 @@ describe('VaultStore', () => {
       expect(vaultStore.selectedNote).toEqual(mockNote)
       expect(vaultStore.error).toBeNull()
       expect(vaultStore.isLoading).toBe(false)
+    })
+
+    it('should persist last selected note path on successful load', async () => {
+      const mockNote: NoteData = {
+        content: '# Test Note\nThis is a test.',
+        path: '/test.md',
+        size: 25,
+        modified: 1234567890
+      }
+
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      await vaultStore.loadNote('/test.md')
+
+      expect(localStorage.getItem(LAST_SELECTED_NOTE_KEY)).toBe('/test.md')
     })
 
     it('should handle note loading failure', async () => {
@@ -245,11 +394,13 @@ describe('VaultStore', () => {
         modified: 1234567890
       }
       vaultStore.error = 'Some error'
+      localStorage.setItem(LAST_SELECTED_NOTE_KEY, '/test.md')
 
       vaultStore.clearSelection()
 
       expect(vaultStore.selectedNote).toBeNull()
       expect(vaultStore.error).toBeNull()
+      expect(localStorage.getItem(LAST_SELECTED_NOTE_KEY)).toBeNull()
     })
   })
 

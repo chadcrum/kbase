@@ -296,6 +296,8 @@ frontend/src/
     - Track expanded state for UI button disable/enable logic
   - All CRUD operations automatically refresh the file tree and handle selection updates
   - `createNote()` automatically opens newly created files in the editor
+  - **Persistent Selection**: Stores the last opened note path in localStorage (`kbase_last_note_path`) and automatically reloads it after the file tree syncs, keeping the same editor instance active and highlighted in the sidebar across full page refreshes
+  - **Editor State Restore**: Persists per-note cursor selection and scroll offsets for both Monaco and Milkdown editors so that refreshing the browser restores the caret position and viewport exactly where the user left off
 - `themeStore`: Dark mode state management, system preference detection, theme persistence
   - **Theme State**: `isDarkMode` reactive boolean tracking current theme
   - **System Preference**: Automatic detection using `matchMedia('prefers-color-scheme: dark')`

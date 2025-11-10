@@ -8,6 +8,7 @@ import loader from '@monaco-editor/loader'
 import { detectLanguage } from '@/utils/languageDetection'
 import { useThemeStore } from '@/stores/theme'
 import type * as Monaco from 'monaco-editor'
+import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 
 // Props
 interface Props {
@@ -36,9 +37,44 @@ const editorContainer = ref<HTMLElement | null>(null)
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
 let monaco: typeof Monaco | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
+let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
+let eventDisposables: Monaco.IDisposable[] = []
 
 // Debounce delay for auto-save (1 second)
 const AUTO_SAVE_DELAY = 1000
+const STATE_SAVE_DELAY = 150
+
+const scheduleStateSave = () => {
+  if (!editor || !props.path) return
+
+  if (stateSaveTimeout) {
+    clearTimeout(stateSaveTimeout)
+  }
+
+  stateSaveTimeout = setTimeout(() => {
+    if (!editor || !props.path) return
+
+    const viewState = editor.saveViewState()
+    if (!viewState) return
+
+    const serializableState = JSON.parse(JSON.stringify(viewState)) as Record<string, unknown>
+
+    updateNoteStateSegment(props.path, 'monaco', {
+      viewState: serializableState
+    })
+  }, STATE_SAVE_DELAY)
+}
+
+const restoreEditorState = () => {
+  if (!editor || !monaco || !props.path) return
+
+  const stored = loadNoteState(props.path)
+  const viewState = stored?.monaco?.viewState
+  if (!viewState) return
+
+  editor.restoreViewState(viewState as Monaco.editor.ICodeEditorViewState)
+  editor.focus()
+}
 
 // Helper to set theme based on dark mode
 const setEditorTheme = () => {
@@ -87,6 +123,26 @@ onMounted(async () => {
       mouseWheelZoom: !isMobile,
     })
     
+    // Register editor event listeners for state persistence
+    const cursorDisposable = editor.onDidChangeCursorPosition(() => {
+      scheduleStateSave()
+    })
+
+    const selectionDisposable = editor.onDidChangeCursorSelection(() => {
+      scheduleStateSave()
+    })
+
+    const scrollDisposable = editor.onDidScrollChange(() => {
+      scheduleStateSave()
+    })
+
+    eventDisposables = [cursorDisposable, selectionDisposable, scrollDisposable]
+
+    // Restore editor view state if available
+    nextTick(() => {
+      restoreEditorState()
+    })
+
     // Listen to content changes
     editor.onDidChangeModelContent(() => {
       if (!editor || props.disabled) return
@@ -133,6 +189,9 @@ watch(() => props.modelValue, (newValue) => {
   // Only update if content actually changed
   if (newValue !== currentValue) {
     editor.setValue(newValue)
+    nextTick(() => {
+      restoreEditorState()
+    })
   }
 })
 
@@ -145,6 +204,10 @@ watch(() => props.path, (newPath) => {
   if (model) {
     monaco.editor.setModelLanguage(model, language)
   }
+
+  nextTick(() => {
+    restoreEditorState()
+  })
 })
 
 // Watch for theme changes
@@ -157,8 +220,21 @@ onBeforeUnmount(() => {
   if (saveTimeout) {
     clearTimeout(saveTimeout)
   }
+  if (stateSaveTimeout) {
+    clearTimeout(stateSaveTimeout)
+  }
   
   if (editor) {
+    const viewState = editor.saveViewState()
+    if (viewState && props.path) {
+      const serializableState = JSON.parse(JSON.stringify(viewState)) as Record<string, unknown>
+      updateNoteStateSegment(props.path, 'monaco', {
+        viewState: serializableState
+      })
+    }
+
+    eventDisposables.forEach(disposable => disposable.dispose())
+    eventDisposables = []
     editor.dispose()
     editor = null
   }

@@ -24,8 +24,10 @@ import { indent } from '@milkdown/plugin-indent'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { nord } from '@milkdown/theme-nord'
 import type { MilkdownPlugin } from '@milkdown/ctx'
-import type { Command } from '@milkdown/prose/state'
+import { TextSelection, type Command } from '@milkdown/prose/state'
+import type { EditorView } from '@milkdown/prose/view'
 import { useThemeStore } from '@/stores/theme'
+import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 
 // Props
 interface Props {
@@ -52,8 +54,13 @@ const themeStore = useThemeStore()
 // Refs
 const editorContainer = ref<HTMLElement | null>(null)
 let editor: Editor | null = null
+let editorView: EditorView | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
+let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
 let currentMarkdown = ref<string>(props.modelValue)
+const cleanupFns: Array<() => void> = []
+
+const STATE_SAVE_DELAY = 150
 
 const focusEditor = async () => {
   if (!editor || props.disabled) return
@@ -154,6 +161,127 @@ const handleContentChange = (markdown: string) => {
   }, AUTO_SAVE_DELAY)
 }
 
+const cleanupMilkdownListeners = () => {
+  cleanupFns.forEach(fn => fn())
+  cleanupFns.length = 0
+}
+
+const saveMilkdownState = () => {
+  if (!props.path || !editorView) return
+
+  const { state } = editorView
+  const selection = state.selection
+  const selectionState = {
+    from: selection.from,
+    to: selection.to
+  }
+
+  const scrollState = {
+    top: editorContainer.value?.scrollTop ?? 0
+  }
+
+  updateNoteStateSegment(props.path, 'milkdown', {
+    selection: selectionState,
+    scroll: scrollState
+  })
+}
+
+const scheduleMilkdownStateSave = () => {
+  if (!editorView || !props.path) return
+
+  if (stateSaveTimeout) {
+    clearTimeout(stateSaveTimeout)
+  }
+
+  stateSaveTimeout = setTimeout(() => {
+    if (!editorView || !props.path) return
+    saveMilkdownState()
+  }, STATE_SAVE_DELAY)
+}
+
+const setupMilkdownStateListeners = async () => {
+  if (!editor) return
+
+  cleanupMilkdownListeners()
+
+  await editor.action((ctx) => {
+    editorView = ctx.get(editorViewCtx)
+  })
+
+  if (!editorView) return
+
+  const handleKeyUp = () => {
+    scheduleMilkdownStateSave()
+  }
+
+  const handleMouseUp = () => {
+    scheduleMilkdownStateSave()
+  }
+
+  const handleScroll = () => {
+    scheduleMilkdownStateSave()
+  }
+
+  const handleSelectionChange = () => {
+    if (!editorView) return
+    if (!document.activeElement) return
+    if (!editorContainer.value) return
+    if (!editorContainer.value.contains(document.activeElement)) return
+    scheduleMilkdownStateSave()
+  }
+
+  editorView.dom.addEventListener('keyup', handleKeyUp)
+  editorView.dom.addEventListener('mouseup', handleMouseUp)
+
+  cleanupFns.push(() => {
+    editorView?.dom.removeEventListener('keyup', handleKeyUp)
+    editorView?.dom.removeEventListener('mouseup', handleMouseUp)
+  })
+
+  if (editorContainer.value) {
+    editorContainer.value.addEventListener('scroll', handleScroll, { passive: true })
+    cleanupFns.push(() => {
+      editorContainer.value?.removeEventListener('scroll', handleScroll)
+    })
+  }
+
+  document.addEventListener('selectionchange', handleSelectionChange)
+  cleanupFns.push(() => {
+    document.removeEventListener('selectionchange', handleSelectionChange)
+  })
+}
+
+const restoreMilkdownState = async () => {
+  if (!editor || !props.path) return
+
+  const stored = loadNoteState(props.path)
+  const milkdownState = stored?.milkdown
+  if (!milkdownState) return
+
+  await editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx)
+    if (!view) return
+    editorView = view
+
+    if (milkdownState.selection) {
+      const doc = view.state.doc
+      const docSize = doc.content.size
+      const clampedFrom = Math.min(Math.max(milkdownState.selection.from, 0), docSize)
+      const clampedTo = Math.min(Math.max(milkdownState.selection.to, 0), docSize)
+      const tr = view.state.tr.setSelection(TextSelection.create(doc, clampedFrom, clampedTo))
+      view.dispatch(tr)
+    }
+  })
+
+  if (milkdownState.scroll && editorContainer.value) {
+    requestAnimationFrame(() => {
+      if (editorContainer.value && typeof milkdownState.scroll?.top === 'number') {
+        editorContainer.value.scrollTop = milkdownState.scroll.top
+      }
+    })
+  }
+}
+
 // Initialize Milkdown editor
 onMounted(async () => {
   if (!editorContainer.value) return
@@ -183,6 +311,8 @@ onMounted(async () => {
     // Apply theme
     updateTheme()
     await focusEditor()
+    await setupMilkdownStateListeners()
+    await restoreMilkdownState()
   } catch (error) {
     console.error('Failed to initialize Milkdown editor:', error)
   }
@@ -195,6 +325,7 @@ watch(() => props.modelValue, async (newValue) => {
   // Only update if content actually changed (avoid infinite loops)
   if (newValue !== currentMarkdown.value) {
     try {
+      cleanupMilkdownListeners()
       // Destroy and recreate editor with new content
       editor.destroy()
       editor = await Editor.make()
@@ -219,6 +350,8 @@ watch(() => props.modelValue, async (newValue) => {
       currentMarkdown.value = newValue
       updateTheme()
       await focusEditor()
+      await setupMilkdownStateListeners()
+      await restoreMilkdownState()
     } catch (error) {
       console.error('Failed to update editor content:', error)
     }
@@ -228,6 +361,12 @@ watch(() => props.modelValue, async (newValue) => {
 // Watch for theme changes
 watch(() => themeStore.isDarkMode, () => {
   updateTheme()
+})
+
+watch(() => props.path, async () => {
+  saveMilkdownState()
+  await setupMilkdownStateListeners()
+  await restoreMilkdownState()
 })
 
 // Update theme based on dark mode
@@ -260,9 +399,15 @@ onBeforeUnmount(() => {
   if (saveTimeout) {
     clearTimeout(saveTimeout)
   }
+  if (stateSaveTimeout) {
+    clearTimeout(stateSaveTimeout)
+  }
+
+  cleanupMilkdownListeners()
   
   if (editor) {
     try {
+      saveMilkdownState()
       editor.destroy()
     } catch (error) {
       console.error('Error destroying Milkdown editor:', error)

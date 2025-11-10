@@ -154,6 +154,11 @@ To stop everything later, run:
 podman-compose -f compose.yaml down
 ```
 
+### Podman Compose Helper Script
+
+- Use `bash scripts/rebuild-container.sh` to stop, rebuild, and restart the stack via Podman Compose.
+- The script must be run from within the repository and assumes `compose.yaml` (or `compose.yml`) exists at the project root.
+
 ## Docker Deployment
 
 KBase is available as a pre-built Docker image from GitHub Container Registry (GHCR). This is the easiest way to deploy KBase in production.

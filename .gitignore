@@ -420,6 +420,7 @@ volumes/
 # Podman/Docker
 .dockerignore
 docker-compose.override.yml
+compose.yaml
 
 # Backup files
 *.bak

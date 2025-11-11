@@ -357,20 +357,15 @@ frontend/src/
       - Displayed in lighter color (#9ca3af) with smaller font (0.75rem)
       - Format: `(123)` next to directory name
       - Helps users understand directory size at a glance
-  - **File Explorer Toolbar**: Quick access toolbar at the top of the sidebar
-    - **New Folder Button**: Create new folders at root level with input validation
-    - **New File Button**: Create new markdown files at root level with input validation
-    - **Refresh Button**: Manually refresh the file tree (disabled during loading)
-    - **Sort Controls**: 
-      - **Sort Order Toggle**: Switch between ascending/descending sort order
-      - **Sort Criteria Dropdown**: Choose sort method (Name, Created Date, Modified Date)
-      - Sort preferences persist in localStorage across sessions
-      - Folders always appear before files in sorted results
-      - Sorting applies recursively to all nested folders
-    - **Collapse All Button**: Quickly collapse all expanded directories
-      - Always visible in toolbar (disabled when no directories are expanded)
-      - Provides instant reset of tree view to collapsed state
-      - Useful for navigating large directory structures
+  - **File Explorer Toolbar**: Consolidated action menu anchored at the top of the sidebar
+    - Single trigger button reveals all explorer actions in a dropdown menu for both desktop and mobile layouts
+    - Actions include: New Folder, New File, Refresh (disabled while loading), Sort Order toggle, Sort criteria options (Name, Created Date, Modified Date), and Collapse All
+    - Menu items close automatically after selection and respect accessibility roles (`menuitem` / `menuitemradio`)
+    - Sort preferences persist in localStorage across sessions
+    - Folders always appear before files in sorted results
+    - Sorting applies recursively to all nested folders
+    - Collapse All remains disabled when no directories are expanded to prevent unnecessary refreshes
+  - **Mobile Layout**: Shares the same single-button action menu as desktop, maintaining consistent interaction patterns while preserving viewport space.
     - Input validation prevents path traversal attacks and invalid characters
     - Auto-appends `.md` extension for new files
   - **Drag & Drop**: Drag files and directories into other directories to move them

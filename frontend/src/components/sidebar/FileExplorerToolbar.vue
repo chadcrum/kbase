@@ -1,40 +1,69 @@
 <template>
   <div class="toolbar">
-    <div class="toolbar-buttons">
-      <button @click="handleNewFolder" class="toolbar-button" title="New Folder">
-        <span class="icon">📁</span>
+    <div class="toolbar-menu">
+      <button
+        @click="toggleMenu"
+        class="toolbar-button toolbar-menu-trigger"
+        title="File Explorer actions"
+        aria-haspopup="true"
+        :aria-expanded="showMenu.toString()"
+      >
+        <span class="icon">☰</span>
       </button>
-      <button @click="handleNewFile" class="toolbar-button" title="New File">
-        <span class="icon">📄</span>
-      </button>
-      <button @click="handleRefresh" class="toolbar-button refresh-button" :disabled="isLoading" title="Refresh">
-        <span class="icon refresh-icon">🔄</span>
-      </button>
-      
-      <!-- Sort buttons -->
-      <div class="sort-buttons">
-        <button @click="handleToggleSortOrder" class="toolbar-button sort-button" :title="sortOrderTitle">
-          <span class="icon">{{ sortOrder === 'asc' ? '⬆️' : '⬇️' }}</span>
+      <div
+        v-if="showMenu"
+        class="toolbar-dropdown"
+        role="menu"
+      >
+        <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFolder">
+          <span class="icon">📁</span>
+          <span class="label">New Folder</span>
         </button>
-        <div class="sort-dropdown-wrapper">
-          <button @click="toggleSortDropdown" class="toolbar-button sort-button" title="Sort by">
-            <span class="icon">⚙️</span>
-          </button>
-          <div v-if="showSortDropdown" class="sort-dropdown" @click.stop>
-            <div 
-              v-for="option in sortOptions" 
-              :key="option.value"
-              class="sort-option"
-              :class="{ 'active': sortBy === option.value }"
-              @click="handleSortByChange(option.value)"
-            >
-              <span class="sort-option-icon">{{ sortBy === option.value ? '✓' : '' }}</span>
-              <span class="sort-option-label">{{ option.label }}</span>
-            </div>
-          </div>
-        </div>
-        <button @click="handleCollapseAll" class="toolbar-button sort-button" title="Collapse All" :disabled="!hasExpandedPaths">
+        <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFile">
+          <span class="icon">📄</span>
+          <span class="label">New File</span>
+        </button>
+        <button
+          class="toolbar-dropdown-item"
+          role="menuitem"
+          @click="handleRefresh"
+          :disabled="isLoading"
+        >
+          <span class="icon">🔄</span>
+          <span class="label">Refresh</span>
+        </button>
+
+        <div class="toolbar-dropdown-divider" role="separator"></div>
+
+        <button class="toolbar-dropdown-item" role="menuitem" @click="handleToggleSortOrder">
+          <span class="icon">{{ sortOrder === 'asc' ? '⬆️' : '⬇️' }}</span>
+          <span class="label">{{ sortOrderTitle }}</span>
+        </button>
+
+        <div class="toolbar-dropdown-subheader">Sort by</div>
+        <button
+          v-for="option in sortOptions"
+          :key="`sort-${option.value}`"
+          class="toolbar-dropdown-item"
+          role="menuitemradio"
+          :aria-checked="(sortBy === option.value).toString()"
+          :class="{ active: sortBy === option.value }"
+          @click="handleSortByChange(option.value)"
+        >
+          <span class="icon">{{ sortBy === option.value ? '✓' : '' }}</span>
+          <span class="label">{{ option.label }}</span>
+        </button>
+
+        <div class="toolbar-dropdown-divider" role="separator"></div>
+
+        <button
+          class="toolbar-dropdown-item"
+          role="menuitem"
+          @click="handleCollapseAll"
+          :disabled="!hasExpandedPaths"
+        >
           <span class="icon">⬇️</span>
+          <span class="label">Collapse All</span>
         </button>
       </div>
     </div>
@@ -91,7 +120,14 @@ const emit = defineEmits<{
 const vaultStore = useVaultStore()
 const showFolderDialog = ref(false)
 const showFileDialog = ref(false)
-const showSortDropdown = ref(false)
+const showMenu = ref(false)
+
+/**
+ * Closes the toolbar menu if open
+ */
+const closeMenu = () => {
+  showMenu.value = false
+}
 
 // Sort state from store
 const sortBy = computed(() => vaultStore.sortBy)
@@ -185,6 +221,7 @@ const validateFileName = (name: string): string | null => {
  */
 const handleNewFolder = () => {
   showFolderDialog.value = true
+  closeMenu()
 }
 
 /**
@@ -192,6 +229,7 @@ const handleNewFolder = () => {
  */
 const handleNewFile = () => {
   showFileDialog.value = true
+  closeMenu()
 }
 
 /**
@@ -199,6 +237,7 @@ const handleNewFile = () => {
  */
 const handleRefresh = () => {
   emit('refresh')
+  closeMenu()
 }
 
 /**
@@ -233,13 +272,7 @@ const createFile = async (fileName: string) => {
  */
 const handleToggleSortOrder = () => {
   vaultStore.toggleSortOrder()
-}
-
-/**
- * Toggles the visibility of the sort dropdown
- */
-const toggleSortDropdown = () => {
-  showSortDropdown.value = !showSortDropdown.value
+  closeMenu()
 }
 
 /**
@@ -247,7 +280,7 @@ const toggleSortDropdown = () => {
  */
 const handleSortByChange = (newSortBy: SortBy) => {
   vaultStore.setSortBy(newSortBy)
-  showSortDropdown.value = false
+  closeMenu()
 }
 
 /**
@@ -255,6 +288,7 @@ const handleSortByChange = (newSortBy: SortBy) => {
  */
 const handleCollapseAll = () => {
   vaultStore.collapseAll()
+  closeMenu()
 }
 
 /**
@@ -262,18 +296,37 @@ const handleCollapseAll = () => {
  */
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement
-  if (!target.closest('.sort-dropdown-wrapper')) {
-    showSortDropdown.value = false
+  if (!target.closest('.toolbar-menu')) {
+    showMenu.value = false
   }
 }
 
-// Setup click outside listener
+/**
+ * Toggles the menu visibility
+ */
+const toggleMenu = () => {
+  showMenu.value = !showMenu.value
+}
+
+// Setup listeners
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', handleClickOutside)
+  }
+
+  if (typeof window === 'undefined') {
+    return
+  }
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('click', handleClickOutside)
+  }
+
+  if (typeof window === 'undefined') {
+    return
+  }
 })
 </script>
 
@@ -286,10 +339,78 @@ onUnmounted(() => {
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-.toolbar-buttons {
+.toolbar-menu {
+  position: relative;
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+}
+
+.toolbar-menu-trigger {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.toolbar-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
   display: flex;
-  gap: 0.375rem;
-  padding: 0.75rem 1rem;
+  flex-direction: column;
+  min-width: 220px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 10px 20px -10px var(--shadow);
+  padding: 0.5rem 0;
+  z-index: 1000;
+}
+
+.toolbar-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.toolbar-dropdown-item .icon {
+  width: 1.25rem;
+  text-align: center;
+}
+
+.toolbar-dropdown-item .label {
+  flex: 1;
+}
+
+.toolbar-dropdown-item:hover:not(:disabled),
+.toolbar-dropdown-item.active {
+  background-color: var(--bg-tertiary);
+}
+
+.toolbar-dropdown-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toolbar-dropdown-subheader {
+  padding: 0.35rem 1rem 0.25rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+
+.toolbar-dropdown-divider {
+  height: 1px;
+  margin: 0.4rem 0;
+  background-color: var(--border-color);
 }
 
 .error-banner {
@@ -363,85 +484,6 @@ onUnmounted(() => {
 
 .refresh-button:hover:not(:disabled) .refresh-icon {
   transform: rotate(180deg);
-}
-
-/* Sort buttons */
-.sort-buttons {
-  display: flex;
-  gap: 0.375rem;
-  margin-left: auto;
-}
-
-.sort-button {
-  min-width: auto;
-}
-
-.sort-dropdown-wrapper {
-  position: relative;
-}
-
-.sort-dropdown {
-  position: absolute;
-  top: calc(100% + 0.25rem);
-  right: 0;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  box-shadow: 0 4px 6px -1px var(--shadow);
-  min-width: 160px;
-  z-index: 1000;
-  overflow: hidden;
-}
-
-.sort-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  font-size: 0.875rem;
-}
-
-.sort-option:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.sort-option.active {
-  background-color: var(--bg-tertiary);
-  color: #667eea;
-}
-
-.sort-option-icon {
-  width: 1rem;
-  text-align: center;
-  font-size: 0.75rem;
-}
-
-.sort-option-label {
-  flex: 1;
-}
-
-/* Mobile Responsive Design */
-@media (max-width: 768px) {
-  .toolbar-buttons {
-    gap: 0.25rem;
-    padding: 0.5rem 0.75rem;
-  }
-
-  .toolbar-button {
-    padding: 0.25rem 0.375rem;
-    min-width: 36px;
-    min-height: 36px;
-  }
-
-  .toolbar-button .icon {
-    font-size: 0.75rem;
-  }
-
-  .sort-buttons {
-    gap: 0.25rem;
-  }
 }
 
 /* Touch device accessibility */

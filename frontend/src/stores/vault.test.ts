@@ -724,6 +724,17 @@ describe('VaultStore', () => {
       expect(newStore.sortOrder).toBe('desc')
     })
 
+    it('should fall back to defaults when stored sort settings are invalid', () => {
+      localStorage.setItem('kbase_sort_by', 'invalid')
+      localStorage.setItem('kbase_sort_order', 'forwards')
+
+      setActivePinia(createPinia())
+      const newStore = useVaultStore()
+
+      expect(newStore.sortBy).toBe('name')
+      expect(newStore.sortOrder).toBe('asc')
+    })
+
     it('should update sortBy and save to localStorage', () => {
       vaultStore.setSortBy('created')
       

@@ -285,6 +285,7 @@ frontend/src/
     - Supports sorting by name, created date, and modified date
     - Maintains folder-first ordering in all sort modes
     - Sort preferences persisted to localStorage
+    - Sanitizes persisted sort preferences on initialization so invalid values fall back to safe defaults while legitimate selections are restored automatically after full page refreshes
   - **Tree Navigation**: `collapseAll()`, `hasExpandedPaths` (computed)
   - **UI State**: `isSidebarCollapsed`, `toggleSidebar()`
     - Global sidebar visibility state for collapse/expand functionality

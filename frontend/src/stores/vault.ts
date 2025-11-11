@@ -10,6 +10,55 @@ const SORT_BY_KEY = 'kbase_sort_by'
 const SORT_ORDER_KEY = 'kbase_sort_order'
 export const LAST_SELECTED_NOTE_KEY = 'kbase_last_note_path'
 
+const SORT_BY_VALUES: SortBy[] = ['name', 'created', 'modified']
+const SORT_ORDER_VALUES: SortOrder[] = ['asc', 'desc']
+
+const getLocalStorage = (): Storage | null => {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
+}
+
+const readSortByPreference = (): SortBy => {
+  const stored = getLocalStorage()?.getItem(SORT_BY_KEY)
+  return SORT_BY_VALUES.includes(stored as SortBy) ? (stored as SortBy) : 'name'
+}
+
+const readSortOrderPreference = (): SortOrder => {
+  const stored = getLocalStorage()?.getItem(SORT_ORDER_KEY)
+  return SORT_ORDER_VALUES.includes(stored as SortOrder) ? (stored as SortOrder) : 'asc'
+}
+
+const setLocalStorageItem = (key: string, value: string) => {
+  try {
+    getLocalStorage()?.setItem(key, value)
+  } catch {
+    // Ignore storage errors (e.g., private mode, quota exceeded)
+  }
+}
+
+const removeLocalStorageItem = (key: string) => {
+  try {
+    getLocalStorage()?.removeItem(key)
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+const getLocalStorageItem = (key: string): string | null => {
+  try {
+    return getLocalStorage()?.getItem(key) ?? null
+  } catch {
+    return null
+  }
+}
+
 export const useVaultStore = defineStore('vault', () => {
   // State
   const fileTree = ref<FileTreeNode | null>(null)
@@ -21,8 +70,8 @@ export const useVaultStore = defineStore('vault', () => {
   const saveError = ref<string | null>(null)
   
   // Sort state - load from localStorage
-  const sortBy = ref<SortBy>((localStorage.getItem(SORT_BY_KEY) as SortBy) || 'name')
-  const sortOrder = ref<SortOrder>((localStorage.getItem(SORT_ORDER_KEY) as SortOrder) || 'asc')
+  const sortBy = ref<SortBy>(readSortByPreference())
+  const sortOrder = ref<SortOrder>(readSortOrderPreference())
   
   // Sidebar visibility state
   const isSidebarCollapsed = ref(false)
@@ -94,14 +143,14 @@ export const useVaultStore = defineStore('vault', () => {
   }
 
   const restoreLastSelectedNote = async (): Promise<boolean> => {
-    const storedPath = localStorage.getItem(LAST_SELECTED_NOTE_KEY)
+    const storedPath = getLocalStorageItem(LAST_SELECTED_NOTE_KEY)
 
     if (!storedPath) {
       return false
     }
 
     if (!noteExistsInTree(fileTree.value, storedPath)) {
-      localStorage.removeItem(LAST_SELECTED_NOTE_KEY)
+      removeLocalStorageItem(LAST_SELECTED_NOTE_KEY)
       return false
     }
 
@@ -110,7 +159,7 @@ export const useVaultStore = defineStore('vault', () => {
     const restored = await loadNote(storedPath)
 
     if (!restored) {
-      localStorage.removeItem(LAST_SELECTED_NOTE_KEY)
+      removeLocalStorageItem(LAST_SELECTED_NOTE_KEY)
     }
 
     return restored
@@ -147,7 +196,7 @@ export const useVaultStore = defineStore('vault', () => {
     try {
       const note = await apiClient.getNote(path)
       selectedNote.value = note
-      localStorage.setItem(LAST_SELECTED_NOTE_KEY, path)
+      setLocalStorageItem(LAST_SELECTED_NOTE_KEY, path)
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to load note'
@@ -191,7 +240,7 @@ export const useVaultStore = defineStore('vault', () => {
   const clearSelection = () => {
     selectedNote.value = null
     error.value = null
-    localStorage.removeItem(LAST_SELECTED_NOTE_KEY)
+    removeLocalStorageItem(LAST_SELECTED_NOTE_KEY)
   }
 
   const toggleExpanded = (path: string) => {
@@ -399,12 +448,12 @@ export const useVaultStore = defineStore('vault', () => {
   // Sort actions
   const setSortBy = (newSortBy: SortBy) => {
     sortBy.value = newSortBy
-    localStorage.setItem(SORT_BY_KEY, newSortBy)
+    setLocalStorageItem(SORT_BY_KEY, newSortBy)
   }
 
   const setSortOrder = (newSortOrder: SortOrder) => {
     sortOrder.value = newSortOrder
-    localStorage.setItem(SORT_ORDER_KEY, newSortOrder)
+    setLocalStorageItem(SORT_ORDER_KEY, newSortOrder)
   }
 
   const toggleSortOrder = () => {

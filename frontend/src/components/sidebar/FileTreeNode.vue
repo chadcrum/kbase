@@ -21,6 +21,7 @@
       @dragover.prevent="handleDragOver"
       @dragleave="handleDragLeave"
       @drop.prevent="handleDrop"
+      :title="tooltipText"
     >
       <!-- Expand/collapse icon for directories -->
       <span v-if="node.type === 'directory'" class="expand-icon">
@@ -232,6 +233,34 @@ const deleteConfirmMessage = computed(() => {
   } else {
     return `Are you sure you want to delete "${props.node.name}"? This action cannot be undone.`
   }
+})
+
+const formatTimestamp = (timestamp?: number | null): string | null => {
+  if (timestamp === undefined || timestamp === null || Number.isNaN(timestamp)) {
+    return null
+  }
+
+  try {
+    return new Date(timestamp * 1000).toLocaleString()
+  } catch {
+    return null
+  }
+}
+
+const tooltipText = computed(() => {
+  const details: string[] = []
+  const createdAt = formatTimestamp(props.node.created ?? null)
+  const modifiedAt = formatTimestamp(props.node.modified ?? null)
+
+  if (createdAt) {
+    details.push(`Created: ${createdAt}`)
+  }
+
+  if (modifiedAt) {
+    details.push(`Modified: ${modifiedAt}`)
+  }
+
+  return details.join('\n')
 })
 
 const itemCount = computed(() => {

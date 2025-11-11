@@ -82,6 +82,34 @@ describe('FileTreeNode', () => {
       expect(wrapper.find('.node-name').text()).toBe('note.md')
     })
 
+    it('should render tooltip when timestamps are available', () => {
+      const created = 1_700_000_000
+      const modified = 1_700_000_600
+
+      wrapper = createWrapper({
+        node: { ...fileNode, created, modified },
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const expectedTitle = [
+        `Created: ${new Date(created * 1000).toLocaleString()}`,
+        `Modified: ${new Date(modified * 1000).toLocaleString()}`
+      ].join('\n')
+
+      expect(wrapper.find('.node-item').attributes('title')).toBe(expectedTitle)
+    })
+
+    it('should render empty tooltip when timestamps are missing', () => {
+      wrapper = createWrapper({
+        node: { ...fileNode, created: undefined, modified: undefined },
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      expect(wrapper.find('.node-item').attributes('title')).toBe('')
+    })
+
     it('should emit selectNote when clicked', async () => {
       wrapper = createWrapper({
         node: fileNode,

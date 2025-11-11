@@ -357,7 +357,8 @@ frontend/src/
       - Recursive counting of all children at any depth
       - Displayed in lighter color (#9ca3af) with smaller font (0.75rem)
       - Format: `(123)` next to directory name
-      - Helps users understand directory size at a glance
+    - **Metadata Tooltips**: Hovering a file or directory node surfaces creation and last modified timestamps using the user’s locale formatting for quick context
+      - Supports quick recency checks without opening the item
   - **File Explorer Toolbar**: Consolidated action menu anchored at the top of the sidebar
     - Single trigger button reveals all explorer actions in a dropdown menu for both desktop and mobile layouts
     - Actions include: New Folder, New File, Refresh (disabled while loading), Sort Order toggle, Sort criteria options (Name, Created Date, Modified Date), Collapse All, Theme toggle, and Logout

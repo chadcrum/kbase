@@ -9,7 +9,7 @@ A Vue 3 frontend for the KBase note-taking application, providing a clean interf
   - File Explorer Toolbar with New File and New Folder buttons
   - Input validation for file and folder creation (security-focused)
   - Drag & Drop files and directories
-  - Right-click context menus (Delete, Rename, Move to Root)
+  - Right-click context menus (Delete, Rename, Move…)
   - Inline rename (double-click)
   - Delete confirmation dialogs
 - **Monaco Editor**: Full-featured code editor with auto-save and syntax highlighting

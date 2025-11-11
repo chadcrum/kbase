@@ -176,12 +176,6 @@ const isExpanded = computed(() => {
 
 const isDirectory = computed(() => props.node.type === 'directory')
 
-const isAtRoot = computed(() => {
-  // Check if the item is at root level (only one level deep)
-  const pathParts = props.node.path.split('/').filter(Boolean)
-  return pathParts.length === 1
-})
-
 const selectedNotePath = computed(() => vaultStore.selectedNotePath)
 
 const isSelected = computed(() => {
@@ -228,11 +222,6 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
 
   if (props.node.path !== '/') {
     items.push({ label: 'Move…', icon: '🚚', action: 'move' })
-  }
-  
-  // Only show "Move to Root" if not already at root
-  if (!isAtRoot.value) {
-    items.push({ label: 'Move to Root', icon: '↗️', action: 'move-to-root' })
   }
   
   items.push({ label: 'Delete', icon: '🗑️', action: 'delete', isDanger: true })
@@ -329,9 +318,6 @@ const handleContextMenuAction = async (action: string) => {
     case 'move':
       showMoveDialog.value = true
       break
-    case 'move-to-root':
-      await handleMoveToRoot()
-      break
     case 'delete':
       showDeleteConfirm.value = true
       break
@@ -397,15 +383,6 @@ const handleRenameBlur = () => {
       handleRenameConfirm()
     }
   }, 100)
-}
-
-// Move to root handler
-const handleMoveToRoot = async () => {
-  if (isDirectory.value) {
-    await vaultStore.moveDirectory(props.node.path, '/')
-  } else {
-    await vaultStore.moveFile(props.node.path, '/')
-  }
 }
 
 const collectDescendantDirectories = (node: FileTreeNodeType | undefined): string[] => {

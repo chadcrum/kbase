@@ -376,7 +376,6 @@ frontend/src/
     - Delete (with confirmation)
     - Rename (inline editing)
     - Move… (opens directory picker to choose destination)
-    - Move to Root
     - Directory picker prevents circular moves (cannot select current directory or descendants) and defaults to the current parent location for quick relocation workflows
   - **Inline Rename**: Double-click file/directory names to rename
   - **Delete Confirmation**: Safety dialogs for all delete operations
@@ -602,7 +601,6 @@ The file explorer provides comprehensive file and directory management through a
    - Click-outside or ESC key to close
    - Menu items:
      - **Rename**: Activates inline rename mode
-     - **Move to Root**: Moves item to vault root directory
      - **Delete**: Shows confirmation dialog (styled as dangerous action)
    - Menu items styled with icons for better UX
    

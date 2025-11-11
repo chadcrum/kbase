@@ -1,3 +1,5 @@
+import type { editor as MonacoEditorNamespace } from 'monaco-editor'
+
 interface StorageLike {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
@@ -5,7 +7,7 @@ interface StorageLike {
 }
 
 export interface MonacoEditorState {
-  viewState?: Record<string, unknown>
+  viewState?: MonacoEditorNamespace.ICodeEditorViewState
 }
 
 export interface MilkdownSelectionState {

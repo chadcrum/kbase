@@ -57,10 +57,8 @@ const scheduleStateSave = () => {
     const viewState = editor.saveViewState()
     if (!viewState) return
 
-    const serializableState = JSON.parse(JSON.stringify(viewState)) as Record<string, unknown>
-
     updateNoteStateSegment(props.path, 'monaco', {
-      viewState: serializableState
+      viewState
     })
   }, STATE_SAVE_DELAY)
 }
@@ -227,9 +225,8 @@ onBeforeUnmount(() => {
   if (editor) {
     const viewState = editor.saveViewState()
     if (viewState && props.path) {
-      const serializableState = JSON.parse(JSON.stringify(viewState)) as Record<string, unknown>
       updateNoteStateSegment(props.path, 'monaco', {
-        viewState: serializableState
+        viewState
       })
     }
 

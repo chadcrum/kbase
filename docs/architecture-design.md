@@ -128,7 +128,7 @@ vault/                           # Mounted Docker volume
 5. On app load, router guard calls `initializeAuth()` to verify stored token
 6. If token is valid, user is authenticated automatically
 7. If token is invalid/expired, user is redirected to login
-8. On logout (via logout button in ViewerToolbar), token is removed from localStorage, auth state is cleared, and user is redirected to login page
+8. On logout (via the FileExplorerToolbar dropdown action), token is removed from localStorage, auth state is cleared, and user is redirected to login page
 
 **Backend Health Monitoring**:
 
@@ -161,13 +161,13 @@ The application includes comprehensive backend connectivity monitoring to provid
 - **Separate from Auth Errors**: Backend warnings don't replace login-specific error messages
 - **Immediate Detection**: Health check runs on page load and during API calls
 
-**Logout Button**:
+**Logout Action**:
 
-- Located in the ViewerToolbar at the top right of the application
-- Positioned to the right of the Search button
-- Icon-based button with door emoji (🚪) and "Logout" text
-- Styled consistently with other toolbar buttons (white background, purple hover effect)
-- On click, triggers `authStore.logout()` and redirects to `/login` route
+- Located in the FileExplorerToolbar dropdown within the sidebar
+- Groups with global application controls alongside the theme toggle
+- Icon-based menu item with door emoji (🚪) and "Logout" label
+- Styled consistently with other dropdown actions and respects accessibility roles
+- On selection, triggers `authStore.logout()`, redirects to `/login`, and closes the dropdown
 - Provides easy access to logout functionality from anywhere in the application
 
 ### 4. Core Backend Services
@@ -230,13 +230,13 @@ frontend/src/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
 │   │   ├── ContextMenu.vue         # Context menu for file operations
-│   │   ├── FileExplorerToolbar.vue # Toolbar with New File/Folder/Refresh buttons
+│   │   ├── FileExplorerToolbar.vue # Toolbar with explorer + global actions (new file/folder, refresh, sort, collapse, theme, logout)
 │   │   ├── FileTree.vue            # Recursive tree component
 │   │   ├── FileTreeNode.vue        # Individual tree node
 │   │   └── Sidebar.vue             # Sidebar container
 │   └── viewer/
 │       ├── NoteViewer.vue          # Note viewer with Monaco editor
-│       └── ViewerToolbar.vue       # Toolbar with search and theme controls
+│       └── ViewerToolbar.vue       # Toolbar with search, sidebar toggle, and editor controls
 ├── stores/
 │   ├── auth.ts                     # JWT & login state
 │   ├── theme.ts                     # Dark mode state
@@ -258,14 +258,14 @@ frontend/src/
 
 - **Editor Components**:
   - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting for all file types
-  - `ViewerToolbar.vue`: Toolbar with search button, logout button, and save status
+- `ViewerToolbar.vue`: Toolbar with search button, sidebar toggle, editor switcher, and save status
   - `NoteViewer.vue`: Orchestrates Monaco editor for all file types
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar container
   - `FileTree.vue`: Hierarchical file tree display
   - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
-  - `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with create and refresh actions
+- `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with creation, refresh, sorting, collapse, theme toggle, and logout actions
 - **Common Components**:
   - `BackendWarning.vue`: Dismissible warning banner for backend connectivity issues
   - `ConfirmDialog.vue`: Reusable confirmation modal for destructive actions
@@ -317,7 +317,7 @@ frontend/src/
 - **Authentication**: JWT-based login with password protection
 - **Dark Mode**: Global dark mode with system preference detection
   - **System Preference**: Automatically respects OS dark mode preference on first visit
-  - **User Control**: Toggle button in ViewerToolbar (between Search and Logout)
+  - **User Control**: Dropdown action in FileExplorerToolbar (grouped with Logout)
   - **Persistence**: User preference saved in localStorage across sessions
   - **System Sync**: Watches system preference changes when no manual override set
   - **Consistent Theming**: All components use CSS variables for theme switching
@@ -359,7 +359,7 @@ frontend/src/
       - Helps users understand directory size at a glance
   - **File Explorer Toolbar**: Consolidated action menu anchored at the top of the sidebar
     - Single trigger button reveals all explorer actions in a dropdown menu for both desktop and mobile layouts
-    - Actions include: New Folder, New File, Refresh (disabled while loading), Sort Order toggle, Sort criteria options (Name, Created Date, Modified Date), and Collapse All
+    - Actions include: New Folder, New File, Refresh (disabled while loading), Sort Order toggle, Sort criteria options (Name, Created Date, Modified Date), Collapse All, Theme toggle, and Logout
     - Menu items close automatically after selection and respect accessibility roles (`menuitem` / `menuitemradio`)
     - Sort preferences persist in localStorage across sessions
     - Folders always appear before files in sorted results

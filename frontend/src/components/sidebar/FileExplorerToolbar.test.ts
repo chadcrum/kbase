@@ -3,10 +3,27 @@ import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import FileExplorerToolbar from './FileExplorerToolbar.vue'
 import { useVaultStore } from '@/stores/vault'
+import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import InputDialog from '@/components/common/InputDialog.vue'
 
 vi.mock('@/stores/vault', () => ({
   useVaultStore: vi.fn()
+}))
+
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: vi.fn()
+}))
+
+vi.mock('@/stores/theme', () => ({
+  useThemeStore: vi.fn()
+}))
+
+const mockRouterPush = vi.fn()
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: mockRouterPush
+  })
 }))
 
 describe('FileExplorerToolbar', () => {
@@ -33,6 +50,13 @@ describe('FileExplorerToolbar', () => {
     collapseAll: ReturnType<typeof vi.fn>
     error: string | null
   }
+  let mockAuthStore: {
+    logout: ReturnType<typeof vi.fn>
+  }
+  let mockThemeStore: {
+    isDarkMode: boolean
+    toggleTheme: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -49,7 +73,18 @@ describe('FileExplorerToolbar', () => {
       error: null
     }
 
+    mockAuthStore = {
+      logout: vi.fn()
+    }
+
+    mockThemeStore = {
+      isDarkMode: false,
+      toggleTheme: vi.fn()
+    }
+
     vi.mocked(useVaultStore).mockReturnValue(mockVaultStore)
+    vi.mocked(useAuthStore).mockReturnValue(mockAuthStore)
+    vi.mocked(useThemeStore).mockReturnValue(mockThemeStore)
   })
 
   afterEach(() => {
@@ -132,6 +167,25 @@ describe('FileExplorerToolbar', () => {
     body!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await wrapper.vm.$nextTick()
 
+    expect(wrapper.find('.toolbar-dropdown').exists()).toBe(false)
+  })
+
+  it('handles theme toggle and logout actions', async () => {
+    const wrapper = mountToolbar()
+
+    await openMenu(wrapper)
+    const themeButton = wrapper.find('.theme-toggle-btn')
+    await themeButton.trigger('click')
+
+    expect(mockThemeStore.toggleTheme).toHaveBeenCalled()
+    expect(wrapper.find('.toolbar-dropdown').exists()).toBe(false)
+
+    await openMenu(wrapper)
+    const logoutButton = wrapper.find('.logout-btn')
+    await logoutButton.trigger('click')
+
+    expect(mockAuthStore.logout).toHaveBeenCalled()
+    expect(mockRouterPush).toHaveBeenCalledWith('/login')
     expect(wrapper.find('.toolbar-dropdown').exists()).toBe(false)
   })
 

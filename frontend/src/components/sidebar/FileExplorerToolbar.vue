@@ -65,6 +65,27 @@
           <span class="icon">⬇️</span>
           <span class="label">Collapse All</span>
         </button>
+
+        <div class="toolbar-dropdown-divider" role="separator"></div>
+
+        <div class="toolbar-dropdown-subheader">Application</div>
+        <button
+          class="toolbar-dropdown-item theme-toggle-btn"
+          role="menuitem"
+          @click="handleToggleTheme"
+        >
+          <span class="icon">{{ themeIcon }}</span>
+          <span class="label">{{ themeToggleLabel }}</span>
+        </button>
+
+        <button
+          class="toolbar-dropdown-item logout-btn"
+          role="menuitem"
+          @click="handleLogout"
+        >
+          <span class="icon">🚪</span>
+          <span class="label">Logout</span>
+        </button>
       </div>
     </div>
 
@@ -103,7 +124,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useVaultStore } from '@/stores/vault'
+import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import InputDialog from '@/components/common/InputDialog.vue'
 import type { SortBy } from '@/stores/vault'
 
@@ -118,6 +142,9 @@ const emit = defineEmits<{
 }>()
 
 const vaultStore = useVaultStore()
+const authStore = useAuthStore()
+const themeStore = useThemeStore()
+const router = useRouter()
 const showFolderDialog = ref(false)
 const showFileDialog = ref(false)
 const showMenu = ref(false)
@@ -146,6 +173,14 @@ const sortOptions = [
 // Computed title for sort order button
 const sortOrderTitle = computed(() => {
   return sortOrder.value === 'asc' ? 'Sort Ascending' : 'Sort Descending'
+})
+
+const themeIcon = computed(() => {
+  return themeStore.isDarkMode ? '🌙' : '☀️'
+})
+
+const themeToggleLabel = computed(() => {
+  return themeStore.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'
 })
 
 /**
@@ -288,6 +323,23 @@ const handleSortByChange = (newSortBy: SortBy) => {
  */
 const handleCollapseAll = () => {
   vaultStore.collapseAll()
+  closeMenu()
+}
+
+/**
+ * Handles theme toggle action
+ */
+const handleToggleTheme = () => {
+  themeStore.toggleTheme()
+  closeMenu()
+}
+
+/**
+ * Logs user out and redirects to login
+ */
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
   closeMenu()
 }
 

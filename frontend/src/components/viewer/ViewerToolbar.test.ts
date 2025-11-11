@@ -3,19 +3,17 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import ViewerToolbar from './ViewerToolbar.vue'
 
-// Mock Vue Router
-const mockPush = vi.fn()
-vi.mock('vue-router', () => ({
-  useRouter: () => ({
-    push: mockPush
-  })
-}))
-
-// Mock the vault store
 vi.mock('@/stores/vault', () => ({
   useVaultStore: vi.fn(() => ({
     isSidebarCollapsed: false,
     toggleSidebar: vi.fn()
+  }))
+}))
+
+vi.mock('@/stores/editor', () => ({
+  useEditorStore: vi.fn(() => ({
+    markdownEditor: 'milkdown',
+    toggleMarkdownEditor: vi.fn()
   }))
 }))
 
@@ -45,7 +43,7 @@ describe('ViewerToolbar', () => {
     expect(wrapper.text()).toContain('folder/test.md')
   })
 
-  it('renders icon-only search and logout buttons', () => {
+  it('renders icon-only search button', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md'
@@ -53,10 +51,8 @@ describe('ViewerToolbar', () => {
     })
 
     expect(wrapper.find('.search-btn').exists()).toBe(true)
-    expect(wrapper.find('.logout-btn').exists()).toBe(true)
     // Verify buttons are icon-only (no text labels)
     expect(wrapper.find('.search-btn').text()).toBe('🔍')
-    expect(wrapper.find('.logout-btn').text()).toBe('🚪')
   })
 
   it('handles search button click', async () => {
@@ -68,17 +64,6 @@ describe('ViewerToolbar', () => {
 
     await wrapper.find('.search-btn').trigger('click')
     expect(wrapper.emitted('openSearch')).toBeTruthy()
-  })
-
-  it('handles logout button click', async () => {
-    const wrapper = mount(ViewerToolbar, {
-      props: {
-        fileName: 'test.md'
-      }
-    })
-
-    await wrapper.find('.logout-btn').trigger('click')
-    expect(mockPush).toHaveBeenCalledWith('/login')
   })
 })
 

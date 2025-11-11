@@ -27,30 +27,18 @@
       <button class="search-btn" @click="openSearch" title="Search (Ctrl+P)">
         <span class="search-icon">🔍</span>
       </button>
-      <button class="theme-toggle-btn" @click="toggleTheme" :title="themeToggleTitle">
-        <span class="theme-icon">{{ themeIcon }}</span>
-      </button>
-      <button class="logout-btn" @click="handleLogout" title="Logout">
-        <span class="logout-icon">🚪</span>
-      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useVaultStore } from '@/stores/vault'
-import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
 import { useEditorStore } from '@/stores/editor'
 
 // Store
 const vaultStore = useVaultStore()
-const authStore = useAuthStore()
-const themeStore = useThemeStore()
 const editorStore = useEditorStore()
-const router = useRouter()
 
 // Props
 interface Props {
@@ -76,15 +64,6 @@ const toggleSidebar = () => {
   vaultStore.toggleSidebar()
 }
 
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
-}
-
-const toggleTheme = () => {
-  themeStore.toggleTheme()
-}
-
 // Computed
 const sidebarToggleIcon = computed(() => {
   return vaultStore.isSidebarCollapsed ? '»' : '«'
@@ -92,14 +71,6 @@ const sidebarToggleIcon = computed(() => {
 
 const sidebarToggleTitle = computed(() => {
   return vaultStore.isSidebarCollapsed ? 'Show Sidebar' : 'Hide Sidebar'
-})
-
-const themeIcon = computed(() => {
-  return themeStore.isDarkMode ? '🌙' : '☀️'
-})
-
-const themeToggleTitle = computed(() => {
-  return themeStore.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'
 })
 
 // Editor toggle
@@ -291,72 +262,6 @@ const editorToggleTitle = computed(() => {
 }
 
 .search-icon {
-  font-size: 0.85rem;
-  line-height: 1;
-}
-
-.theme-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: #667eea;
-  font-size: 0.875rem;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px var(--shadow);
-}
-
-.theme-toggle-btn:hover {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-}
-
-.theme-toggle-btn:active {
-  transform: scale(0.98);
-}
-
-.theme-icon {
-  font-size: 0.85rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logout-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: #667eea;
-  font-size: 0.875rem;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px var(--shadow);
-}
-
-.logout-btn:hover {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-}
-
-.logout-btn:active {
-  transform: scale(0.98);
-}
-
-.logout-icon {
   font-size: 0.85rem;
   line-height: 1;
 }

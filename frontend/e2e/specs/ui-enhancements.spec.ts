@@ -456,15 +456,22 @@ test.describe('UI Enhancements', () => {
       
       // Toolbar should be visible and functional
       const searchBtn = page.locator('.search-btn')
-      const themeBtn = page.locator('.theme-toggle-btn')
-      const logoutBtn = page.locator('.logout-btn')
       
       await expect(searchBtn).toBeVisible()
+      await expect(searchBtn).toBeEnabled()
+
+      // File explorer toolbar dropdown should expose theme and logout actions
+      const toolbarTrigger = page.locator('.toolbar-menu-trigger').first()
+      await toolbarTrigger.click()
+
+      const themeBtn = page.locator('.theme-toggle-btn')
+      const logoutBtn = page.locator('.logout-btn')
+
       await expect(themeBtn).toBeVisible()
       await expect(logoutBtn).toBeVisible()
-      
-      // Buttons should be clickable
-      await expect(searchBtn).toBeEnabled()
+
+      // Close the dropdown
+      await toolbarTrigger.click()
     })
 
     test('should maintain layout at different mobile viewport widths', async ({ page }) => {

@@ -230,6 +230,7 @@ frontend/src/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
 │   │   ├── ContextMenu.vue         # Context menu for file operations
+│   │   ├── DirectoryPickerDialog.vue # Destination picker modal for move operations
 │   │   ├── FileExplorerToolbar.vue # Toolbar with explorer + global actions (new file/folder, refresh, sort, collapse, theme, logout)
 │   │   ├── FileTree.vue            # Recursive tree component
 │   │   ├── FileTreeNode.vue        # Individual tree node
@@ -374,7 +375,9 @@ frontend/src/
   - **Context Menus**: Right-click on files/directories for operations
     - Delete (with confirmation)
     - Rename (inline editing)
+    - Move… (opens directory picker to choose destination)
     - Move to Root
+    - Directory picker prevents circular moves (cannot select current directory or descendants) and defaults to the current parent location for quick relocation workflows
   - **Inline Rename**: Double-click file/directory names to rename
   - **Delete Confirmation**: Safety dialogs for all delete operations
   - **Recursive Directory Deletion**: Delete directories with all contents (with confirmation)

@@ -30,17 +30,23 @@ class MockDragEvent extends Event {
 global.DataTransfer = MockDataTransfer as any
 global.DragEvent = MockDragEvent as any
 
-// Mock vault store
+const moveFileMock = vi.fn(() => Promise.resolve(true))
+const moveDirectoryMock = vi.fn(() => Promise.resolve(true))
+const renameFileMock = vi.fn(() => Promise.resolve(true))
+const renameDirectoryMock = vi.fn(() => Promise.resolve(true))
+const deleteFileMock = vi.fn(() => Promise.resolve(true))
+const deleteDirectoryMock = vi.fn(() => Promise.resolve(true))
+const createDirectoryMock = vi.fn(() => Promise.resolve(true))
+const createNoteMock = vi.fn(() => Promise.resolve(true))
+const toggleExpandedMock = vi.fn()
+const clearSelectionMock = vi.fn()
+
+let storeMock: any
+
+const useVaultStoreMock = vi.fn(() => storeMock)
+
 vi.mock('@/stores/vault', () => ({
-  useVaultStore: vi.fn(() => ({
-    moveFile: vi.fn(() => Promise.resolve()),
-    moveDirectory: vi.fn(() => Promise.resolve()),
-    createDirectory: vi.fn(() => Promise.resolve()),
-    renameNote: vi.fn(() => Promise.resolve()),
-    renameDirectory: vi.fn(() => Promise.resolve()),
-    deleteNote: vi.fn(() => Promise.resolve()),
-    deleteDirectory: vi.fn(() => Promise.resolve())
-  }))
+  useVaultStore: useVaultStoreMock
 }))
 
 describe('FileTreeNode', () => {
@@ -48,6 +54,40 @@ describe('FileTreeNode', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia())
+  moveFileMock.mockClear()
+  moveDirectoryMock.mockClear()
+  renameFileMock.mockClear()
+  renameDirectoryMock.mockClear()
+  deleteFileMock.mockClear()
+  deleteDirectoryMock.mockClear()
+  createDirectoryMock.mockClear()
+  createNoteMock.mockClear()
+  toggleExpandedMock.mockClear()
+  clearSelectionMock.mockClear()
+
+  storeMock = {
+    moveFile: moveFileMock,
+    moveDirectory: moveDirectoryMock,
+    renameFile: renameFileMock,
+    renameDirectory: renameDirectoryMock,
+    deleteFile: deleteFileMock,
+    deleteDirectory: deleteDirectoryMock,
+    createDirectory: createDirectoryMock,
+    createNote: createNoteMock,
+    toggleExpanded: toggleExpandedMock,
+    expandedPaths: new Set<string>(),
+    selectedNotePath: null,
+    clearSelection: clearSelectionMock,
+    isLoading: false,
+    hasError: false,
+    error: null,
+    sortedFileTree: null,
+    loadFileTree: vi.fn(),
+    loadNote: vi.fn(),
+    selectNote: vi.fn()
+  }
+
+  useVaultStoreMock.mockReturnValue(storeMock)
   })
 
   afterEach(() => {
@@ -131,6 +171,42 @@ describe('FileTreeNode', () => {
       })
       
       expect(wrapper.find('.expand-icon').exists()).toBe(false)
+    })
+
+    it('should include move option in context menu for files', () => {
+      wrapper = createWrapper({
+        node: fileNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const items = wrapper.vm.contextMenuItems
+      expect(items.some((item: any) => item.action === 'move')).toBe(true)
+    })
+
+    it('should open move dialog when move action selected', async () => {
+      wrapper = createWrapper({
+        node: fileNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      await wrapper.vm.handleContextMenuAction('move')
+      expect(wrapper.vm.showMoveDialog).toBe(true)
+    })
+
+    it('should call moveFile when move confirmed for file', async () => {
+      moveFileMock.mockResolvedValueOnce(true)
+
+      wrapper = createWrapper({
+        node: fileNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      await wrapper.vm.handleMoveConfirm('/destination')
+
+      expect(moveFileMock).toHaveBeenCalledWith('/note.md', '/destination')
     })
   })
 
@@ -229,6 +305,55 @@ describe('FileTreeNode', () => {
       })
       
       expect(wrapper.find('.children').exists()).toBe(false)
+    })
+
+    it('should include move option in context menu for directories', () => {
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      const items = wrapper.vm.contextMenuItems
+      expect(items.some((item: any) => item.action === 'move')).toBe(true)
+    })
+
+    it('should mark directory and descendants as disallowed destinations', () => {
+      const directoryWithChild: FileTreeNodeType = {
+        name: 'folder',
+        path: '/folder',
+        type: 'directory',
+        children: [
+          {
+            name: 'sub',
+            path: '/folder/sub',
+            type: 'directory',
+            children: []
+          }
+        ]
+      }
+
+      wrapper = createWrapper({
+        node: directoryWithChild,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      expect(wrapper.vm.disallowedMoveDestinations).toEqual(['/folder', '/folder/sub'])
+    })
+
+    it('should call moveDirectory when move confirmed for directory', async () => {
+      moveDirectoryMock.mockResolvedValueOnce(true)
+
+      wrapper = createWrapper({
+        node: directoryNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+
+      await wrapper.vm.handleMoveConfirm('/destination')
+
+      expect(moveDirectoryMock).toHaveBeenCalledWith('/folder', '/destination')
     })
   })
 

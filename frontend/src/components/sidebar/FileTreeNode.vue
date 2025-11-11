@@ -106,6 +106,17 @@
       @confirm="createNoteInDirectory"
       @cancel="showCreateFileDialog = false"
     />
+
+    <DirectoryPickerDialog
+      :is-open="showMoveDialog"
+      :current-path="props.node.path"
+      :initial-directory="initialMoveDirectory"
+      :disallowed-paths="disallowedMoveDestinations"
+      :title="isDirectory ? 'Move Directory' : 'Move File'"
+      :message="moveDialogMessage"
+      @confirm="handleMoveConfirm"
+      @cancel="showMoveDialog = false"
+    />
   </div>
 </template>
 
@@ -115,6 +126,7 @@ import { useVaultStore } from '@/stores/vault'
 import ContextMenu, { type ContextMenuItem } from './ContextMenu.vue'
 import ConfirmDialog from '../common/ConfirmDialog.vue'
 import InputDialog from '../common/InputDialog.vue'
+import DirectoryPickerDialog from './DirectoryPickerDialog.vue'
 import type { FileTreeNode as FileTreeNodeType } from '@/types'
 
 // Props
@@ -148,6 +160,7 @@ const renameInput = ref<HTMLInputElement | null>(null)
 const dragHoverTimer = ref<number | null>(null)
 const showCreateFolderDialog = ref(false)
 const showCreateFileDialog = ref(false)
+const showMoveDialog = ref(false)
 const nodeItem = ref<HTMLDivElement | null>(null)
 
 // Computed properties
@@ -212,6 +225,10 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
   }
   
   items.push({ label: 'Rename', icon: '✏️', action: 'rename' })
+
+  if (props.node.path !== '/') {
+    items.push({ label: 'Move…', icon: '🚚', action: 'move' })
+  }
   
   // Only show "Move to Root" if not already at root
   if (!isAtRoot.value) {
@@ -309,6 +326,9 @@ const handleContextMenuAction = async (action: string) => {
     case 'rename':
       startRename()
       break
+    case 'move':
+      showMoveDialog.value = true
+      break
     case 'move-to-root':
       await handleMoveToRoot()
       break
@@ -385,6 +405,67 @@ const handleMoveToRoot = async () => {
     await vaultStore.moveDirectory(props.node.path, '/')
   } else {
     await vaultStore.moveFile(props.node.path, '/')
+  }
+}
+
+const collectDescendantDirectories = (node: FileTreeNodeType | undefined): string[] => {
+  if (!node || node.type !== 'directory' || !node.children) return []
+
+  const paths: string[] = []
+  node.children.forEach(child => {
+    if (child.type === 'directory') {
+      paths.push(child.path)
+      paths.push(...collectDescendantDirectories(child))
+    }
+  })
+  return paths
+}
+
+const disallowedMoveDestinations = computed(() => {
+  const disallowed = new Set<string>([props.node.path])
+  if (isDirectory.value) {
+    collectDescendantDirectories(props.node).forEach(path => disallowed.add(path))
+  }
+  return Array.from(disallowed)
+})
+
+const getParentPath = (path: string): string => {
+  if (path === '/' || !path) return '/'
+  const segments = path.split('/').filter(Boolean)
+  if (segments.length <= 1) return '/'
+  segments.pop()
+  return `/${segments.join('/')}`
+}
+
+const initialMoveDirectory = computed(() => {
+  return getParentPath(props.node.path)
+})
+
+const moveDialogMessage = computed(() => {
+  return isDirectory.value
+    ? `Choose the destination folder for "${props.node.name}" and its contents.`
+    : `Choose the destination folder for "${props.node.name}".`
+})
+
+const handleMoveConfirm = async (destination: string) => {
+  if (disallowedMoveDestinations.value.includes(destination)) {
+    return
+  }
+
+  if (destination === props.node.path) {
+    showMoveDialog.value = false
+    return
+  }
+
+  let success = false
+  if (isDirectory.value) {
+    success = await vaultStore.moveDirectory(props.node.path, destination)
+  } else {
+    success = await vaultStore.moveFile(props.node.path, destination)
+  }
+
+  if (success) {
+    showMoveDialog.value = false
   }
 }
 

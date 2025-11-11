@@ -266,6 +266,7 @@ frontend/src/
   - `FileTree.vue`: Hierarchical file tree display
   - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
 - `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with creation, refresh, sorting, collapse, theme toggle, and logout actions
+  - Accessibility: boolean-driven ARIA attributes ensure menu/toggle state bindings remain compatible with the build toolchain
 - **Common Components**:
   - `BackendWarning.vue`: Dismissible warning banner for backend connectivity issues
   - `ConfirmDialog.vue`: Reusable confirmation modal for destructive actions

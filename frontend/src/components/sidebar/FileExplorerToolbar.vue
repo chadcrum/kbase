@@ -6,7 +6,7 @@
         class="toolbar-button toolbar-menu-trigger"
         title="File Explorer actions"
         aria-haspopup="true"
-        :aria-expanded="showMenu.toString()"
+        :aria-expanded="showMenu"
       >
         <span class="icon">☰</span>
       </button>
@@ -46,7 +46,7 @@
           :key="`sort-${option.value}`"
           class="toolbar-dropdown-item"
           role="menuitemradio"
-          :aria-checked="(sortBy === option.value).toString()"
+          :aria-checked="sortBy === option.value"
           :class="{ active: sortBy === option.value }"
           @click="handleSortByChange(option.value)"
         >

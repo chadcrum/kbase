@@ -39,24 +39,35 @@ describe('FileExplorerToolbar', () => {
       props: { isLoading }
     })
 
-  let mockVaultStore: {
+  type VaultStoreType = ReturnType<typeof useVaultStore>
+  type AuthStoreType = ReturnType<typeof useAuthStore>
+  type ThemeStoreType = ReturnType<typeof useThemeStore>
+
+  type VaultStoreMock = {
     createDirectory: ReturnType<typeof vi.fn>
     createNote: ReturnType<typeof vi.fn>
-    sortBy: string
-    sortOrder: string
     setSortBy: ReturnType<typeof vi.fn>
     toggleSortOrder: ReturnType<typeof vi.fn>
-    hasExpandedPaths: boolean
     collapseAll: ReturnType<typeof vi.fn>
+    clearError: ReturnType<typeof vi.fn>
+    sortBy: string
+    sortOrder: string
+    hasExpandedPaths: boolean
     error: string | null
   }
-  let mockAuthStore: {
+
+  type AuthStoreMock = {
     logout: ReturnType<typeof vi.fn>
   }
-  let mockThemeStore: {
+
+  type ThemeStoreMock = {
     isDarkMode: boolean
     toggleTheme: ReturnType<typeof vi.fn>
   }
+
+  let mockVaultStore: VaultStoreMock
+  let mockAuthStore: AuthStoreMock
+  let mockThemeStore: ThemeStoreMock
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -64,12 +75,13 @@ describe('FileExplorerToolbar', () => {
     mockVaultStore = {
       createDirectory: vi.fn().mockResolvedValue(true),
       createNote: vi.fn().mockResolvedValue(true),
-      sortBy: 'name',
-      sortOrder: 'asc',
       setSortBy: vi.fn(),
       toggleSortOrder: vi.fn(),
-      hasExpandedPaths: false,
       collapseAll: vi.fn(),
+      clearError: vi.fn(),
+      sortBy: 'name',
+      sortOrder: 'asc',
+      hasExpandedPaths: false,
       error: null
     }
 
@@ -82,9 +94,9 @@ describe('FileExplorerToolbar', () => {
       toggleTheme: vi.fn()
     }
 
-    vi.mocked(useVaultStore).mockReturnValue(mockVaultStore)
-    vi.mocked(useAuthStore).mockReturnValue(mockAuthStore)
-    vi.mocked(useThemeStore).mockReturnValue(mockThemeStore)
+    vi.mocked(useVaultStore).mockReturnValue(mockVaultStore as unknown as VaultStoreType)
+    vi.mocked(useAuthStore).mockReturnValue(mockAuthStore as unknown as AuthStoreType)
+    vi.mocked(useThemeStore).mockReturnValue(mockThemeStore as unknown as ThemeStoreType)
   })
 
   afterEach(() => {

@@ -17,6 +17,7 @@ import {
   commandsCtx,
   keymapCtx,
   KeymapReady,
+  remarkStringifyOptionsCtx,
 } from '@milkdown/core'
 import { commonmark, sinkListItemCommand, liftListItemCommand } from '@milkdown/preset-commonmark'
 import { gfm } from '@milkdown/preset-gfm'
@@ -26,6 +27,7 @@ import { nord } from '@milkdown/theme-nord'
 import type { MilkdownPlugin } from '@milkdown/ctx'
 import { TextSelection, type Command } from '@milkdown/prose/state'
 import type { EditorView } from '@milkdown/prose/view'
+import type { Options } from 'remark-stringify'
 import { useThemeStore } from '@/stores/theme'
 import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 import { milkdownTaskListPlugin } from './plugins/milkdownTaskListPlugin'
@@ -60,6 +62,12 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null
 let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
 let currentMarkdown = ref<string>(props.modelValue)
 const cleanupFns: Array<() => void> = []
+
+// Custom remark stringify options to use hyphens for unordered list bullets
+const customRemarkOptions: Options = {
+  bullet: '-',
+  encode: [],
+}
 
 const STATE_SAVE_DELAY = 150
 
@@ -349,7 +357,8 @@ onMounted(async () => {
       .config((ctx) => {
         ctx.set(rootCtx, editorContainer.value!)
         ctx.set(defaultValueCtx, props.modelValue)
-        
+        ctx.set(remarkStringifyOptionsCtx, customRemarkOptions)
+
         // Configure listener for content changes
         ctx.get(listenerCtx).markdownUpdated((ctx, markdown, prevMarkdown) => {
           if (markdown !== prevMarkdown) {
@@ -390,7 +399,8 @@ watch(() => props.modelValue, async (newValue) => {
         .config((ctx) => {
           ctx.set(rootCtx, editorContainer.value!)
           ctx.set(defaultValueCtx, newValue)
-          
+          ctx.set(remarkStringifyOptionsCtx, customRemarkOptions)
+
           ctx.get(listenerCtx).markdownUpdated((ctx, markdown, prevMarkdown) => {
             if (markdown !== prevMarkdown) {
               handleContentChange(markdown)

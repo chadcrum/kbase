@@ -562,6 +562,8 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
    - Theme: Nord theme with dark/light mode support
    - Responsive design with mobile optimizations
    - CSS variables for theme integration
+   - Markdown Serialization: Custom remark-stringify options for consistent formatting
+     - Unordered Lists: Uses hyphens (-) instead of asterisks (*) for bullet points
    - Tab Indentation: Tab key indents selected lines/blocks, Shift+Tab outdents
      - Lists: Uses native `@milkdown/plugin-indent` plugin for list items
      - Regular Text: Custom plugin for paragraph indentation (2 spaces per level)

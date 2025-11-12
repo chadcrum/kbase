@@ -22,6 +22,11 @@
       @dragleave="handleDragLeave"
       @drop.prevent="handleDrop"
       :title="tooltipText"
+      @pointerdown="handlePointerDown"
+      @pointerup="handlePointerUp"
+      @pointercancel="handlePointerCancel"
+      @pointerleave="handlePointerCancel"
+      @pointermove="handlePointerMove"
     >
       <!-- Expand/collapse icon for directories -->
       <span v-if="node.type === 'directory'" class="expand-icon">
@@ -121,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, watch, onMounted } from 'vue'
+import { computed, ref, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import ContextMenu, { type ContextMenuItem } from './ContextMenu.vue'
 import ConfirmDialog from '../common/ConfirmDialog.vue'
@@ -162,6 +167,11 @@ const showCreateFolderDialog = ref(false)
 const showCreateFileDialog = ref(false)
 const showMoveDialog = ref(false)
 const nodeItem = ref<HTMLDivElement | null>(null)
+const longPressTimer = ref<number | null>(null)
+const longPressTriggered = ref(false)
+const longPressStartCoords = ref<{ x: number; y: number } | null>(null)
+const LONG_PRESS_DURATION_MS = 500
+const LONG_PRESS_MOVE_THRESHOLD_PX = 10
 
 // Computed properties
 const hasChildren = computed(() => {
@@ -286,9 +296,16 @@ const itemCount = computed(() => {
 })
 
 // Methods
-const handleClick = () => {
+const handleClick = (event: MouseEvent) => {
   if (isRenaming.value) return
   
+  if (longPressTriggered.value) {
+    longPressTriggered.value = false
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
+
   if (props.node.type === 'directory') {
     emit('toggleExpand', props.node.path)
   } else {
@@ -299,10 +316,75 @@ const handleClick = () => {
 // Context menu handlers
 const handleContextMenu = (event: MouseEvent) => {
   event.stopPropagation()
-  contextMenuX.value = event.clientX
-  contextMenuY.value = event.clientY
+  cancelLongPressTimer()
+  openContextMenuAt(event.clientX, event.clientY)
+}
+
+const openContextMenuAt = (x: number, y: number) => {
+  contextMenuX.value = x
+  contextMenuY.value = y
   showContextMenu.value = true
 }
+
+const isTouchLikePointer = (event: PointerEvent) => {
+  return event.pointerType === 'touch' || event.pointerType === 'pen'
+}
+
+const cancelLongPressTimer = () => {
+  if (longPressTimer.value !== null) {
+    window.clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+  longPressStartCoords.value = null
+}
+
+const handlePointerDown = (event: PointerEvent) => {
+  if (!isTouchLikePointer(event) || isRenaming.value) {
+    return
+  }
+
+  cancelLongPressTimer()
+  longPressTriggered.value = false
+  const startCoords = { x: event.clientX, y: event.clientY }
+  longPressStartCoords.value = startCoords
+
+  longPressTimer.value = window.setTimeout(() => {
+    longPressTriggered.value = true
+    const coords = longPressStartCoords.value ?? startCoords
+    openContextMenuAt(coords.x, coords.y)
+    cancelLongPressTimer()
+  }, LONG_PRESS_DURATION_MS)
+}
+
+const handlePointerUp = () => {
+  cancelLongPressTimer()
+}
+
+const handlePointerCancel = () => {
+  cancelLongPressTimer()
+}
+
+const handlePointerMove = (event: PointerEvent) => {
+  if (!isTouchLikePointer(event)) {
+    return
+  }
+
+  if (!longPressStartCoords.value || longPressTimer.value === null) {
+    return
+  }
+
+  const deltaX = event.clientX - longPressStartCoords.value.x
+  const deltaY = event.clientY - longPressStartCoords.value.y
+  const distance = Math.hypot(deltaX, deltaY)
+
+  if (distance > LONG_PRESS_MOVE_THRESHOLD_PX) {
+    cancelLongPressTimer()
+  }
+}
+
+onBeforeUnmount(() => {
+  cancelLongPressTimer()
+})
 
 const handleContextMenuAction = async (action: string) => {
   switch (action) {

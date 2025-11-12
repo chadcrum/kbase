@@ -30,6 +30,23 @@ class MockDragEvent extends Event {
 global.DataTransfer = MockDataTransfer as any
 global.DragEvent = MockDragEvent as any
 
+class MockPointerEvent extends Event {
+  clientX: number
+  clientY: number
+  pointerType: string
+  button: number
+
+  constructor(type: string, init?: any) {
+    super(type, init)
+    this.clientX = init?.clientX ?? 0
+    this.clientY = init?.clientY ?? 0
+    this.pointerType = init?.pointerType ?? 'mouse'
+    this.button = init?.button ?? 0
+  }
+}
+
+global.PointerEvent = MockPointerEvent as any
+
 const moveFileMock = vi.fn(() => Promise.resolve(true))
 const moveDirectoryMock = vi.fn(() => Promise.resolve(true))
 const renameFileMock = vi.fn(() => Promise.resolve(true))
@@ -43,7 +60,9 @@ const clearSelectionMock = vi.fn()
 
 let storeMock: any
 
-const useVaultStoreMock = vi.fn(() => storeMock)
+const { useVaultStoreMock } = vi.hoisted(() => ({
+  useVaultStoreMock: vi.fn(() => storeMock)
+}))
 
 vi.mock('@/stores/vault', () => ({
   useVaultStore: useVaultStoreMock
@@ -805,6 +824,110 @@ describe('FileTreeNode', () => {
       // Count: file1.md (1) + dir1 (1) + file2.md (1) + file3.md (1) + dir2 (1) = 5
       const itemCount = wrapper.find('.item-count')
       expect(itemCount.text()).toBe('5')
+    })
+  })
+
+  describe('touch interactions', () => {
+    const fileNode: FileTreeNodeType = {
+      name: 'note.md',
+      path: '/note.md',
+      type: 'file'
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      wrapper = createWrapper({
+        node: fileNode,
+        level: 0,
+        expandedPaths: new Set()
+      })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('should open context menu on long press', async () => {
+      const nodeItem = wrapper.find('.node-item')
+
+      nodeItem.element.dispatchEvent(new PointerEvent('pointerdown', {
+        pointerType: 'touch',
+        clientX: 120,
+        clientY: 160
+      }))
+
+      vi.advanceTimersByTime(500)
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.showContextMenu).toBe(true)
+    })
+
+    it('should cancel long press if released early', async () => {
+      const nodeItem = wrapper.find('.node-item')
+
+      nodeItem.element.dispatchEvent(new PointerEvent('pointerdown', {
+        pointerType: 'touch',
+        clientX: 100,
+        clientY: 140
+      }))
+
+      vi.advanceTimersByTime(300)
+
+      nodeItem.element.dispatchEvent(new PointerEvent('pointerup', {
+        pointerType: 'touch',
+        clientX: 100,
+        clientY: 140
+      }))
+
+      vi.advanceTimersByTime(300)
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.showContextMenu).toBe(false)
+    })
+
+    it('should cancel long press when moved beyond threshold', async () => {
+      const nodeItem = wrapper.find('.node-item')
+
+      nodeItem.element.dispatchEvent(new PointerEvent('pointerdown', {
+        pointerType: 'touch',
+        clientX: 80,
+        clientY: 90
+      }))
+
+      nodeItem.element.dispatchEvent(new PointerEvent('pointermove', {
+        pointerType: 'touch',
+        clientX: 120,
+        clientY: 130
+      }))
+
+      vi.advanceTimersByTime(500)
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.showContextMenu).toBe(false)
+    })
+
+    it('should not trigger file selection after long press', async () => {
+      const nodeItem = wrapper.find('.node-item')
+
+      nodeItem.element.dispatchEvent(new PointerEvent('pointerdown', {
+        pointerType: 'touch',
+        clientX: 150,
+        clientY: 180
+      }))
+
+      vi.advanceTimersByTime(500)
+      await wrapper.vm.$nextTick()
+
+      nodeItem.element.dispatchEvent(new PointerEvent('pointerup', {
+        pointerType: 'touch',
+        clientX: 150,
+        clientY: 180
+      }))
+
+      await nodeItem.trigger('click')
+
+      expect(wrapper.emitted('selectNote')).toBeUndefined()
+      expect(wrapper.vm.showContextMenu).toBe(true)
     })
   })
 })

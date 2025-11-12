@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import MilkdownEditor from './MilkdownEditor.vue'
 
-const { editorViewCtxSymbol, focusMock, actionMock } = vi.hoisted(() => {
+const { editorViewCtxSymbol, focusMock, actionMock, useCalls, taskListPluginSymbol } = vi.hoisted(() => {
   const focusMock = vi.fn()
   const editorViewCtxSymbol = Symbol('editorViewCtx')
+  const useCalls: unknown[] = []
+  const taskListPluginSymbol = Symbol('taskListPlugin')
   const actionMock = vi.fn((callback: (ctx: { get: (key: symbol) => unknown }) => void | Promise<void>) => {
     const view = {
       hasFocus: () => false,
@@ -14,6 +16,10 @@ const { editorViewCtxSymbol, focusMock, actionMock } = vi.hoisted(() => {
         doc: { childCount: 1 },
       },
       dispatch: vi.fn(),
+      dom: {
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
     }
 
     callback({
@@ -23,8 +29,12 @@ const { editorViewCtxSymbol, focusMock, actionMock } = vi.hoisted(() => {
     return Promise.resolve()
   })
 
-  return { editorViewCtxSymbol, focusMock, actionMock }
+  return { editorViewCtxSymbol, focusMock, actionMock, useCalls, taskListPluginSymbol }
 })
+
+vi.mock('./plugins/milkdownTaskListPlugin', () => ({
+  milkdownTaskListPlugin: taskListPluginSymbol,
+}))
 
 vi.mock('@milkdown/core', () => {
   class EditorInstance {
@@ -39,7 +49,8 @@ vi.mock('@milkdown/core', () => {
       return this
     }
 
-    use() {
+    use(plugin: unknown) {
+      useCalls.push(plugin)
       return this
     }
 
@@ -51,6 +62,7 @@ vi.mock('@milkdown/core', () => {
   return {
     Editor: {
       make: vi.fn(() => new EditorBuilder()),
+      getUseCalls: () => useCalls,
     },
     editorViewCtx: editorViewCtxSymbol,
     rootCtx: Symbol('rootCtx'),
@@ -89,6 +101,7 @@ describe('MilkdownEditor', () => {
     setActivePinia(createPinia())
     focusMock.mockClear()
     actionMock.mockClear()
+    useCalls.length = 0
   })
 
   it('focuses the editor view when the container receives pointer interaction', async () => {
@@ -107,6 +120,7 @@ describe('MilkdownEditor', () => {
 
     expect(focusMock.mock.calls.length).toBe(initialFocusCalls + 1)
     expect(actionMock).toHaveBeenCalled()
+    expect(useCalls).toContain(taskListPluginSymbol)
   })
 
   it('does not attempt to focus when editor is disabled', async () => {

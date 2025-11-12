@@ -28,6 +28,7 @@ import { TextSelection, type Command } from '@milkdown/prose/state'
 import type { EditorView } from '@milkdown/prose/view'
 import { useThemeStore } from '@/stores/theme'
 import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
+import { milkdownTaskListPlugin } from './plugins/milkdownTaskListPlugin'
 
 // Props
 interface Props {
@@ -360,6 +361,7 @@ onMounted(async () => {
       .use(gfm)
       .use(indent)
       .use(textIndentPlugin)
+      .use(milkdownTaskListPlugin)
       .use(listener)
       .create()
 
@@ -399,6 +401,7 @@ watch(() => props.modelValue, async (newValue) => {
         .use(gfm)
         .use(indent)
         .use(textIndentPlugin)
+        .use(milkdownTaskListPlugin)
         .use(listener)
         .create()
       
@@ -585,6 +588,26 @@ onBeforeUnmount(() => {
 
 .milkdown-editor-container :deep(.milkdown li) {
   margin: 0.25em 0;
+}
+
+.milkdown-editor-container :deep(.milkdown .milkdown-task-item) {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  list-style: none;
+  padding-left: 0;
+}
+
+.milkdown-editor-container :deep(.milkdown .milkdown-task-checkbox) {
+  margin-top: 0.25rem;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.milkdown-editor-container :deep(.milkdown .milkdown-task-item > p:first-of-type) {
+  margin: 0;
+  flex: 1;
 }
 
 .milkdown-editor-container :deep(.milkdown a) {

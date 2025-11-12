@@ -377,6 +377,7 @@ frontend/src/
     - Rename (inline editing)
     - Move… (opens directory picker to choose destination)
     - Directory picker prevents circular moves (cannot select current directory or descendants) and defaults to the current parent location for quick relocation workflows
+    - Long-press (≈500 ms) on touch devices reveals the same context menu, ensuring parity for mobile and tablet interactions
   - **Inline Rename**: Double-click file/directory names to rename
   - **Delete Confirmation**: Safety dialogs for all delete operations
   - **Recursive Directory Deletion**: Delete directories with all contents (with confirmation)
@@ -389,6 +390,10 @@ frontend/src/
     - Syntax highlighting for 30+ languages
     - Dark theme matching VS Code
     - Language detection from file extensions
+- **Milkdown Editor**: WYSIWYG markdown editor available for `.md` files
+    - Interactive task list checkboxes with markdown sync using a custom ProseMirror plugin.
+    - Shares the same auto-save cadence and state restoration (cursor + scroll) as Monaco.
+    - Nord theme integration keeps checkbox widgets aligned with light/dark theme variables.
 - **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
 - **Sidebar Toggle**: Collapsible file explorer for maximizing editor space
   - Toggle button in toolbar (left side, before file name)
@@ -560,6 +565,10 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
      - Lists: Uses native `@milkdown/plugin-indent` plugin for list items
      - Regular Text: Custom plugin for paragraph indentation (2 spaces per level)
      - Works with markdown syntax (lists, code blocks, paragraphs)
+   - Task List Checkboxes:
+     - Custom ProseMirror plugin (`frontend/src/components/editor/plugins/milkdownTaskListPlugin.ts`) renders interactive checkboxes for GitHub-style task lists.
+     - Checkbox toggles immediately update the underlying markdown (`- [ ]` / `- [x]`) and participate in the standard auto-save flow.
+     - Decorations leverage `DecorationSet` to keep checkbox widgets responsive while preserving Milkdown selection behavior and theme styling.
    
 5. **Content Synchronization**:
    - Watches for external content changes
@@ -775,6 +784,7 @@ workbox: {
 
 - **Backend**: pytest with test vault fixtures (comprehensive coverage)
 - **Frontend**: Vitest + Vue Test Utils (92+ tests passing, 87% coverage)
+  - Includes unit coverage for the Milkdown task list checkbox plugin to validate decoration rendering and toggle behavior.
 - **E2E Tests**: Playwright with comprehensive authentication flow coverage
 - **Unit Tests**: All stores, components, and API client
 - **Component Tests**: User interactions, error states, conditional rendering

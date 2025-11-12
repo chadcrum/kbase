@@ -271,6 +271,9 @@ const editorToggleTitle = computed(() => {
 /* Responsive design */
 @media (max-width: 768px) {
   .viewer-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     flex-wrap: wrap;
     gap: 0.5rem;
     padding: 0.5rem;

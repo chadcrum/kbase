@@ -47,7 +47,7 @@ const createDecorations = (doc: ProseMirrorNode) => {
   return DecorationSet.create(doc, decorations)
 }
 
-const handleCheckboxChange = (view: EditorView, target: EventTarget): boolean => {
+const handleCheckboxChange = (view: EditorView, target: EventTarget | null): boolean => {
   if (!(target instanceof HTMLInputElement)) return false
   if (!target.classList.contains(TASK_CHECKBOX_CLASS)) return false
 
@@ -70,8 +70,10 @@ export const taskListCheckboxPluginKey = new PluginKey<DecorationSet>('milkdown-
 
 const setSelectionAtListItem = (view: EditorView, pos: number) => {
   const { doc } = view.state
-  const resolvedPos = Math.min(pos + 1, doc.content.size)
-  const tr = view.state.tr.setSelection(TextSelection.near(doc.resolve(resolvedPos)))
+  // For a typical list item structure: list_item -> paragraph -> text
+  // pos + 2 should place us inside the paragraph content
+  const contentPos = Math.min(pos + 2, doc.content.size - 1)
+  const tr = view.state.tr.setSelection(TextSelection.create(doc, contentPos, contentPos))
   view.dispatch(tr)
 }
 

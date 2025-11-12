@@ -125,7 +125,7 @@ describe('milkdownTaskListPlugin', () => {
       value: input,
     })
 
-    const handled = plugin.props.handleDOMEvents?.change?.(view as any, changeEvent)
+    const handled = plugin.props.handleDOMEvents?.change?.call(plugin, view as any, changeEvent)
 
     expect(handled).toBe(true)
     expect(view.dispatch).toHaveBeenCalled()
@@ -170,7 +170,7 @@ describe('milkdownTaskListPlugin', () => {
     const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true })
     Object.defineProperty(tabEvent, 'target', { value: input })
 
-    const handled = plugin.props.handleDOMEvents?.keydown?.(view as any, tabEvent)
+    const handled = plugin.props.handleDOMEvents?.keydown?.call(plugin, view as any, tabEvent)
 
     expect(handled).toBe(true)
     expect(view.focus).toHaveBeenCalled()
@@ -223,7 +223,7 @@ describe('milkdownTaskListPlugin', () => {
     })
     Object.defineProperty(shiftTabEvent, 'target', { value: input })
 
-    const handled = plugin.props.handleDOMEvents?.keydown?.(view as any, shiftTabEvent)
+    const handled = plugin.props.handleDOMEvents?.keydown?.call(plugin, view as any, shiftTabEvent)
 
     expect(handled).toBe(true)
     expect(view.focus).toHaveBeenCalled()

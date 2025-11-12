@@ -210,7 +210,8 @@ const handleCheckboxClick = (event: Event) => {
 
   // Check if it's in a task list item
   const taskListItem = target.closest('.task-list-item')
-  if (!taskListItem || !editorView) {
+  const view = editorView
+  if (!taskListItem || !view) {
     return
   }
 
@@ -218,7 +219,7 @@ const handleCheckboxClick = (event: Event) => {
   event.preventDefault()
 
   try {
-    const { state, dispatch } = editorView
+    const { state, dispatch } = view
     const { doc, tr } = state
 
     // Find the position of the task list item in the document
@@ -230,7 +231,7 @@ const handleCheckboxClick = (event: Event) => {
 
       if (node.type.name === 'task_list_item') {
         // Get the DOM node for this position
-        const domNode = editorView.domAtPos(nodePos + 1).node
+        const domNode = view.domAtPos(nodePos + 1).node
         if (domNode && (domNode === taskListItem || domNode.contains(taskListItem as Node) || taskListItem.contains(domNode))) {
           pos = nodePos
           found = true

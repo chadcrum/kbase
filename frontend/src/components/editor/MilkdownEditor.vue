@@ -554,12 +554,12 @@ onBeforeUnmount(() => {
 .milkdown-editor-container :deep(.milkdown h6) {
   color: var(--text-primary);
   font-weight: 600;
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
+  margin-top: 1em;
+  margin-bottom: 0.25em;
 }
 
 .milkdown-editor-container :deep(.milkdown p) {
-  margin: 0.75em 0;
+  margin: 0.5em 0;
   color: var(--text-primary);
 }
 
@@ -593,12 +593,12 @@ onBeforeUnmount(() => {
 
 .milkdown-editor-container :deep(.milkdown ul),
 .milkdown-editor-container :deep(.milkdown ol) {
-  margin: 0.75em 0;
+  margin: 0.5em 0;
   padding-left: 1.5em;
 }
 
 .milkdown-editor-container :deep(.milkdown li) {
-  margin: 0.25em 0;
+  margin: 0.125em 0;
 }
 
 .milkdown-editor-container :deep(.milkdown .milkdown-task-item) {

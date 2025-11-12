@@ -260,7 +260,7 @@ frontend/src/
 - **Editor Components**:
   - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting for all file types
 - `ViewerToolbar.vue`: Toolbar with search button, sidebar toggle, editor switcher, and save status; shares common toolbar sizing tokens with the sidebar and matches the file explorer toolbar behavior where the toolbar stays fixed while note content scrolls underneath
-  - `NoteViewer.vue`: Orchestrates Monaco editor for all file types
+  - `NoteViewer.vue`: Orchestrates Monaco editor for all file types with toolbar positioned outside the scrollable content area (matching sidebar layout)
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar container

@@ -99,15 +99,19 @@ const editorToggleTitle = computed(() => {
 
 <style scoped>
 .viewer-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(to bottom, var(--bg-primary), var(--bg-tertiary));
+  padding: var(--pane-toolbar-padding-y) var(--pane-toolbar-padding-x);
+  background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  min-height: 60px;
+  min-height: var(--pane-toolbar-height);
   gap: 1rem;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 1px 0 var(--border-color-subtle);
 }
 
 .toolbar-left {

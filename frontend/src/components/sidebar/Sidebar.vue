@@ -85,8 +85,8 @@ onMounted(() => {
 /* Safe area insets on mobile */
 @supports (padding: max(0px)) {
   .sidebar {
-    padding-top: max(8px, env(safe-area-inset-top));
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 </style>

@@ -44,6 +44,9 @@ onMounted(async () => {
   --text-tertiary: #9ca3af;
   --shadow: rgba(0, 0, 0, 0.1);
   --code-bg: #f3f4f6;
+  --pane-toolbar-height: 56px;
+  --pane-toolbar-padding-y: 0.5rem;
+  --pane-toolbar-padding-x: 0.75rem;
 }
 
 /* CSS Variables for Dark Mode */

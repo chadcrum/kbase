@@ -1,6 +1,6 @@
 <template>
   <div class="toolbar">
-    <div class="toolbar-menu">
+    <div class="toolbar-header toolbar-menu">
       <button
         @click="toggleMenu"
         class="toolbar-button toolbar-menu-trigger"
@@ -386,15 +386,26 @@ onUnmounted(() => {
 .toolbar {
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-secondary);
+  background: var(--bg-secondary);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.toolbar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: var(--pane-toolbar-padding-y) var(--pane-toolbar-padding-x);
+  min-height: var(--pane-toolbar-height);
+  background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  box-shadow: 0 1px 0 var(--border-color-subtle);
 }
 
 .toolbar-menu {
   position: relative;
-  display: inline-block;
-  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 .toolbar-menu-trigger {
@@ -472,6 +483,7 @@ onUnmounted(() => {
   padding: 0.5rem 1rem;
   background-color: #fef2f2;
   border-top: 1px solid #fecaca;
+  border-bottom: 1px solid var(--border-color);
   color: #991b1b;
   font-size: 0.875rem;
 }

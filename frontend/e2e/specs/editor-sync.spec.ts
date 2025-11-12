@@ -111,4 +111,110 @@ test.describe('Monaco Editor', () => {
 
 })
 
+test.describe('Milkdown Editor', () => {
+  test.beforeAll(async () => {
+    await startBackend()
+  })
+
+  test.afterAll(async () => {
+    await stopBackend()
+  })
+
+  test.beforeEach(async ({ page, context }) => {
+    await context.clearCookies()
+    await page.goto('http://localhost:5173')
+
+    // Create a test markdown file with task lists
+    await createVault([
+      { path: 'tasks.md', content: `# Task List Test
+
+- [ ] Unchecked task
+- [x] Checked task
+- [ ] Another task
+` }
+    ])
+
+    await login(page)
+    await page.waitForSelector('.file-tree')
+
+    // Open the test file and switch to Milkdown
+    const testFile = page.locator('.node-item:has-text("tasks.md")').first()
+    await testFile.click()
+    await page.waitForSelector('.viewer-toolbar')
+
+    // Switch to Milkdown editor
+    const editorToggle = page.locator('.editor-toggle')
+    await editorToggle.click()
+    await page.waitForSelector('.milkdown-editor-container')
+  })
+
+  test.afterEach(async () => {
+    await destroyVault()
+  })
+
+  test.describe('Task List Functionality', () => {
+    test('should render task list checkboxes', async ({ page }) => {
+      // Wait for Milkdown to load
+      await page.waitForTimeout(500)
+
+      // Check for task list checkboxes
+      const checkboxes = page.locator('.milkdown-task-checkbox')
+      await expect(checkboxes).toHaveCount(3)
+
+      // Check initial states
+      const uncheckedBoxes = page.locator('.milkdown-task-checkbox:not(:checked)')
+      const checkedBoxes = page.locator('.milkdown-task-checkbox:checked')
+      await expect(uncheckedBoxes).toHaveCount(2)
+      await expect(checkedBoxes).toHaveCount(1)
+    })
+
+    test('should toggle checkboxes', async ({ page }) => {
+      await page.waitForTimeout(500)
+
+      // Click first checkbox (should be unchecked)
+      const firstCheckbox = page.locator('.milkdown-task-checkbox').first()
+      await expect(firstCheckbox).not.toBeChecked()
+
+      await firstCheckbox.click()
+      await expect(firstCheckbox).toBeChecked()
+
+      // Click again to uncheck
+      await firstCheckbox.click()
+      await expect(firstCheckbox).not.toBeChecked()
+    })
+
+    test('should indent/outdent tasks with Tab/Shift+Tab on checkbox', async ({ page }) => {
+      await page.waitForTimeout(500)
+
+      // Focus the first checkbox
+      const firstCheckbox = page.locator('.milkdown-task-checkbox').first()
+      await firstCheckbox.focus()
+
+      // Press Tab to indent
+      await page.keyboard.press('Tab')
+
+      // Wait for the change to take effect
+      await page.waitForTimeout(200)
+
+      // The document should now have nested structure
+      // Check that the markdown content reflects indentation
+      const editor = page.locator('.milkdown-editor-container .ProseMirror')
+      const content = await editor.textContent()
+
+      // Should contain indented task (with 4 spaces or similar)
+      expect(content).toContain('    - [ ] Unchecked task')
+
+      // Now test Shift+Tab to outdent
+      await firstCheckbox.focus()
+      await page.keyboard.press('Shift+Tab')
+
+      await page.waitForTimeout(200)
+
+      // Should be back to original indentation
+      const updatedContent = await editor.textContent()
+      expect(updatedContent).not.toContain('    - [ ] Unchecked task')
+    })
+  })
+})
+
 

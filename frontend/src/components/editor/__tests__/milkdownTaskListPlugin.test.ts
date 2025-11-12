@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { Schema } from '@milkdown/prose/model'
 import { EditorState } from '@milkdown/prose/state'
 import {
@@ -74,6 +74,19 @@ const createState = (
 }
 
 describe('milkdownTaskListPlugin', () => {
+  const originalRequestAnimationFrame = globalThis.requestAnimationFrame
+
+  beforeEach(() => {
+    globalThis.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+      callback(0)
+      return 0 as unknown as number
+    }) as typeof globalThis.requestAnimationFrame
+  })
+
+  afterEach(() => {
+    globalThis.requestAnimationFrame = originalRequestAnimationFrame
+  })
+
   it('adds checkbox decoration for task list items', () => {
     const schema = createTestSchema()
     const plugin = createTaskListProsePlugin()
@@ -142,6 +155,13 @@ describe('milkdownTaskListPlugin', () => {
       { text: 'Child task', checked: true },
     ])
 
+    const checkboxDom = document.createElement('input')
+    checkboxDom.classList.add('milkdown-task-checkbox')
+    const listItemDom = document.createElement('li')
+    listItemDom.classList.add('milkdown-task-item')
+    listItemDom.appendChild(checkboxDom)
+    const checkboxFocusSpy = vi.spyOn(checkboxDom, 'focus')
+
     const view = {
       state,
       dispatch: vi.fn((tr) => {
@@ -149,6 +169,7 @@ describe('milkdownTaskListPlugin', () => {
         view.state = state
       }),
       focus: vi.fn(),
+      domAtPos: vi.fn(() => ({ node: checkboxDom, offset: 0 })),
     }
 
     let targetPos = -1
@@ -173,11 +194,11 @@ describe('milkdownTaskListPlugin', () => {
     const handled = plugin.props.handleDOMEvents?.keydown?.call(plugin, view as any, tabEvent)
 
     expect(handled).toBe(true)
-    expect(view.focus).toHaveBeenCalled()
     const rootList = view.state.doc.firstChild
     expect(rootList?.childCount).toBe(1)
     const nestedList = rootList?.firstChild?.lastChild
     expect(nestedList?.type.name).toBe('bullet_list')
+    expect(checkboxFocusSpy).toHaveBeenCalled()
   })
 
   it('outdents task list item when Shift+Tab pressed on checkbox', () => {
@@ -191,6 +212,13 @@ describe('milkdownTaskListPlugin', () => {
       },
     ])
 
+    const checkboxDom = document.createElement('input')
+    checkboxDom.classList.add('milkdown-task-checkbox')
+    const listItemDom = document.createElement('li')
+    listItemDom.classList.add('milkdown-task-item')
+    listItemDom.appendChild(checkboxDom)
+    const checkboxFocusSpy = vi.spyOn(checkboxDom, 'focus')
+
     const view = {
       state,
       dispatch: vi.fn((tr) => {
@@ -198,6 +226,7 @@ describe('milkdownTaskListPlugin', () => {
         view.state = state
       }),
       focus: vi.fn(),
+      domAtPos: vi.fn(() => ({ node: checkboxDom, offset: 0 })),
     }
 
     let targetPos = -1
@@ -226,11 +255,11 @@ describe('milkdownTaskListPlugin', () => {
     const handled = plugin.props.handleDOMEvents?.keydown?.call(plugin, view as any, shiftTabEvent)
 
     expect(handled).toBe(true)
-    expect(view.focus).toHaveBeenCalled()
     const rootList = view.state.doc.firstChild
     expect(rootList?.childCount).toBe(2)
     const secondItem = rootList?.lastChild
     expect(secondItem?.attrs.checked).toBe(true)
+    expect(checkboxFocusSpy).toHaveBeenCalled()
   })
 })
 

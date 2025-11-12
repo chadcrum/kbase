@@ -7,29 +7,32 @@
         :file-path="selectedNote.path"
         @open-search="handleOpenSearch"
       />
+
+      <!-- Scrollable Content Area -->
+      <div class="note-scroll-content">
+        <!-- Editor View (Monaco or Milkdown) -->
+        <div class="editor-view">
+          <MilkdownEditor
+            v-if="shouldUseMilkdown"
+            v-model="editableContent"
+            :path="selectedNote.path"
+            @save="handleSave"
+          />
+          <MonacoEditor
+            v-else
+            v-model="editableContent"
+            :path="selectedNote.path"
+            @save="handleSave"
+          />
+        </div>
       
-      <!-- Editor View (Monaco or Milkdown) -->
-      <div class="editor-view">
-        <MilkdownEditor
-          v-if="shouldUseMilkdown"
-          v-model="editableContent"
-          :path="selectedNote.path"
-          @save="handleSave"
-        />
-        <MonacoEditor
-          v-else
-          v-model="editableContent"
-          :path="selectedNote.path"
-          @save="handleSave"
-        />
-      </div>
-      
-      <!-- Floating Save Status -->
-      <div v-if="saveStatus" class="floating-save-status" :class="saveStatus">
-        <span v-if="saveStatus === 'saving'" class="status-icon spinner">⏳</span>
-        <span v-else-if="saveStatus === 'saved'" class="status-icon">✓</span>
-        <span v-else-if="saveStatus === 'error'" class="status-icon">⚠️</span>
-        <span class="status-text">{{ saveStatusText }}</span>
+        <!-- Floating Save Status -->
+        <div v-if="saveStatus" class="floating-save-status" :class="saveStatus">
+          <span v-if="saveStatus === 'saving'" class="status-icon spinner">⏳</span>
+          <span v-else-if="saveStatus === 'saved'" class="status-icon">✓</span>
+          <span v-else-if="saveStatus === 'error'" class="status-icon">⚠️</span>
+          <span class="status-text">{{ saveStatusText }}</span>
+        </div>
       </div>
     </div>
     
@@ -193,14 +196,20 @@ const handleOpenSearch = () => {
   overflow: hidden;
 }
 
-.editor-view {
+.note-scroll-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  background-color: var(--bg-primary);
   -webkit-overflow-scrolling: touch;
+}
+
+.editor-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
 }
 
 

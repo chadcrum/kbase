@@ -394,6 +394,7 @@ frontend/src/
     - Interactive task list checkboxes with markdown sync using a custom ProseMirror plugin.
     - Shares the same auto-save cadence and state restoration (cursor + scroll) as Monaco.
     - Nord theme integration keeps checkbox widgets aligned with light/dark theme variables.
+    - Checkbox widgets honor Tab / Shift+Tab for indent and outdent, keeping keyboard ergonomics consistent with the text caret.
 - **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
 - **Sidebar Toggle**: Collapsible file explorer for maximizing editor space
   - Toggle button in toolbar (left side, before file name)
@@ -569,6 +570,7 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
      - Custom ProseMirror plugin (`frontend/src/components/editor/plugins/milkdownTaskListPlugin.ts`) renders interactive checkboxes for GitHub-style task lists.
      - Checkbox toggles immediately update the underlying markdown (`- [ ]` / `- [x]`) and participate in the standard auto-save flow.
      - Decorations leverage `DecorationSet` to keep checkbox widgets responsive while preserving Milkdown selection behavior and theme styling.
+     - Keyboard support mirrors editor behavior: Tab indents and Shift+Tab outdents directly from the checkbox element, calling the same list commands used elsewhere in Milkdown.
    
 5. **Content Synchronization**:
    - Watches for external content changes

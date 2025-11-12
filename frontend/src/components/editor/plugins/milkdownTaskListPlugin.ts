@@ -1,8 +1,9 @@
 import type { MilkdownPlugin } from '@milkdown/ctx'
 import { $prose } from '@milkdown/utils'
-import { Plugin, PluginKey } from '@milkdown/prose/state'
+import { Plugin, PluginKey, TextSelection } from '@milkdown/prose/state'
 import { Decoration, DecorationSet, EditorView } from '@milkdown/prose/view'
 import type { Node as ProseMirrorNode } from '@milkdown/prose/model'
+import { liftListItem, sinkListItem } from '@milkdown/prose/schema-list'
 
 const TASK_ITEM_CLASS = 'milkdown-task-item'
 const TASK_CHECKBOX_CLASS = 'milkdown-task-checkbox'
@@ -14,7 +15,7 @@ const createTaskCheckbox = (pos: number, checked: boolean) => {
   checkbox.classList.add(TASK_CHECKBOX_CLASS)
   checkbox.dataset[TASK_POS_DATA_KEY] = String(pos)
   checkbox.contentEditable = 'false'
-  checkbox.tabIndex = -1
+  checkbox.tabIndex = 0
   checkbox.checked = checked
 
   return checkbox
@@ -67,6 +68,27 @@ const handleCheckboxChange = (view: EditorView, target: EventTarget): boolean =>
 
 export const taskListCheckboxPluginKey = new PluginKey<DecorationSet>('milkdown-task-checkbox')
 
+const setSelectionAtListItem = (view: EditorView, pos: number) => {
+  const { doc } = view.state
+  const resolvedPos = Math.min(pos + 1, doc.content.size)
+  const tr = view.state.tr.setSelection(TextSelection.near(doc.resolve(resolvedPos)))
+  view.dispatch(tr)
+}
+
+const indentListItem = (view: EditorView, pos: number) => {
+  const listItemType = view.state.schema.nodes.list_item
+  if (!listItemType) return false
+  setSelectionAtListItem(view, pos)
+  return sinkListItem(listItemType)(view.state, view.dispatch)
+}
+
+const outdentListItem = (view: EditorView, pos: number) => {
+  const listItemType = view.state.schema.nodes.list_item
+  if (!listItemType) return false
+  setSelectionAtListItem(view, pos)
+  return liftListItem(listItemType)(view.state, view.dispatch)
+}
+
 export const createTaskListProsePlugin = () =>
   new Plugin<DecorationSet>({
     key: taskListCheckboxPluginKey,
@@ -84,6 +106,27 @@ export const createTaskListProsePlugin = () =>
       decorations: (state) => taskListCheckboxPluginKey.getState(state) ?? null,
       handleDOMEvents: {
         change: (view, event) => handleCheckboxChange(view, event.target),
+        keydown: (view, event) => {
+          const target = event.target as HTMLElement | null
+          if (!target?.classList.contains(TASK_CHECKBOX_CLASS)) return false
+
+          const pos = Number(target.dataset[TASK_POS_DATA_KEY])
+          if (Number.isNaN(pos)) return false
+
+          if (event.key === 'Tab') {
+            event.preventDefault()
+            const handled = event.shiftKey
+              ? outdentListItem(view, pos)
+              : indentListItem(view, pos)
+
+            if (handled) {
+              view.focus()
+              return true
+            }
+          }
+
+          return false
+        },
         mousedown: (_, event) => {
           const target = event.target as HTMLElement | null
           if (target?.classList.contains(TASK_CHECKBOX_CLASS)) {

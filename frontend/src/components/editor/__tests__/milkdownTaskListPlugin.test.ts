@@ -33,10 +33,37 @@ const createTestSchema = () => {
   })
 }
 
-const createState = (schema: Schema, plugin = createTaskListProsePlugin(), checked: boolean | null = true) => {
-  const paragraph = schema.node('paragraph', undefined, schema.text('Task 1'))
-  const listItem = schema.node('list_item', { checked }, paragraph)
-  const list = schema.node('bullet_list', undefined, listItem)
+const createState = (
+  schema: Schema,
+  plugin = createTaskListProsePlugin(),
+  items: Array<{ text: string; checked: boolean | null; children?: Array<{ text: string; checked: boolean | null }> }> = [
+    { text: 'Task 1', checked: true },
+  ]
+) => {
+  const listItems = items.map((item) => {
+    const content = [
+      schema.node('paragraph', undefined, schema.text(item.text)),
+      ...(item.children
+        ? [
+            schema.node(
+              'bullet_list',
+              undefined,
+              item.children.map((child) =>
+                schema.node(
+                  'list_item',
+                  { checked: child.checked },
+                  schema.node('paragraph', undefined, schema.text(child.text))
+                )
+              )
+            ),
+          ]
+        : []),
+    ]
+
+    return schema.node('list_item', { checked: item.checked }, content)
+  })
+
+  const list = schema.node('bullet_list', undefined, listItems)
   const doc = schema.node('doc', undefined, list)
 
   return EditorState.create({
@@ -70,7 +97,7 @@ describe('milkdownTaskListPlugin', () => {
   it('toggles checked attribute when checkbox changes', () => {
     const schema = createTestSchema()
     const plugin = createTaskListProsePlugin()
-    let state = createState(schema, plugin, false)
+    let state = createState(schema, plugin, [{ text: 'Task 1', checked: false }])
     const view = {
       state,
       dispatch: vi.fn((tr) => {
@@ -105,6 +132,105 @@ describe('milkdownTaskListPlugin', () => {
 
     const updatedNode = view.state.doc.nodeAt(listItemPos)
     expect(updatedNode?.attrs.checked).toBe(true)
+  })
+
+  it('indents task list item when Tab pressed on checkbox', () => {
+    const schema = createTestSchema()
+    const plugin = createTaskListProsePlugin()
+    let state = createState(schema, plugin, [
+      { text: 'Parent task', checked: null },
+      { text: 'Child task', checked: true },
+    ])
+
+    const view = {
+      state,
+      dispatch: vi.fn((tr) => {
+        state = state.apply(tr)
+        view.state = state
+      }),
+      focus: vi.fn(),
+    }
+
+    let targetPos = -1
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'list_item' && node.attrs.checked === true) {
+        targetPos = pos
+        return false
+      }
+      return
+    })
+
+    expect(targetPos).toBeGreaterThan(-1)
+
+    const input = document.createElement('input')
+    input.checked = true
+    input.dataset.milkdownTaskPos = `${targetPos}`
+    input.classList.add('milkdown-task-checkbox')
+
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true })
+    Object.defineProperty(tabEvent, 'target', { value: input })
+
+    const handled = plugin.props.handleDOMEvents?.keydown?.(view as any, tabEvent)
+
+    expect(handled).toBe(true)
+    expect(view.focus).toHaveBeenCalled()
+    const rootList = view.state.doc.firstChild
+    expect(rootList?.childCount).toBe(1)
+    const nestedList = rootList?.firstChild?.lastChild
+    expect(nestedList?.type.name).toBe('bullet_list')
+  })
+
+  it('outdents task list item when Shift+Tab pressed on checkbox', () => {
+    const schema = createTestSchema()
+    const plugin = createTaskListProsePlugin()
+    let state = createState(schema, plugin, [
+      {
+        text: 'Parent task',
+        checked: null,
+        children: [{ text: 'Nested task', checked: true }],
+      },
+    ])
+
+    const view = {
+      state,
+      dispatch: vi.fn((tr) => {
+        state = state.apply(tr)
+        view.state = state
+      }),
+      focus: vi.fn(),
+    }
+
+    let targetPos = -1
+    state.doc.descendants((node, pos) => {
+      if (node.type.name === 'list_item' && node.attrs.checked === true) {
+        targetPos = pos
+        return false
+      }
+      return
+    })
+
+    expect(targetPos).toBeGreaterThan(-1)
+
+    const input = document.createElement('input')
+    input.checked = true
+    input.dataset.milkdownTaskPos = `${targetPos}`
+    input.classList.add('milkdown-task-checkbox')
+
+    const shiftTabEvent = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey: true,
+      bubbles: true,
+    })
+    Object.defineProperty(shiftTabEvent, 'target', { value: input })
+
+    const handled = plugin.props.handleDOMEvents?.keydown?.(view as any, shiftTabEvent)
+
+    expect(handled).toBe(true)
+    expect(view.focus).toHaveBeenCalled()
+    const rootList = view.state.doc.firstChild
+    expect(rootList?.childCount).toBe(2)
+    const secondItem = rootList?.lastChild
+    expect(secondItem?.attrs.checked).toBe(true)
   })
 })
 

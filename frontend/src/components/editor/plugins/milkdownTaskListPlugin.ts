@@ -68,27 +68,61 @@ const handleCheckboxChange = (view: EditorView, target: EventTarget | null): boo
 
 export const taskListCheckboxPluginKey = new PluginKey<DecorationSet>('milkdown-task-checkbox')
 
-const setSelectionAtListItem = (view: EditorView, pos: number) => {
+const setSelectionAtListItem = (view: EditorView, pos: number): boolean => {
   const { doc } = view.state
-  // For a typical list item structure: list_item -> paragraph -> text
-  // pos + 2 should place us inside the paragraph content
-  const contentPos = Math.min(pos + 2, doc.content.size - 1)
-  const tr = view.state.tr.setSelection(TextSelection.create(doc, contentPos, contentPos))
-  view.dispatch(tr)
+  const clampPos = (value: number) => Math.max(0, Math.min(value, Math.max(0, doc.content.size)))
+
+  const resolvedStart = doc.resolve(clampPos(pos + 1))
+  const selection =
+    TextSelection.findFrom(resolvedStart, 1, true) ??
+    TextSelection.findFrom(resolvedStart, -1, true)
+
+  if (!selection) {
+    return false
+  }
+
+  view.dispatch(view.state.tr.setSelection(selection))
+  return true
 }
 
 const indentListItem = (view: EditorView, pos: number) => {
   const listItemType = view.state.schema.nodes.list_item
   if (!listItemType) return false
-  setSelectionAtListItem(view, pos)
+  if (!setSelectionAtListItem(view, pos)) return false
   return sinkListItem(listItemType)(view.state, view.dispatch)
 }
 
 const outdentListItem = (view: EditorView, pos: number) => {
   const listItemType = view.state.schema.nodes.list_item
   if (!listItemType) return false
-  setSelectionAtListItem(view, pos)
+  if (!setSelectionAtListItem(view, pos)) return false
   return liftListItem(listItemType)(view.state, view.dispatch)
+}
+
+const focusCheckboxForSelection = (view: EditorView) => {
+  requestAnimationFrame(() => {
+    const selectionPos = Math.max(0, view.state.selection.from)
+    const domAtPos = view.domAtPos(selectionPos)
+    let element = domAtPos.node as Node | null
+
+    if (element?.nodeType === Node.TEXT_NODE) {
+      element = element.parentElement
+    }
+
+    if (!(element instanceof HTMLElement)) {
+      view.focus()
+      return
+    }
+
+    const taskItem = element.closest<HTMLElement>(`.${TASK_ITEM_CLASS}`)
+    const checkbox = taskItem?.querySelector<HTMLInputElement>(`.${TASK_CHECKBOX_CLASS}`)
+
+    if (checkbox) {
+      checkbox.focus()
+    } else {
+      view.focus()
+    }
+  })
 }
 
 export const createTaskListProsePlugin = () =>
@@ -122,7 +156,7 @@ export const createTaskListProsePlugin = () =>
               : indentListItem(view, pos)
 
             if (handled) {
-              view.focus()
+              focusCheckboxForSelection(view)
               return true
             }
           }

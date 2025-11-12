@@ -259,14 +259,14 @@ frontend/src/
 
 - **Editor Components**:
   - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting for all file types
-- `ViewerToolbar.vue`: Toolbar with search button, sidebar toggle, editor switcher, and save status
+- `ViewerToolbar.vue`: Toolbar with search button, sidebar toggle, editor switcher, and save status; shares common toolbar sizing tokens with the sidebar and stays pinned while the editors scroll so the controls remain visible
   - `NoteViewer.vue`: Orchestrates Monaco editor for all file types
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar container
   - `FileTree.vue`: Hierarchical file tree display
   - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
-- `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with creation, refresh, sorting, collapse, theme toggle, and logout actions
+- `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with creation, refresh, sorting, collapse, theme toggle, and logout actions, using the shared toolbar sizing tokens so it visually aligns with the primary note toolbar
   - Accessibility: boolean-driven ARIA attributes ensure menu/toggle state bindings remain compatible with the build toolchain
 - **Common Components**:
   - `BackendWarning.vue`: Dismissible warning banner for backend connectivity issues
@@ -571,6 +571,7 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
      - Checkbox toggles immediately update the underlying markdown (`- [ ]` / `- [x]`) and participate in the standard auto-save flow.
      - Decorations leverage `DecorationSet` to keep checkbox widgets responsive while preserving Milkdown selection behavior and theme styling.
      - Keyboard support mirrors editor behavior: Tab indents and Shift+Tab outdents directly from the checkbox element, calling the same list commands used elsewhere in Milkdown.
+     - Selection handling normalizes the caret position before running `sinkListItem` / `liftListItem`, so ProseMirror always indents/outdents the intended list item instead of jumping focus to the end of the line.
    
 5. **Content Synchronization**:
    - Watches for external content changes

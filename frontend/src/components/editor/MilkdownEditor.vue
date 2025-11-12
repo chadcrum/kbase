@@ -199,6 +199,59 @@ const scheduleMilkdownStateSave = () => {
   }, STATE_SAVE_DELAY)
 }
 
+const handleCheckboxClick = (event: Event) => {
+  const target = event.target as HTMLElement
+
+  // Check if the clicked element is a checkbox in a task list
+  if (target.tagName !== 'INPUT' || target.getAttribute('type') !== 'checkbox') {
+    return
+  }
+
+  // Check if it's in a task list item
+  const taskListItem = target.closest('.task-list-item')
+  if (!taskListItem || !editorView) {
+    return
+  }
+
+  // Prevent default to handle the toggle ourselves
+  event.preventDefault()
+
+  try {
+    const { state, dispatch } = editorView
+    const { doc, tr } = state
+
+    // Find the position of the task list item in the document
+    let pos = -1
+    let found = false
+
+    doc.descendants((node, nodePos) => {
+      if (found) return false
+
+      if (node.type.name === 'task_list_item') {
+        // Get the DOM node for this position
+        const domNode = editorView.domAtPos(nodePos + 1).node
+        if (domNode && (domNode === taskListItem || domNode.contains(taskListItem as Node) || taskListItem.contains(domNode))) {
+          pos = nodePos
+          found = true
+          return false
+        }
+      }
+      return true
+    })
+
+    if (pos !== -1) {
+      const node = doc.nodeAt(pos)
+      if (node && node.type.name === 'task_list_item') {
+        // Toggle the checked attribute
+        const newAttrs = { ...node.attrs, checked: !node.attrs.checked }
+        dispatch(tr.setNodeMarkup(pos, undefined, newAttrs))
+      }
+    }
+  } catch (error) {
+    console.error('Failed to toggle checkbox:', error)
+  }
+}
+
 const setupMilkdownStateListeners = async () => {
   if (!editor) return
 
@@ -232,10 +285,12 @@ const setupMilkdownStateListeners = async () => {
 
   editorView.dom.addEventListener('keyup', handleKeyUp)
   editorView.dom.addEventListener('mouseup', handleMouseUp)
+  editorView.dom.addEventListener('click', handleCheckboxClick, true)
 
   cleanupFns.push(() => {
     editorView?.dom.removeEventListener('keyup', handleKeyUp)
     editorView?.dom.removeEventListener('mouseup', handleMouseUp)
+    editorView?.dom.removeEventListener('click', handleCheckboxClick, true)
   })
 
   if (editorContainer.value) {
@@ -557,6 +612,40 @@ onBeforeUnmount(() => {
 .milkdown-editor-container :deep(.milkdown th) {
   background-color: var(--bg-secondary);
   font-weight: 600;
+}
+
+/* Task list (checkbox) styles */
+.milkdown-editor-container :deep(.milkdown .task-list-item) {
+  list-style: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.milkdown-editor-container :deep(.milkdown .task-list-item input[type="checkbox"]) {
+  position: absolute;
+  left: 0;
+  top: 0.3em;
+  margin: 0;
+  cursor: pointer;
+  width: 1em;
+  height: 1em;
+}
+
+.milkdown-editor-container :deep(.milkdown .task-list-item input[type="checkbox"]:checked) {
+  accent-color: #667eea;
+}
+
+.milkdown-editor-container :deep(.milkdown .task-list-item > p) {
+  margin: 0;
+  display: inline;
+}
+
+.milkdown-editor-container :deep(.milkdown ul.contains-task-list) {
+  padding-left: 0;
+}
+
+.milkdown-editor-container :deep(.milkdown ul.contains-task-list > .task-list-item) {
+  margin-left: 1.5em;
 }
 </style>
 

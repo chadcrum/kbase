@@ -45,9 +45,10 @@
     <!-- Action buttons at far right -->
     <div class="tabs-actions">
       <!-- Tabs dropdown -->
-      <div class="tabs-dropdown-container">
+      <div class="tabs-dropdown-container" ref="tabsDropdownContainerRef">
         <button
           class="tabs-dropdown-btn"
+          ref="tabsDropdownBtnRef"
           @click="toggleTabsDropdown"
           :title="'Show all tabs'"
           aria-haspopup="true"
@@ -58,6 +59,7 @@
         <div
           v-if="showTabsDropdown"
           class="tabs-dropdown"
+          :style="dropdownStyle"
           role="menu"
         >
           <div v-if="tabs.length === 0" class="tabs-dropdown-empty">
@@ -122,7 +124,10 @@ const editorStore = useEditorStore()
 
 // Refs
 const tabsContainerRef = ref<HTMLElement | null>(null)
+const tabsDropdownContainerRef = ref<HTMLElement | null>(null)
+const tabsDropdownBtnRef = ref<HTMLElement | null>(null)
 const showTabsDropdown = ref(false)
+const dropdownStyle = ref<{ right?: string }>({})
 
 // State for long-press detection (mobile pinning)
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
@@ -181,8 +186,29 @@ const openSearch = () => {
 }
 
 // Tabs dropdown
+const updateDropdownPosition = () => {
+  if (!tabsDropdownBtnRef.value || !showTabsDropdown.value) return
+  
+  nextTick(() => {
+    if (!tabsDropdownBtnRef.value) return
+    
+    const rect = tabsDropdownBtnRef.value.getBoundingClientRect()
+    const viewportWidth = window.innerWidth
+    const dropdownWidth = 320 // max-width from CSS
+    const rightOffset = viewportWidth - rect.right
+    
+    // Position dropdown aligned to button's right edge
+    dropdownStyle.value = {
+      right: `${rightOffset}px`
+    }
+  })
+}
+
 const toggleTabsDropdown = () => {
   showTabsDropdown.value = !showTabsDropdown.value
+  if (showTabsDropdown.value) {
+    updateDropdownPosition()
+  }
 }
 
 const handleTabSelect = (tabId: string) => {
@@ -349,10 +375,25 @@ watch(activeTabId, (newId) => {
   }
 })
 
+// Update dropdown position when sidebar state changes
+watch(() => vaultStore.isSidebarCollapsed, () => {
+  if (showTabsDropdown.value) {
+    updateDropdownPosition()
+  }
+})
+
+// Update dropdown position on window resize
+const handleResize = () => {
+  if (showTabsDropdown.value) {
+    updateDropdownPosition()
+  }
+}
+
 // Setup click outside listener for dropdown
 onMounted(() => {
   if (typeof document !== 'undefined') {
     document.addEventListener('click', handleClickOutside)
+    window.addEventListener('resize', handleResize)
   }
 })
 
@@ -366,6 +407,7 @@ onBeforeUnmount(() => {
 onUnmounted(() => {
   if (typeof document !== 'undefined') {
     document.removeEventListener('click', handleClickOutside)
+    window.removeEventListener('resize', handleResize)
   }
 })
 </script>
@@ -648,9 +690,8 @@ onUnmounted(() => {
 }
 
 .tabs-dropdown {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
+  position: fixed;
+  top: calc(var(--tabs-bar-height) + 0.5rem);
   display: flex;
   flex-direction: column;
   min-width: 240px;
@@ -662,7 +703,7 @@ onUnmounted(() => {
   border-radius: 8px;
   box-shadow: 0 10px 20px -10px var(--shadow);
   padding: 0.5rem 0;
-  z-index: 1000;
+  z-index: 1001;
 }
 
 .tabs-dropdown-empty {

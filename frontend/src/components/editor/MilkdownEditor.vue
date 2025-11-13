@@ -4,9 +4,7 @@
     class="milkdown-editor-container"
     @mousedown="handleContainerPointerDown"
     @touchstart="handleContainerPointerDown"
-  >
-    <div class="toolbar-spacer"></div>
-  </div>
+  ></div>
 </template>
 
 <script setup lang="ts">
@@ -498,18 +496,13 @@ onBeforeUnmount(() => {
   overflow: auto;
 }
 
-.toolbar-spacer {
-  flex-shrink: 0;
-  height: 1.5rem;
-  width: 100%;
-}
-
 /* Milkdown editor styles */
 .milkdown-editor-container :deep(.milkdown) {
   display: flex;
   flex-direction: column;
   flex: 1;
   padding: 1rem;
+  padding-top: calc(1rem + 2.5rem);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   font-size: 14px;
   line-height: 1.6;
@@ -542,12 +535,9 @@ onBeforeUnmount(() => {
     min-height: 300px;
   }
   
-  .toolbar-spacer {
-    height: 1.5rem;
-  }
-  
   .milkdown-editor-container :deep(.milkdown) {
     padding: 0.75rem;
+    padding-top: calc(0.75rem + 2.5rem);
     font-size: 14px;
   }
 }

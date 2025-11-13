@@ -1,14 +1,16 @@
 <template>
   <div class="note-viewer">
     <!-- Tabs Bar -->
-    <TabsBar />
+    <TabsBar
+      :file-path="selectedNote?.path"
+      @open-search="handleOpenSearch"
+    />
     
     <div v-if="selectedNote" class="note-content">
       <!-- Viewer Toolbar -->
       <ViewerToolbar
         :file-name="getNoteTitle(selectedNote.path)"
         :file-path="selectedNote.path"
-        @open-search="handleOpenSearch"
       />
 
       <!-- Scrollable Content Area -->
@@ -198,7 +200,7 @@ const handleOpenSearch = () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-top: calc(var(--tabs-bar-height) + var(--pane-toolbar-height));
+  padding-top: var(--tabs-bar-height);
 }
 
 .note-scroll-content {

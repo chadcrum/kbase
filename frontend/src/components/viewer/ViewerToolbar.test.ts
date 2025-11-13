@@ -33,27 +33,14 @@ describe('ViewerToolbar', () => {
     expect(wrapper.text()).toContain('folder/test.md')
   })
 
-  it('renders icon-only search button', () => {
+  it('does not render file path when not provided', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {
         fileName: 'test.md'
       }
     })
 
-    expect(wrapper.find('.search-btn').exists()).toBe(true)
-    // Verify buttons are icon-only (no text labels)
-    expect(wrapper.find('.search-btn').text()).toBe('🔍')
-  })
-
-  it('handles search button click', async () => {
-    const wrapper = mount(ViewerToolbar, {
-      props: {
-        fileName: 'test.md'
-      }
-    })
-
-    await wrapper.find('.search-btn').trigger('click')
-    expect(wrapper.emitted('openSearch')).toBeTruthy()
+    expect(wrapper.find('.file-path').exists()).toBe(false)
   })
 })
 

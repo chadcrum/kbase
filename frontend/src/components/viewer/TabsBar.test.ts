@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import TabsBar from './TabsBar.vue'
 import { useTabsStore } from '@/stores/tabs'
 import { useVaultStore } from '@/stores/vault'
+import { useEditorStore } from '@/stores/editor'
 
 // Mock stores
 vi.mock('@/stores/tabs', () => ({
@@ -14,9 +15,14 @@ vi.mock('@/stores/vault', () => ({
   useVaultStore: vi.fn()
 }))
 
+vi.mock('@/stores/editor', () => ({
+  useEditorStore: vi.fn()
+}))
+
 describe('TabsBar', () => {
   let mockTabsStore: any
   let mockVaultStore: any
+  let mockEditorStore: any
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -39,11 +45,18 @@ describe('TabsBar', () => {
       isSidebarCollapsed: false,
       sidebarWidth: 300,
       loadNote: vi.fn(),
-      clearSelection: vi.fn()
+      clearSelection: vi.fn(),
+      toggleSidebar: vi.fn()
+    }
+
+    mockEditorStore = {
+      markdownEditor: 'milkdown',
+      toggleMarkdownEditor: vi.fn()
     }
 
     ;(useTabsStore as any).mockReturnValue(mockTabsStore)
     ;(useVaultStore as any).mockReturnValue(mockVaultStore)
+    ;(useEditorStore as any).mockReturnValue(mockEditorStore)
   })
 
   it('renders tabs correctly', () => {
@@ -117,5 +130,68 @@ describe('TabsBar', () => {
     tabs.forEach(tab => {
       expect(tab.attributes('draggable')).toBe('true')
     })
+  })
+
+  it('renders sidebar toggle button', () => {
+    const wrapper = mount(TabsBar)
+    expect(wrapper.find('.sidebar-toggle-btn').exists()).toBe(true)
+  })
+
+  it('handles sidebar toggle click', async () => {
+    const wrapper = mount(TabsBar)
+    const sidebarToggle = wrapper.find('.sidebar-toggle-btn')
+    
+    await sidebarToggle.trigger('click')
+    
+    expect(mockVaultStore.toggleSidebar).toHaveBeenCalled()
+  })
+
+  it('renders search button', () => {
+    const wrapper = mount(TabsBar)
+    expect(wrapper.find('.search-btn').exists()).toBe(true)
+  })
+
+  it('handles search button click', async () => {
+    const wrapper = mount(TabsBar, {
+      props: {
+        filePath: 'test.md'
+      }
+    })
+    const searchBtn = wrapper.find('.search-btn')
+    
+    await searchBtn.trigger('click')
+    
+    expect(wrapper.emitted('openSearch')).toBeTruthy()
+  })
+
+  it('renders editor toggle for markdown files', () => {
+    const wrapper = mount(TabsBar, {
+      props: {
+        filePath: 'test.md'
+      }
+    })
+    expect(wrapper.find('.editor-toggle-btn').exists()).toBe(true)
+  })
+
+  it('does not render editor toggle for non-markdown files', () => {
+    const wrapper = mount(TabsBar, {
+      props: {
+        filePath: 'test.txt'
+      }
+    })
+    expect(wrapper.find('.editor-toggle-btn').exists()).toBe(false)
+  })
+
+  it('handles editor toggle click', async () => {
+    const wrapper = mount(TabsBar, {
+      props: {
+        filePath: 'test.md'
+      }
+    })
+    const editorToggle = wrapper.find('.editor-toggle-btn')
+    
+    await editorToggle.trigger('click')
+    
+    expect(mockEditorStore.toggleMarkdownEditor).toHaveBeenCalled()
   })
 })

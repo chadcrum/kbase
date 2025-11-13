@@ -223,6 +223,9 @@ export const useVaultStore = defineStore('vault', () => {
   const loadNote = async (path: string): Promise<boolean> => {
     if (!path) return false
 
+    // Expand directories to the note's path before loading
+    expandToPath(path)
+
     isLoading.value = true
     error.value = null
 

@@ -4,7 +4,9 @@
     class="milkdown-editor-container"
     @mousedown="handleContainerPointerDown"
     @touchstart="handleContainerPointerDown"
-  ></div>
+  >
+    <div class="toolbar-spacer"></div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -494,7 +496,12 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-height: 400px;
   overflow: auto;
-  padding-top: 1.5rem;
+}
+
+.toolbar-spacer {
+  flex-shrink: 0;
+  height: 1.5rem;
+  width: 100%;
 }
 
 /* Milkdown editor styles */
@@ -533,7 +540,10 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   .milkdown-editor-container {
     min-height: 300px;
-    padding-top: 1.5rem;
+  }
+  
+  .toolbar-spacer {
+    height: 1.5rem;
   }
   
   .milkdown-editor-container :deep(.milkdown) {

@@ -1,5 +1,5 @@
 <template>
-  <div class="viewer-toolbar">
+  <div class="viewer-toolbar" :style="{ '--toolbar-left': toolbarLeft }">
     <div class="toolbar-left">
       <button class="sidebar-toggle-btn" @click="toggleSidebar" :title="sidebarToggleTitle">
         <span class="toggle-icon">{{ sidebarToggleIcon }}</span>
@@ -95,13 +95,18 @@ const editorToggleTitle = computed(() => {
     ? 'Switch to Monaco Editor'
     : 'Switch to Milkdown Editor'
 })
+
+// Toolbar left position based on sidebar state
+const toolbarLeft = computed(() => {
+  return vaultStore.isSidebarCollapsed ? '0px' : `${vaultStore.sidebarWidth}px`
+})
 </script>
 
 <style scoped>
 .viewer-toolbar {
   position: fixed;
   top: 0;
-  left: 0;
+  left: var(--toolbar-left);
   right: 0;
   z-index: 10;
   display: flex;

@@ -391,6 +391,9 @@ onUnmounted(() => {
 }
 
 .toolbar-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -399,6 +402,7 @@ onUnmounted(() => {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
   box-shadow: 0 1px 0 var(--border-color-subtle);
+  touch-action: none;
 }
 
 .toolbar-menu {

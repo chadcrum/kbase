@@ -266,7 +266,7 @@ frontend/src/
   - `Sidebar.vue`: File tree sidebar container
   - `FileTree.vue`: Hierarchical file tree display
   - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
-- `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with creation, refresh, sorting, collapse, theme toggle, and logout actions, using the shared toolbar sizing tokens so it visually aligns with the primary note toolbar
+- `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with creation, refresh, sorting, collapse, theme toggle, and logout actions; uses sticky positioning with touch-action prevention to stay fixed while file tree scrolls on all devices
   - Accessibility: boolean-driven ARIA attributes ensure menu/toggle state bindings remain compatible with the build toolchain
 - **Common Components**:
   - `BackendWarning.vue`: Dismissible warning banner for backend connectivity issues

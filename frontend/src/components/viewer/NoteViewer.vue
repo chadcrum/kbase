@@ -194,6 +194,7 @@ const handleOpenSearch = () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding-top: var(--pane-toolbar-height);
 }
 
 .note-scroll-content {
@@ -203,6 +204,7 @@ const handleOpenSearch = () => {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
 }
 
 .editor-view {
@@ -340,7 +342,11 @@ const handleOpenSearch = () => {
   .note-viewer {
     font-size: 0.875rem;
   }
-  
+
+  .note-content {
+    padding-top: calc(var(--pane-toolbar-height) + 0.5rem);
+  }
+
   .floating-save-status {
     bottom: 16px;
     right: 16px;

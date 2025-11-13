@@ -99,6 +99,11 @@ const editorToggleTitle = computed(() => {
 
 <style scoped>
 .viewer-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -110,6 +115,7 @@ const editorToggleTitle = computed(() => {
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   box-shadow: 0 1px 0 var(--border-color-subtle);
   flex-shrink: 0;
+  touch-action: none;
 }
 
 .toolbar-left {

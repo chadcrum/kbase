@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { apiClient } from '@/api/client'
 import type { FileTreeNode, NoteData } from '@/types'
+import { useTabsStore } from './tabs'
 
 export type SortBy = 'name' | 'created' | 'modified'
 export type SortOrder = 'asc' | 'desc'
@@ -90,6 +91,24 @@ export const useVaultStore = defineStore('vault', () => {
   const isNoteSelected = computed(() => selectedNote.value !== null)
   const selectedNotePath = computed(() => selectedNote.value?.path || null)
   
+  // Helper function to get all file paths from file tree
+  const getAllFilePaths = (tree: FileTreeNode | null): string[] => {
+    if (!tree) return []
+
+    const paths: string[] = []
+
+    const collectPaths = (node: FileTreeNode) => {
+      if (node.type === 'file') {
+        paths.push(node.path)
+      } else if (node.children) {
+        node.children.forEach(collectPaths)
+      }
+    }
+
+    collectPaths(tree)
+    return paths
+  }
+
   // Helper function to sort nodes
   const sortNodes = (nodes: FileTreeNode[]): FileTreeNode[] => {
     if (!nodes || nodes.length === 0) return nodes
@@ -184,6 +203,11 @@ export const useVaultStore = defineStore('vault', () => {
       // Auto-expand root to show first-level items
       expandedPaths.value.add('/')
 
+      // Clean up invalid tabs (tabs referencing files that no longer exist)
+      const existingFiles = getAllFilePaths(tree)
+      const tabsStore = useTabsStore()
+      await tabsStore.cleanupInvalidTabs(existingFiles)
+
       if (!selectedNote.value) {
         await restoreLastSelectedNote()
       }
@@ -206,6 +230,17 @@ export const useVaultStore = defineStore('vault', () => {
       const note = await apiClient.getNote(path)
       selectedNote.value = note
       setLocalStorageItem(LAST_SELECTED_NOTE_KEY, path)
+      
+      // Sync with tabs store - ensure tab exists and is active
+      const tabsStore = useTabsStore()
+      const tab = tabsStore.getTabByPath(path)
+      if (tab) {
+        tabsStore.setActiveTab(tab.id)
+      } else {
+        // Tab doesn't exist, create it
+        tabsStore.openTab(path)
+      }
+      
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to load note'
@@ -239,6 +274,12 @@ export const useVaultStore = defineStore('vault', () => {
 
     if (path === selectedNotePath.value) return
 
+    // Import tabs store
+    const tabsStore = useTabsStore()
+    
+    // Open tab in tabs store
+    tabsStore.openTab(path)
+    
     // Clear current selection
     selectedNote.value = null
     
@@ -250,6 +291,10 @@ export const useVaultStore = defineStore('vault', () => {
     selectedNote.value = null
     error.value = null
     removeLocalStorageItem(LAST_SELECTED_NOTE_KEY)
+    
+    // Clear active tab in tabs store
+    const tabsStore = useTabsStore()
+    tabsStore.setActiveTab(null)
   }
 
   const toggleExpanded = (path: string) => {
@@ -309,6 +354,13 @@ export const useVaultStore = defineStore('vault', () => {
     try {
       await apiClient.deleteNote(path)
       
+      // Close tab if it exists
+      const tabsStore = useTabsStore()
+      const tab = tabsStore.getTabByPath(path)
+      if (tab) {
+        tabsStore.closeTab(tab.id)
+      }
+      
       // If the deleted file was selected, clear selection
       if (selectedNotePath.value === path) {
         clearSelection()
@@ -332,6 +384,17 @@ export const useVaultStore = defineStore('vault', () => {
       pathParts[pathParts.length - 1] = newName
       const newPath = pathParts.join('/')
       
+      // Update tab if it exists
+      const tabsStore = useTabsStore()
+      const tab = tabsStore.getTabByPath(oldPath)
+      if (tab) {
+        tab.path = newPath
+        // Extract title from new path
+        const pathParts = newPath.split('/')
+        const filename = pathParts[pathParts.length - 1]
+        tab.title = filename.endsWith('.md') ? filename.slice(0, -3) : filename
+      }
+      
       // If the renamed file was selected, update selection
       if (selectedNotePath.value === oldPath) {
         await loadNote(newPath)
@@ -354,9 +417,20 @@ export const useVaultStore = defineStore('vault', () => {
       
       await apiClient.moveNote(path, destination)
       
-      // If the moved file was selected, clear selection
+      // Update tab if it exists
+      const tabsStore = useTabsStore()
+      const tab = tabsStore.getTabByPath(path)
+      if (tab) {
+        tab.path = destination
+        // Extract title from new path
+        const pathParts = destination.split('/')
+        const filename = pathParts[pathParts.length - 1]
+        tab.title = filename.endsWith('.md') ? filename.slice(0, -3) : filename
+      }
+      
+      // If the moved file was selected, update selection
       if (selectedNotePath.value === path) {
-        clearSelection()
+        await loadNote(destination)
       }
       
       // Refresh file tree

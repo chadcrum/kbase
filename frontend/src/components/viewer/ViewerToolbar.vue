@@ -1,16 +1,16 @@
 <template>
   <div class="viewer-toolbar" :style="{ '--toolbar-left': toolbarLeft }">
-    <div class="toolbar-left">
-      <button class="sidebar-toggle-btn" @click="toggleSidebar" :title="sidebarToggleTitle">
-        <span class="toggle-icon">{{ sidebarToggleIcon }}</span>
-      </button>
-      <div class="file-info">
-        <h2 class="file-name">{{ fileName }}</h2>
-        <span v-if="filePath" class="file-path">{{ filePath }}</span>
-      </div>
-    </div>
-    
+    <!-- Sidebar toggle at far left -->
+    <button class="sidebar-toggle-btn" @click="toggleSidebar" :title="sidebarToggleTitle">
+      <span class="toggle-icon">{{ sidebarToggleIcon }}</span>
+    </button>
+
     <div class="toolbar-center">
+      <!-- File path (smaller title) -->
+      <span v-if="filePath" class="file-path">{{ filePath }}</span>
+    </div>
+
+    <div class="toolbar-right">
       <!-- Editor toggle for markdown files -->
       <button
         v-if="isMarkdownFile"
@@ -19,11 +19,8 @@
         :title="editorToggleTitle"
       >
         <span class="editor-icon">{{ editorIcon }}</span>
-        <span class="editor-text">{{ editorText }}</span>
       </button>
-    </div>
-    
-    <div class="toolbar-right">
+
       <button class="search-btn" @click="openSearch" title="Search (Ctrl+P)">
         <span class="search-icon">🔍</span>
       </button>
@@ -105,7 +102,7 @@ const toolbarLeft = computed(() => {
 <style scoped>
 .viewer-toolbar {
   position: fixed;
-  top: 0;
+  top: var(--tabs-bar-height);
   left: var(--toolbar-left);
   right: 0;
   z-index: 10;
@@ -123,29 +120,22 @@ const toolbarLeft = computed(() => {
   touch-action: none;
 }
 
-.toolbar-left {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
 .sidebar-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.5rem;
+  height: 1.5rem;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: #667eea;
-  font-size: 1.25rem;
+  font-size: 1rem;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: all 0.2s ease;
   flex-shrink: 0;
   box-shadow: 0 1px 3px var(--shadow);
+  margin-right: 0.75rem;
 }
 
 .sidebar-toggle-btn:hover {
@@ -164,24 +154,6 @@ const toolbarLeft = computed(() => {
   font-weight: bold;
 }
 
-.file-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.file-name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .file-path {
   font-size: 0.75rem;
   color: var(--text-secondary);
@@ -192,24 +164,26 @@ const toolbarLeft = computed(() => {
 }
 
 .toolbar-center {
-  flex: 0 0 auto;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
 }
 
 .editor-toggle-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.25rem;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: #667eea;
   font-size: 0.875rem;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px var(--shadow);
 }
@@ -233,17 +207,12 @@ const toolbarLeft = computed(() => {
   justify-content: center;
 }
 
-.editor-text {
-  font-weight: 500;
-  white-space: nowrap;
-}
 
 .toolbar-right {
   flex: 0 0 auto;
-  min-width: 220px;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   justify-content: flex-end;
 }
 
@@ -251,14 +220,15 @@ const toolbarLeft = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  padding: 0.4rem 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.25rem;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: #667eea;
   font-size: 0.875rem;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px var(--shadow);
 }
@@ -287,34 +257,25 @@ const toolbarLeft = computed(() => {
     padding: 0.5rem;
   }
   
-  .toolbar-left {
-    flex: 1 1 100%;
+  .sidebar-toggle-btn {
     order: 1;
-    gap: 0.5rem;
+    margin-right: 0.5rem;
   }
-  
+
   .toolbar-center {
     order: 3;
     flex: 1 1 100%;
     display: flex;
     justify-content: center;
   }
-  
+
   .toolbar-right {
     order: 2;
     gap: 0.25rem;
   }
-  
+
   .file-path {
     display: none;
-  }
-  
-  .file-name {
-    font-size: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: calc(100vw - 260px); /* Account for sidebar width when open */
   }
 }
 </style>

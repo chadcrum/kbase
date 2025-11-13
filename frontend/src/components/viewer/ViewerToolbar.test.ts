@@ -22,16 +22,6 @@ describe('ViewerToolbar', () => {
     setActivePinia(createPinia())
   })
 
-  it('renders file name', () => {
-    const wrapper = mount(ViewerToolbar, {
-      props: {
-        fileName: 'test.md'
-      }
-    })
-
-    expect(wrapper.text()).toContain('test.md')
-  })
-
   it('renders file path when provided', () => {
     const wrapper = mount(ViewerToolbar, {
       props: {

@@ -1,5 +1,8 @@
 <template>
   <div class="note-viewer">
+    <!-- Tabs Bar -->
+    <TabsBar />
+    
     <div v-if="selectedNote" class="note-content">
       <!-- Viewer Toolbar -->
       <ViewerToolbar
@@ -59,6 +62,7 @@
 import { computed, ref, watch } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
+import TabsBar from './TabsBar.vue'
 import ViewerToolbar from './ViewerToolbar.vue'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
 import MilkdownEditor from '@/components/editor/MilkdownEditor.vue'
@@ -194,7 +198,7 @@ const handleOpenSearch = () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-top: var(--pane-toolbar-height);
+  padding-top: calc(var(--tabs-bar-height) + var(--pane-toolbar-height));
 }
 
 .note-scroll-content {
@@ -344,7 +348,7 @@ const handleOpenSearch = () => {
   }
 
   .note-content {
-    padding-top: calc(var(--pane-toolbar-height) + 0.5rem);
+    padding-top: calc(var(--tabs-bar-height) + var(--pane-toolbar-height) + 0.5rem);
   }
 
   .floating-save-status {

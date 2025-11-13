@@ -87,13 +87,16 @@ onUnmounted(() => {
 
 <style scoped>
 .resize-handle {
-  width: 4px;
+  width: 1px;
   background-color: var(--border-color);
   cursor: col-resize;
   position: relative;
   flex-shrink: 0;
   transition: background-color 0.3s ease;
   z-index: 1001; /* Higher than sidebar z-index */
+  /* Expand hit area for easier dragging while keeping visual border thin */
+  padding: 0 3px;
+  margin: 0 -3px;
 }
 
 .resize-handle:hover {
@@ -110,10 +113,10 @@ onUnmounted(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 2px;
+  width: 1px;
   height: 20px;
   background-color: var(--text-secondary);
-  border-radius: 1px;
+  border-radius: 0.5px;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -125,7 +128,10 @@ onUnmounted(() => {
 /* Touch-friendly on mobile */
 @media (hover: none) and (pointer: coarse) {
   .resize-handle {
-    width: 12px; /* Wider touch target */
+    width: 1px; /* Keep visual border super thin */
+    /* Expand hit area for touch while keeping visual border thin */
+    padding: 0 8px;
+    margin: 0 -8px;
   }
 
   .resize-handle-indicator {

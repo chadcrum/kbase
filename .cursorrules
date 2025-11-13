@@ -150,12 +150,13 @@ docs/
 - Delete branches after merging
 
 ### Pre-commit Checklist
-1. ✅ All tests pass
-2. ✅ Code follows style guidelines
-3. ✅ Documentation is updated
-4. ✅ Security considerations addressed
-5. ✅ Performance impact assessed
-6. ✅ Commit message follows convention
+1. ✅ **Type-check passes** (frontend: `npm run type-check`, backend: type hints validated)
+2. ✅ All tests pass (`npm run test`)
+3. ✅ Code follows style guidelines
+4. ✅ **Documentation is updated** (see [02-documentation-requirements.mdc](mdc:.cursor/rules/02-documentation-requirements.mdc))
+5. ✅ Security considerations addressed
+6. ✅ Performance impact assessed
+7. ✅ Commit message follows convention
 
 ## Development Environment
 
@@ -198,6 +199,13 @@ docs/
 - Update all relevant documentation immediately
 - Re-run the pre-commit checklist
 - Only proceed after documentation is complete
+
+### If Type-Check Fails
+- **STOP** the commit process
+- Fix all TypeScript/type errors immediately
+- Common issues: invalid properties, null safety, type mismatches
+- Re-run type-check before proceeding
+- Only commit after type-check passes
 
 ### If Tests Fail
 - Fix all failing tests before committing

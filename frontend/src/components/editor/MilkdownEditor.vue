@@ -66,7 +66,6 @@ const cleanupFns: Array<() => void> = []
 // Custom remark stringify options to use hyphens for unordered list bullets
 const customRemarkOptions: Options = {
   bullet: '-',
-  encode: [],
 }
 
 const STATE_SAVE_DELAY = 150

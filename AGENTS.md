@@ -114,9 +114,12 @@ npm run install:all
 npm run dev
 
 # Run tests
-npm run test              # All tests
+npm run test              # All tests (includes type-check for frontend)
 npm run test:backend      # Backend only
-npm run test:frontend     # Frontend only
+npm run test:frontend     # Frontend only (runs type-check + tests)
+
+# Type-checking (run before committing frontend changes)
+cd frontend && npm run type-check  # Check TypeScript types without building
 ```
 
 ### Documentation Links
@@ -171,13 +174,16 @@ Use descriptive names: `feature/note-search`, `fix/auth-bug`, `docs/api-update`
 ### Pre-Commit Checklist
 
 Before every commit:
-- [ ] All tests pass
+- [ ] **Type-check passes** (`cd frontend && npm run type-check`)
+  - **CRITICAL**: Type errors cause build failures in CI/CD and Podman
+  - Frontend automatically runs type-check before tests (`npm run test:run`)
+- [ ] All tests pass (`npm run test`)
 - [ ] Code follows style guidelines
 - [ ] Documentation updated
 - [ ] Security considerations addressed
 - [ ] Commit message follows convention
 
-Reference: `.cursorrules` (lines 139-159)
+Reference: `.cursorrules` (lines 152-159), `.cursor/rules/30-git-workflow.mdc`
 
 ---
 
@@ -225,10 +231,11 @@ Reference: `.cursorrules` (lines 139-159)
 
 ## Remember
 
-1. **Documentation is mandatory** - Never commit without updating docs
-2. **Write tests** - Write tests for new functionality
-3. **Security first** - Always validate inputs and protect against path traversal
-4. **Test coverage** - Maintain 80%+ coverage
-5. **Code quality** - Follow style guidelines and best practices
+1. **Type-check is mandatory** - Always run `npm run type-check` before committing frontend changes
+2. **Documentation is mandatory** - Never commit without updating docs
+3. **Write tests** - Write tests for new functionality
+4. **Security first** - Always validate inputs and protect against path traversal
+5. **Test coverage** - Maintain 80%+ coverage
+6. **Code quality** - Follow style guidelines and best practices
 
 **Happy coding!** 🚀

@@ -54,12 +54,16 @@ Use descriptive branch names:
 
 Before every commit, verify:
 
-1. ✅ All tests pass (`npm run test`)
-2. ✅ Code follows style guidelines
-3. ✅ **Documentation is updated** (see [02-documentation-requirements.mdc](mdc:.cursor/rules/02-documentation-requirements.mdc))
-4. ✅ Security considerations addressed
-5. ✅ Performance impact assessed
-6. ✅ Commit message follows convention
+1. ✅ **Type-check passes** 
+   - Frontend: `cd frontend && npm run type-check` (runs `vue-tsc --noEmit`)
+   - Backend: Ensure all type hints are valid (mypy if configured)
+   - **CRITICAL**: Type errors will cause build failures in CI/CD and Podman builds
+2. ✅ All tests pass (`npm run test`)
+3. ✅ Code follows style guidelines
+4. ✅ **Documentation is updated** (see [02-documentation-requirements.mdc](mdc:.cursor/rules/02-documentation-requirements.mdc))
+5. ✅ Security considerations addressed
+6. ✅ Performance impact assessed
+7. ✅ Commit message follows convention
 
 ## Commit Message Guidelines
 
@@ -88,6 +92,18 @@ See docs/templates/omni-search.md
 ```
 
 ## Emergency Procedures
+
+**If type-check fails:**
+- **STOP** the commit process immediately
+- Fix all TypeScript/type errors before proceeding
+- Common issues to check:
+  - Invalid properties on types (e.g., `encode` on `Options`)
+  - Null safety issues (`event.currentTarget` possibly null)
+  - Type mismatches (`EventTarget` vs `Node`)
+  - Incorrect function signatures
+- Re-run `npm run type-check` (frontend) to verify fixes
+- Type errors will cause build failures in CI/CD and Podman builds
+- Only proceed after type-check passes
 
 **If documentation is missing:**
 - STOP the commit process

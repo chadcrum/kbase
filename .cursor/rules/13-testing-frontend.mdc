@@ -8,10 +8,21 @@ Follow TDD workflow from [20-tdd-workflow.md](mdc:.cursor/rules/20-tdd-workflow.
 
 ## Test Types
 
+- **Type Checking**: Run `npm run type-check` before tests (automatically runs before `test:run`)
 - **Unit Tests**: Vitest for component/service testing
 - **E2E Tests**: Playwright for full user workflows
 - Place unit tests next to source: `Component.test.ts`
 - Place e2e tests in [frontend/e2e/](mdc:frontend/e2e/)
+
+## Type Checking
+
+**CRITICAL**: Type-checking runs automatically before tests (`npm run test:run`).
+
+- Run manually: `cd frontend && npm run type-check`
+- Uses `vue-tsc --noEmit` to check TypeScript types without building
+- Catches errors like: invalid properties, null safety issues, type mismatches
+- **Required before committing** - see [30-git-workflow.mdc](mdc:.cursor/rules/30-git-workflow.mdc)
+- Type errors will cause build failures in CI/CD and Podman builds
 
 ## Vitest Configuration
 

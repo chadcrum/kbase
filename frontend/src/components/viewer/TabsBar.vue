@@ -26,7 +26,7 @@
         @dragleave="handleDragLeave"
         @drop="handleDrop($event, tab.id)"
         @touchstart="handleTouchStart($event, tab.id)"
-        @touchmove="handleTouchMove($event)"
+        @touchmove="handleTouchMove"
         @touchend="handleTouchEnd"
       >
         <span class="tab-title" :class="{ 'is-italic': !tab.isPinned }">
@@ -335,9 +335,11 @@ const handleDragOver = (event: DragEvent, tabId: string) => {
 
 const handleDragLeave = (event: DragEvent) => {
   // Only clear if we're actually leaving the tab (not entering a child element)
-  if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-    dragOverTabId = null
-    dragOverIndex = -1
+  if (event.currentTarget && event.relatedTarget && event.currentTarget instanceof HTMLElement && event.relatedTarget instanceof Node) {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      dragOverTabId = null
+      dragOverIndex = -1
+    }
   }
 }
 

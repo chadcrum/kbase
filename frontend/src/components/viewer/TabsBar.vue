@@ -735,7 +735,7 @@ onUnmounted(() => {
   border-radius: 8px;
   box-shadow: 0 10px 20px -10px var(--shadow);
   padding: 0.5rem 0;
-  z-index: 1001;
+  z-index: 10000;
 }
 
 .tabs-dropdown-empty {

@@ -350,7 +350,7 @@ const handleOpenSearch = () => {
   }
 
   .note-content {
-    padding-top: calc(var(--tabs-bar-height) + var(--pane-toolbar-height) + 0.5rem);
+    padding-top: var(--tabs-bar-height);
   }
 
   .floating-save-status {

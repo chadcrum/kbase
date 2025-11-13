@@ -40,9 +40,11 @@ const toolbarLeft = computed(() => {
   background: transparent;
   height: auto;
   min-height: 0;
+  max-height: fit-content;
   display: flex;
   align-items: center;
   transition: left 0.3s ease;
+  line-height: 1;
 }
 
 .file-path {
@@ -52,7 +54,8 @@ const toolbarLeft = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.5;
+  line-height: 1.2;
+  display: block;
 }
 
 .file-name {
@@ -62,7 +65,8 @@ const toolbarLeft = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.5;
+  line-height: 1.2;
+  display: block;
 }
 
 /* Responsive design */

@@ -211,6 +211,7 @@ const handleOpenSearch = () => {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
+  padding-top: 1.5rem;
 }
 
 .editor-view {

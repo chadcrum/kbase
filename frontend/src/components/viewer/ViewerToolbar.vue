@@ -1,7 +1,7 @@
 <template>
   <div class="viewer-toolbar" :style="{ '--toolbar-left': toolbarLeft }">
     <span v-if="filePath" class="file-path">{{ filePath }}</span>
-    <span v-else-if="fileName" class="file-name">{{ fileName }}</span>
+    <span v-if="fileName" class="file-name">{{ fileName }}</span>
   </div>
 </template>
 
@@ -66,7 +66,7 @@ const toolbarLeft = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
-  display: block;
+  display: none;
 }
 
 /* Responsive design */

@@ -237,6 +237,7 @@ frontend/src/
 │   │   └── Sidebar.vue             # Sidebar container
 │   └── viewer/
 │       ├── NoteViewer.vue          # Note viewer with Monaco editor
+│       ├── TabsBar.vue             # Tab management bar with drag-and-drop, pinning, and tabs dropdown
 │       └── ViewerToolbar.vue       # Toolbar with search, sidebar toggle, and editor controls
 ├── stores/
 │   ├── auth.ts                     # JWT & login state
@@ -259,6 +260,7 @@ frontend/src/
 
 - **Editor Components**:
   - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting for all file types
+- `TabsBar.vue`: Tab management bar at the top of the viewer with drag-and-drop reordering, pinning (double-click or long-press), tabs dropdown menu showing all open tabs (pinned and unpinned), sidebar toggle, editor switcher for markdown files, and search button; uses fixed positioning to stay anchored to viewport
 - `ViewerToolbar.vue`: Toolbar with search button, sidebar toggle, editor switcher, and save status; uses fixed positioning to stay completely anchored to viewport on all devices, preventing any touch scrolling or movement
   - `NoteViewer.vue`: Orchestrates Monaco editor for all file types with toolbar positioned outside the scrollable content area (matching sidebar layout)
 - **Layout Components**:
@@ -280,6 +282,12 @@ frontend/src/
 **State Management (Pinia)**:
 
 - `authStore`: User session, JWT token management, login/logout
+- `tabsStore`: Tab management state with persistence to localStorage
+  - **Tab Operations**: `openTab()`, `closeTab()`, `setActiveTab()`, `togglePinTab()`, `pinTab()`, `unpinTab()`, `reorderTabs()`
+  - **Tab State**: `tabs` (array of Tab objects with id, path, title, isPinned), `activeTabId`, `activeTab` (computed), `activeTabPath` (computed)
+  - **Persistence**: Tabs and active tab state persisted to localStorage, restored on page load
+  - **Tab Replacement**: Unpinned tabs are replaced when opening new files if tab limit reached
+  - **Cleanup**: `cleanupInvalidTabs()` removes tabs referencing deleted files
 - `vaultStore`: File tree state, selected note, loading states, expanded paths, note updates, save state, sorting preferences
   - **File Operations**: `deleteFile()`, `renameFile()`, `moveFile()`, `createNote()`
   - **Directory Operations**: `deleteDirectory()`, `renameDirectory()`, `moveDirectory()`, `createDirectory()`

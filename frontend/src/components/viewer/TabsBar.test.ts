@@ -194,4 +194,96 @@ describe('TabsBar', () => {
     
     expect(mockEditorStore.toggleMarkdownEditor).toHaveBeenCalled()
   })
+
+  it('renders tabs dropdown button', () => {
+    const wrapper = mount(TabsBar)
+    expect(wrapper.find('.tabs-dropdown-btn').exists()).toBe(true)
+  })
+
+  it('toggles tabs dropdown on button click', async () => {
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    // Initially dropdown should be closed
+    expect(wrapper.find('.tabs-dropdown').exists()).toBe(false)
+    
+    // Click to open
+    await dropdownBtn.trigger('click')
+    expect(wrapper.find('.tabs-dropdown').exists()).toBe(true)
+    
+    // Click again to close
+    await dropdownBtn.trigger('click')
+    expect(wrapper.find('.tabs-dropdown').exists()).toBe(false)
+  })
+
+  it('shows all tabs in dropdown', async () => {
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    await dropdownBtn.trigger('click')
+    
+    const dropdownItems = wrapper.findAll('.tabs-dropdown-item')
+    expect(dropdownItems).toHaveLength(3)
+  })
+
+  it('shows empty message when no tabs', async () => {
+    mockTabsStore.tabs = []
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    await dropdownBtn.trigger('click')
+    
+    expect(wrapper.find('.tabs-dropdown-empty').exists()).toBe(true)
+    expect(wrapper.find('.tabs-dropdown-empty').text()).toBe('No tabs open')
+  })
+
+  it('highlights active tab in dropdown', async () => {
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    await dropdownBtn.trigger('click')
+    
+    const activeItem = wrapper.find('.tabs-dropdown-item.is-active')
+    expect(activeItem.exists()).toBe(true)
+    expect(activeItem.text()).toContain('Test 1')
+  })
+
+  it('shows pin icon for pinned tabs in dropdown', async () => {
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    await dropdownBtn.trigger('click')
+    
+    const dropdownItems = wrapper.findAll('.tabs-dropdown-item')
+    const pinnedItem = dropdownItems[1] // tab2 is pinned
+    expect(pinnedItem.find('.tabs-dropdown-item-icon').text()).toBe('📌')
+  })
+
+  it('shows file icon for unpinned tabs in dropdown', async () => {
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    await dropdownBtn.trigger('click')
+    
+    const dropdownItems = wrapper.findAll('.tabs-dropdown-item')
+    const unpinnedItem = dropdownItems[0] // tab1 is unpinned
+    expect(unpinnedItem.find('.tabs-dropdown-item-icon').text()).toBe('📄')
+  })
+
+  it('handles tab selection from dropdown', async () => {
+    mockTabsStore.setActiveTab = vi.fn()
+    mockVaultStore.loadNote = vi.fn()
+    
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    await dropdownBtn.trigger('click')
+    
+    const dropdownItems = wrapper.findAll('.tabs-dropdown-item')
+    await dropdownItems[1].trigger('click') // Click tab2
+    
+    expect(mockTabsStore.setActiveTab).toHaveBeenCalledWith('tab2')
+    expect(mockVaultStore.loadNote).toHaveBeenCalledWith('/test2.md')
+    expect(wrapper.find('.tabs-dropdown').exists()).toBe(false) // Dropdown should close
+  })
 })

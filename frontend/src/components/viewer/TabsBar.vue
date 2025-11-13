@@ -44,6 +44,40 @@
 
     <!-- Action buttons at far right -->
     <div class="tabs-actions">
+      <!-- Tabs dropdown -->
+      <div class="tabs-dropdown-container">
+        <button
+          class="tabs-dropdown-btn"
+          @click="toggleTabsDropdown"
+          :title="'Show all tabs'"
+          aria-haspopup="true"
+          :aria-expanded="showTabsDropdown"
+        >
+          <span class="tabs-dropdown-icon">📋</span>
+        </button>
+        <div
+          v-if="showTabsDropdown"
+          class="tabs-dropdown"
+          role="menu"
+        >
+          <div v-if="tabs.length === 0" class="tabs-dropdown-empty">
+            No tabs open
+          </div>
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            class="tabs-dropdown-item"
+            :class="{ 'is-active': tab.id === activeTabId, 'is-pinned': tab.isPinned }"
+            role="menuitem"
+            @click="handleTabSelect(tab.id)"
+          >
+            <span class="tabs-dropdown-item-icon">{{ tab.isPinned ? '📌' : '📄' }}</span>
+            <span class="tabs-dropdown-item-label">{{ tab.title }}</span>
+            <span v-if="tab.id === activeTabId" class="tabs-dropdown-item-check">✓</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Editor toggle for markdown files -->
       <button
         v-if="isMarkdownFile"
@@ -62,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, onMounted, onUnmounted, nextTick } from 'vue'
 import { useTabsStore } from '@/stores/tabs'
 import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
@@ -88,6 +122,7 @@ const editorStore = useEditorStore()
 
 // Refs
 const tabsContainerRef = ref<HTMLElement | null>(null)
+const showTabsDropdown = ref(false)
 
 // State for long-press detection (mobile pinning)
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
@@ -143,6 +178,30 @@ const editorToggleTitle = computed(() => {
 // Search
 const openSearch = () => {
   emit('openSearch')
+}
+
+// Tabs dropdown
+const toggleTabsDropdown = () => {
+  showTabsDropdown.value = !showTabsDropdown.value
+}
+
+const handleTabSelect = (tabId: string) => {
+  const tab = tabsStore.tabs.find(t => t.id === tabId)
+  if (tab) {
+    tabsStore.setActiveTab(tabId)
+    vaultStore.loadNote(tab.path)
+    showTabsDropdown.value = false
+  }
+}
+
+/**
+ * Close dropdown when clicking outside
+ */
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.tabs-dropdown-container')) {
+    showTabsDropdown.value = false
+  }
 }
 
 // Methods
@@ -290,10 +349,23 @@ watch(activeTabId, (newId) => {
   }
 })
 
+// Setup click outside listener for dropdown
+onMounted(() => {
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', handleClickOutside)
+  }
+})
+
 // Cleanup on unmount
 onBeforeUnmount(() => {
   if (longPressTimer) {
     clearTimeout(longPressTimer)
+  }
+})
+
+onUnmounted(() => {
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('click', handleClickOutside)
   }
 })
 </script>
@@ -534,6 +606,134 @@ onBeforeUnmount(() => {
 .search-icon {
   font-size: 0.85rem;
   line-height: 1;
+}
+
+.tabs-dropdown-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tabs-dropdown-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: #667eea;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.tabs-dropdown-btn:hover {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.tabs-dropdown-btn:active {
+  transform: scale(0.98);
+}
+
+.tabs-dropdown-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.tabs-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  max-width: 320px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 10px 20px -10px var(--shadow);
+  padding: 0.5rem 0;
+  z-index: 1000;
+}
+
+.tabs-dropdown-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+}
+
+.tabs-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.tabs-dropdown-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.tabs-dropdown-item.is-active {
+  background-color: var(--bg-tertiary);
+  font-weight: 500;
+}
+
+.tabs-dropdown-item-icon {
+  width: 1.25rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.tabs-dropdown-item-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tabs-dropdown-item.is-pinned .tabs-dropdown-item-label {
+  font-style: italic;
+}
+
+.tabs-dropdown-item-check {
+  color: #667eea;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.tabs-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tabs-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tabs-dropdown::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.tabs-dropdown::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 /* Responsive design */

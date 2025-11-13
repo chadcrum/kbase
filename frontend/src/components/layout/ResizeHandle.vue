@@ -87,7 +87,7 @@ onUnmounted(() => {
 
 <style scoped>
 .resize-handle {
-  width: 1px; /* Thin visual border */
+  width: 0.5px; /* Extremely thin visual border */
   background-color: var(--border-color);
   cursor: col-resize;
   position: relative;
@@ -120,10 +120,10 @@ onUnmounted(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 1px;
+  width: 0.5px;
   height: 20px;
   background-color: var(--text-secondary);
-  border-radius: 0.5px;
+  border-radius: 0.25px;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -135,7 +135,7 @@ onUnmounted(() => {
 /* Touch-friendly on mobile */
 @media (hover: none) and (pointer: coarse) {
   .resize-handle {
-    width: 1px; /* Keep visual border thin */
+    width: 0.5px; /* Keep visual border extremely thin */
   }
 
   .resize-handle::before {

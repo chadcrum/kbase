@@ -397,8 +397,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: var(--pane-toolbar-padding-y) var(--pane-toolbar-padding-x);
-  min-height: var(--pane-toolbar-height);
+  padding: 0;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  min-height: 0;
+  height: auto;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
   box-shadow: 0 1px 0 var(--border-color-subtle);
@@ -413,8 +416,14 @@ onUnmounted(() => {
 }
 
 .toolbar-menu-trigger {
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toolbar-dropdown {
@@ -517,15 +526,20 @@ onUnmounted(() => {
 .toolbar-button {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.5rem;
+  justify-content: center;
+  gap: 0;
+  padding: 0.25rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 0.875rem;
   color: var(--text-primary);
   transition: all 0.2s ease;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
 }
 
 .toolbar-button:hover {
@@ -557,9 +571,11 @@ onUnmounted(() => {
 /* Touch device accessibility */
 @media (hover: none) and (pointer: coarse) {
   .toolbar-button {
-    min-width: 40px;
-    min-height: 40px;
-    padding: 0.375rem 0.5rem;
+    min-width: 1.75rem;
+    min-height: 1.75rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0.25rem;
   }
 
   .toolbar-button .icon {

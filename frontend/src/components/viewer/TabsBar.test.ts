@@ -222,7 +222,7 @@ describe('TabsBar', () => {
     
     await dropdownBtn.trigger('click')
     
-    const dropdownItems = wrapper.findAll('.tabs-dropdown-item')
+    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
     expect(dropdownItems).toHaveLength(3)
   })
 
@@ -243,7 +243,7 @@ describe('TabsBar', () => {
     
     await dropdownBtn.trigger('click')
     
-    const activeItem = wrapper.find('.tabs-dropdown-item.is-active')
+    const activeItem = wrapper.find('.tabs-dropdown-item-wrapper.is-active')
     expect(activeItem.exists()).toBe(true)
     expect(activeItem.text()).toContain('Test 1')
   })
@@ -254,7 +254,7 @@ describe('TabsBar', () => {
     
     await dropdownBtn.trigger('click')
     
-    const dropdownItems = wrapper.findAll('.tabs-dropdown-item')
+    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
     const pinnedItem = dropdownItems[1] // tab2 is pinned
     expect(pinnedItem.find('.tabs-dropdown-item-icon').text()).toBe('📌')
   })
@@ -265,7 +265,7 @@ describe('TabsBar', () => {
     
     await dropdownBtn.trigger('click')
     
-    const dropdownItems = wrapper.findAll('.tabs-dropdown-item')
+    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
     const unpinnedItem = dropdownItems[0] // tab1 is unpinned
     expect(unpinnedItem.find('.tabs-dropdown-item-icon').text()).toBe('📄')
   })
@@ -279,11 +279,62 @@ describe('TabsBar', () => {
     
     await dropdownBtn.trigger('click')
     
-    const dropdownItems = wrapper.findAll('.tabs-dropdown-item')
-    await dropdownItems[1].trigger('click') // Click tab2
+    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
+    const tabButton = dropdownItems[1].find('.tabs-dropdown-item')
+    await tabButton.trigger('click') // Click tab2
     
     expect(mockTabsStore.setActiveTab).toHaveBeenCalledWith('tab2')
     expect(mockVaultStore.loadNote).toHaveBeenCalledWith('/test2.md')
+    expect(wrapper.find('.tabs-dropdown').exists()).toBe(false) // Dropdown should close
+  })
+
+  it('renders close button for each tab in dropdown', async () => {
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    await dropdownBtn.trigger('click')
+    
+    const closeButtons = wrapper.findAll('.tabs-dropdown-item-close')
+    expect(closeButtons).toHaveLength(3)
+  })
+
+  it('handles closing tab from dropdown', async () => {
+    mockTabsStore.closeTab = vi.fn()
+    mockTabsStore.activeTabPath = '/test3.md'
+    mockVaultStore.loadNote = vi.fn()
+    
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    await dropdownBtn.trigger('click')
+    
+    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
+    const closeButton = dropdownItems[0].find('.tabs-dropdown-item-close')
+    await closeButton.trigger('click') // Close tab1
+    
+    expect(mockTabsStore.closeTab).toHaveBeenCalledWith('tab1')
+    expect(mockVaultStore.loadNote).toHaveBeenCalledWith('/test3.md')
+  })
+
+  it('closes dropdown when last tab is closed', async () => {
+    mockTabsStore.tabs = [{ id: 'tab1', path: '/test1.md', title: 'Test 1', isPinned: false }]
+    mockTabsStore.closeTab = vi.fn(() => {
+      mockTabsStore.tabs = []
+    })
+    mockTabsStore.activeTabPath = null
+    mockVaultStore.clearSelection = vi.fn()
+    
+    const wrapper = mount(TabsBar)
+    const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
+    
+    await dropdownBtn.trigger('click')
+    expect(wrapper.find('.tabs-dropdown').exists()).toBe(true)
+    
+    const closeButton = wrapper.find('.tabs-dropdown-item-close')
+    await closeButton.trigger('click')
+    
+    expect(mockTabsStore.closeTab).toHaveBeenCalled()
+    expect(mockVaultStore.clearSelection).toHaveBeenCalled()
     expect(wrapper.find('.tabs-dropdown').exists()).toBe(false) // Dropdown should close
   })
 })

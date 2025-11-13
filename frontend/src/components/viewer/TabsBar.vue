@@ -65,18 +65,30 @@
           <div v-if="tabs.length === 0" class="tabs-dropdown-empty">
             No tabs open
           </div>
-          <button
+          <div
             v-for="tab in tabs"
             :key="tab.id"
-            class="tabs-dropdown-item"
+            class="tabs-dropdown-item-wrapper"
             :class="{ 'is-active': tab.id === activeTabId, 'is-pinned': tab.isPinned }"
-            role="menuitem"
-            @click="handleTabSelect(tab.id)"
           >
-            <span class="tabs-dropdown-item-icon">{{ tab.isPinned ? '📌' : '📄' }}</span>
-            <span class="tabs-dropdown-item-label">{{ tab.title }}</span>
-            <span v-if="tab.id === activeTabId" class="tabs-dropdown-item-check">✓</span>
-          </button>
+            <button
+              class="tabs-dropdown-item"
+              role="menuitem"
+              @click="handleTabSelect(tab.id)"
+            >
+              <span class="tabs-dropdown-item-icon">{{ tab.isPinned ? '📌' : '📄' }}</span>
+              <span class="tabs-dropdown-item-label">{{ tab.title }}</span>
+              <span v-if="tab.id === activeTabId" class="tabs-dropdown-item-check">✓</span>
+            </button>
+            <button
+              class="tabs-dropdown-item-close"
+              :title="'Close tab'"
+              @click.stop="handleCloseTabFromDropdown(tab.id)"
+              aria-label="Close tab"
+            >
+              ×
+            </button>
+          </div>
         </div>
       </div>
 
@@ -216,6 +228,26 @@ const handleTabSelect = (tabId: string) => {
   if (tab) {
     tabsStore.setActiveTab(tabId)
     vaultStore.loadNote(tab.path)
+    showTabsDropdown.value = false
+  }
+}
+
+const handleCloseTabFromDropdown = (tabId: string) => {
+  const tab = tabsStore.tabs.find(t => t.id === tabId)
+  if (!tab) return
+
+  tabsStore.closeTab(tabId)
+
+  // If tab was active and we closed it, load the new active tab
+  if (tabsStore.activeTabPath) {
+    vaultStore.loadNote(tabsStore.activeTabPath)
+  } else {
+    // No active tab, clear selection
+    vaultStore.clearSelection()
+  }
+
+  // Close dropdown if no tabs remain
+  if (tabsStore.tabs.length === 0) {
     showTabsDropdown.value = false
   }
 }
@@ -713,6 +745,21 @@ onUnmounted(() => {
   font-size: 0.875rem;
 }
 
+.tabs-dropdown-item-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.tabs-dropdown-item-wrapper:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.tabs-dropdown-item-wrapper.is-active {
+  background-color: var(--bg-tertiary);
+}
+
 .tabs-dropdown-item {
   display: flex;
   align-items: center;
@@ -720,20 +767,16 @@ onUnmounted(() => {
   padding: 0.5rem 1rem;
   background: none;
   border: none;
-  width: 100%;
+  flex: 1;
   text-align: left;
   font-size: 0.9rem;
   color: var(--text-primary);
   cursor: pointer;
   transition: background-color 0.2s ease;
+  min-width: 0;
 }
 
-.tabs-dropdown-item:hover {
-  background-color: var(--bg-tertiary);
-}
-
-.tabs-dropdown-item.is-active {
-  background-color: var(--bg-tertiary);
+.tabs-dropdown-item-wrapper.is-active .tabs-dropdown-item {
   font-weight: 500;
 }
 
@@ -750,7 +793,7 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
-.tabs-dropdown-item.is-pinned .tabs-dropdown-item-label {
+.tabs-dropdown-item-wrapper.is-pinned .tabs-dropdown-item-label {
   font-style: italic;
 }
 
@@ -758,6 +801,39 @@ onUnmounted(() => {
   color: #667eea;
   font-weight: bold;
   flex-shrink: 0;
+}
+
+.tabs-dropdown-item-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  margin-right: 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.tabs-dropdown-item-wrapper:hover .tabs-dropdown-item-close {
+  opacity: 1;
+}
+
+.tabs-dropdown-item-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.tabs-dropdown-item-close:active {
+  background: var(--border-color);
 }
 
 .tabs-dropdown::-webkit-scrollbar {

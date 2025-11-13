@@ -391,7 +391,7 @@ frontend/src/
     - Dark theme matching VS Code
     - Language detection from file extensions
 - **Milkdown Editor**: WYSIWYG markdown editor available for `.md` files
-    - Interactive task list checkboxes with markdown sync using a custom ProseMirror plugin.
+    - Interactive task list checkboxes with markdown sync using a custom ProseMirror plugin. Checked items display with strikethrough text styling.
     - Shares the same auto-save cadence and state restoration (cursor + scroll) as Monaco.
     - Nord theme integration keeps checkbox widgets aligned with light/dark theme variables.
     - Checkbox widgets honor Tab / Shift+Tab for indent and outdent, keeping keyboard ergonomics consistent with the text caret.

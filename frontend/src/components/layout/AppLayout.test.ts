@@ -12,6 +12,14 @@ vi.mock('@/components/sidebar/Sidebar.vue', () => ({
   }
 }))
 
+// Mock the ResizeHandle component
+vi.mock('./ResizeHandle.vue', () => ({
+  default: {
+    name: 'ResizeHandle',
+    template: '<div class="resize-handle">ResizeHandle</div>'
+  }
+}))
+
 describe('AppLayout', () => {
   let wrapper: any
 
@@ -29,7 +37,8 @@ describe('AppLayout', () => {
       global: {
         plugins: [createPinia()],
         stubs: {
-          Sidebar: true
+          Sidebar: true,
+          ResizeHandle: true
         }
       }
     })
@@ -82,14 +91,16 @@ describe('AppLayout', () => {
       wrapper = createWrapper({
         default: '<div class="content">Content</div>'
       })
-      
+
       // Check that the layout structure is maintained
       const appLayout = wrapper.find('.app-layout')
       const sidebar = wrapper.findComponent({ name: 'Sidebar' })
+      const resizeHandle = wrapper.findComponent({ name: 'ResizeHandle' })
       const mainContent = wrapper.find('.main-content')
-      
-      expect(appLayout.element.children).toHaveLength(2)
+
+      expect(appLayout.element.children).toHaveLength(3) // BackendWarning, Sidebar, ResizeHandle
       expect(sidebar.exists()).toBe(true)
+      expect(resizeHandle.exists()).toBe(true)
       expect(mainContent.exists()).toBe(true)
     })
   })

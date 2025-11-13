@@ -107,6 +107,29 @@ describe('milkdownTaskListPlugin', () => {
     expect(widgetDom.getAttribute('type')).toBe('checkbox')
   })
 
+  it('adds checked class for completed task list items', () => {
+    const schema = createTestSchema()
+    const plugin = createTaskListProsePlugin()
+    const state = createState(schema, plugin, [
+      { text: 'Completed task', checked: true },
+      { text: 'Incomplete task', checked: false },
+    ])
+    const decorations = plugin.getState(state) as ReturnType<typeof taskListCheckboxPluginKey['getState']>
+
+    const allDecorations = decorations?.find(0, state.doc.content.size)
+    const nodeDecorations = allDecorations?.filter((decoration) => {
+      return Boolean((decoration as any).type?.attrs?.class)
+    })
+
+    expect(nodeDecorations).toHaveLength(2)
+
+    // Find decorations by checking the classes
+    const classes = nodeDecorations?.map((decoration) => (decoration as any).type.attrs.class)
+
+    expect(classes).toContain('milkdown-task-item milkdown-task-item--checked') // Completed task
+    expect(classes).toContain('milkdown-task-item') // Incomplete task (only base class)
+  })
+
   it('toggles checked attribute when checkbox changes', () => {
     const schema = createTestSchema()
     const plugin = createTaskListProsePlugin()

@@ -621,6 +621,11 @@ onBeforeUnmount(() => {
   flex: 1;
 }
 
+.milkdown-editor-container :deep(.milkdown .milkdown-task-item--checked > p:first-of-type) {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
 .milkdown-editor-container :deep(.milkdown a) {
   color: #667eea;
   text-decoration: none;

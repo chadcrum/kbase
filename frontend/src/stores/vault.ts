@@ -8,6 +8,7 @@ export type SortOrder = 'asc' | 'desc'
 
 const SORT_BY_KEY = 'kbase_sort_by'
 const SORT_ORDER_KEY = 'kbase_sort_order'
+const SIDEBAR_WIDTH_KEY = 'kbase_sidebar_width'
 export const LAST_SELECTED_NOTE_KEY = 'kbase_last_note_path'
 
 const SORT_BY_VALUES: SortBy[] = ['name', 'created', 'modified']
@@ -33,6 +34,13 @@ const readSortByPreference = (): SortBy => {
 const readSortOrderPreference = (): SortOrder => {
   const stored = getLocalStorage()?.getItem(SORT_ORDER_KEY)
   return SORT_ORDER_VALUES.includes(stored as SortOrder) ? (stored as SortOrder) : 'asc'
+}
+
+const readSidebarWidthPreference = (): number => {
+  const stored = getLocalStorage()?.getItem(SIDEBAR_WIDTH_KEY)
+  const parsed = stored ? parseInt(stored, 10) : null
+  // Default to 300px, with min 200px and max 600px
+  return parsed && parsed >= 200 && parsed <= 600 ? parsed : 300
 }
 
 const setLocalStorageItem = (key: string, value: string) => {
@@ -72,9 +80,10 @@ export const useVaultStore = defineStore('vault', () => {
   // Sort state - load from localStorage
   const sortBy = ref<SortBy>(readSortByPreference())
   const sortOrder = ref<SortOrder>(readSortOrderPreference())
-  
-  // Sidebar visibility state
+
+  // Sidebar state
   const isSidebarCollapsed = ref(false)
+  const sidebarWidth = ref<number>(readSidebarWidthPreference())
 
   // Getters
   const hasError = computed(() => error.value !== null)
@@ -461,6 +470,14 @@ export const useVaultStore = defineStore('vault', () => {
     setSortOrder(newOrder)
   }
 
+  // Sidebar width actions
+  const setSidebarWidth = (newWidth: number) => {
+    // Constrain width between 200px and 600px
+    const constrainedWidth = Math.max(200, Math.min(600, newWidth))
+    sidebarWidth.value = constrainedWidth
+    setLocalStorageItem(SIDEBAR_WIDTH_KEY, constrainedWidth.toString())
+  }
+
   // Collapse all action
   const collapseAll = () => {
     expandedPaths.value.clear()
@@ -487,6 +504,7 @@ export const useVaultStore = defineStore('vault', () => {
     sortBy,
     sortOrder,
     isSidebarCollapsed,
+    sidebarWidth,
     // Getters
     hasError,
     isNoteSelected,
@@ -522,7 +540,8 @@ export const useVaultStore = defineStore('vault', () => {
     // Collapse all action
     collapseAll,
     // Sidebar actions
-    toggleSidebar
+    toggleSidebar,
+    setSidebarWidth
   }
 })
 

@@ -6,6 +6,7 @@ import type { Node as ProseMirrorNode } from '@milkdown/prose/model'
 import { liftListItem, sinkListItem } from '@milkdown/prose/schema-list'
 
 const TASK_ITEM_CLASS = 'milkdown-task-item'
+const TASK_ITEM_CHECKED_CLASS = 'milkdown-task-item--checked'
 const TASK_CHECKBOX_CLASS = 'milkdown-task-checkbox'
 const TASK_POS_DATA_KEY = 'milkdownTaskPos'
 
@@ -37,9 +38,14 @@ const createDecorations = (doc: ProseMirrorNode) => {
       })
     )
 
+    const classes = [TASK_ITEM_CLASS]
+    if (Boolean(node.attrs.checked)) {
+      classes.push(TASK_ITEM_CHECKED_CLASS)
+    }
+
     decorations.push(
       Decoration.node(pos, pos + node.nodeSize, {
-        class: TASK_ITEM_CLASS,
+        class: classes.join(' '),
       })
     )
   })

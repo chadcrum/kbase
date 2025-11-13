@@ -2,6 +2,7 @@
   <div class="app-layout">
     <BackendWarning />
     <Sidebar :class="{ 'collapsed': vaultStore.isSidebarCollapsed }" />
+    <ResizeHandle v-if="!vaultStore.isSidebarCollapsed" />
     <main class="main-content">
       <slot />
     </main>
@@ -12,6 +13,7 @@
 import { useVaultStore } from '@/stores/vault'
 import Sidebar from '@/components/sidebar/Sidebar.vue'
 import BackendWarning from '@/components/common/BackendWarning.vue'
+import ResizeHandle from './ResizeHandle.vue'
 
 const vaultStore = useVaultStore()
 </script>

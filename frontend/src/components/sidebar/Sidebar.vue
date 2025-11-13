@@ -48,10 +48,9 @@ onMounted(() => {
   width: v-bind(sidebarWidth);
   height: 100vh;
   background-color: var(--bg-primary);
-  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease, left 0.3s ease, width 0.1s ease;
+  transition: margin-left 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, transform 0.3s ease, left 0.3s ease, width 0.1s ease;
   flex-shrink: 0;
   z-index: 1000;
 }

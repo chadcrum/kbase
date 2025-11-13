@@ -494,6 +494,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-height: 400px;
   overflow: auto;
+  padding-top: 1.5rem;
 }
 
 /* Milkdown editor styles */
@@ -502,7 +503,6 @@ onBeforeUnmount(() => {
   flex-direction: column;
   flex: 1;
   padding: 1rem;
-  padding-top: calc(1rem + 1.5rem);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   font-size: 14px;
   line-height: 1.6;
@@ -533,11 +533,11 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   .milkdown-editor-container {
     min-height: 300px;
+    padding-top: 1.5rem;
   }
   
   .milkdown-editor-container :deep(.milkdown) {
     padding: 0.75rem;
-    padding-top: calc(0.75rem + 1.5rem);
     font-size: 14px;
   }
 }

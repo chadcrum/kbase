@@ -1,6 +1,7 @@
 <template>
   <div class="viewer-toolbar" :style="{ '--toolbar-left': toolbarLeft }">
     <span v-if="filePath" class="file-path">{{ filePath }}</span>
+    <span v-else-if="fileName" class="file-name">{{ fileName }}</span>
   </div>
 </template>
 
@@ -54,14 +55,30 @@ const toolbarLeft = computed(() => {
   line-height: 1.5;
 }
 
+.file-name {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .viewer-toolbar {
     padding-left: 0.5rem;
+    height: auto;
+    min-height: 0;
   }
 
   .file-path {
     display: none;
+  }
+
+  .file-name {
+    display: block;
   }
 }
 </style>

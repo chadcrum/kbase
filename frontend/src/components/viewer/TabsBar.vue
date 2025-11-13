@@ -56,12 +56,13 @@
         >
           <span class="tabs-dropdown-icon">📋</span>
         </button>
-        <div
-          v-if="showTabsDropdown"
-          class="tabs-dropdown"
-          :style="dropdownStyle"
-          role="menu"
-        >
+        <Teleport to="body">
+          <div
+            v-if="showTabsDropdown"
+            class="tabs-dropdown"
+            :style="dropdownStyle"
+            role="menu"
+          >
           <div v-if="tabs.length === 0" class="tabs-dropdown-empty">
             No tabs open
           </div>
@@ -89,7 +90,8 @@
               ×
             </button>
           </div>
-        </div>
+          </div>
+        </Teleport>
       </div>
 
       <!-- Editor toggle for markdown files -->

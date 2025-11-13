@@ -204,16 +204,18 @@ describe('TabsBar', () => {
     const wrapper = mount(TabsBar)
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
-    // Initially dropdown should be closed
-    expect(wrapper.find('.tabs-dropdown').exists()).toBe(false)
+    // Initially dropdown should be closed (check document body for Teleported content)
+    expect(document.body.querySelector('.tabs-dropdown')).toBeNull()
     
     // Click to open
     await dropdownBtn.trigger('click')
-    expect(wrapper.find('.tabs-dropdown').exists()).toBe(true)
+    await wrapper.vm.$nextTick()
+    expect(document.body.querySelector('.tabs-dropdown')).toBeTruthy()
     
     // Click again to close
     await dropdownBtn.trigger('click')
-    expect(wrapper.find('.tabs-dropdown').exists()).toBe(false)
+    await wrapper.vm.$nextTick()
+    expect(document.body.querySelector('.tabs-dropdown')).toBeNull()
   })
 
   it('shows all tabs in dropdown', async () => {
@@ -221,9 +223,12 @@ describe('TabsBar', () => {
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
     await dropdownBtn.trigger('click')
+    await wrapper.vm.$nextTick()
     
-    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
-    expect(dropdownItems).toHaveLength(3)
+    const dropdown = document.body.querySelector('.tabs-dropdown')
+    expect(dropdown).toBeTruthy()
+    const dropdownItems = dropdown?.querySelectorAll('.tabs-dropdown-item-wrapper')
+    expect(dropdownItems?.length).toBe(3)
   })
 
   it('shows empty message when no tabs', async () => {
@@ -232,9 +237,11 @@ describe('TabsBar', () => {
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
     await dropdownBtn.trigger('click')
+    await wrapper.vm.$nextTick()
     
-    expect(wrapper.find('.tabs-dropdown-empty').exists()).toBe(true)
-    expect(wrapper.find('.tabs-dropdown-empty').text()).toBe('No tabs open')
+    const emptyMessage = document.body.querySelector('.tabs-dropdown-empty')
+    expect(emptyMessage).toBeTruthy()
+    expect(emptyMessage?.textContent).toBe('No tabs open')
   })
 
   it('highlights active tab in dropdown', async () => {
@@ -242,10 +249,11 @@ describe('TabsBar', () => {
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
     await dropdownBtn.trigger('click')
+    await wrapper.vm.$nextTick()
     
-    const activeItem = wrapper.find('.tabs-dropdown-item-wrapper.is-active')
-    expect(activeItem.exists()).toBe(true)
-    expect(activeItem.text()).toContain('Test 1')
+    const activeItem = document.body.querySelector('.tabs-dropdown-item-wrapper.is-active')
+    expect(activeItem).toBeTruthy()
+    expect(activeItem?.textContent).toContain('Test 1')
   })
 
   it('shows pin icon for pinned tabs in dropdown', async () => {
@@ -253,10 +261,12 @@ describe('TabsBar', () => {
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
     await dropdownBtn.trigger('click')
+    await wrapper.vm.$nextTick()
     
-    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
+    const dropdownItems = document.body.querySelectorAll('.tabs-dropdown-item-wrapper')
     const pinnedItem = dropdownItems[1] // tab2 is pinned
-    expect(pinnedItem.find('.tabs-dropdown-item-icon').text()).toBe('📌')
+    const icon = pinnedItem.querySelector('.tabs-dropdown-item-icon')
+    expect(icon?.textContent).toBe('📌')
   })
 
   it('shows file icon for unpinned tabs in dropdown', async () => {
@@ -264,10 +274,12 @@ describe('TabsBar', () => {
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
     await dropdownBtn.trigger('click')
+    await wrapper.vm.$nextTick()
     
-    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
+    const dropdownItems = document.body.querySelectorAll('.tabs-dropdown-item-wrapper')
     const unpinnedItem = dropdownItems[0] // tab1 is unpinned
-    expect(unpinnedItem.find('.tabs-dropdown-item-icon').text()).toBe('📄')
+    const icon = unpinnedItem.querySelector('.tabs-dropdown-item-icon')
+    expect(icon?.textContent).toBe('📄')
   })
 
   it('handles tab selection from dropdown', async () => {
@@ -278,14 +290,19 @@ describe('TabsBar', () => {
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
     await dropdownBtn.trigger('click')
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0)) // Allow Teleport to render
     
-    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
-    const tabButton = dropdownItems[1].find('.tabs-dropdown-item')
-    await tabButton.trigger('click') // Click tab2
+    const dropdownItems = document.body.querySelectorAll('.tabs-dropdown-item-wrapper')
+    const tabButton = dropdownItems[1].querySelector('.tabs-dropdown-item') as HTMLElement
+    if (tabButton) {
+      tabButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
+    }
     
     expect(mockTabsStore.setActiveTab).toHaveBeenCalledWith('tab2')
     expect(mockVaultStore.loadNote).toHaveBeenCalledWith('/test2.md')
-    expect(wrapper.find('.tabs-dropdown').exists()).toBe(false) // Dropdown should close
+    expect(document.body.querySelector('.tabs-dropdown')).toBeNull() // Dropdown should close
   })
 
   it('renders close button for each tab in dropdown', async () => {
@@ -293,9 +310,10 @@ describe('TabsBar', () => {
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
     await dropdownBtn.trigger('click')
+    await wrapper.vm.$nextTick()
     
-    const closeButtons = wrapper.findAll('.tabs-dropdown-item-close')
-    expect(closeButtons).toHaveLength(3)
+    const closeButtons = document.body.querySelectorAll('.tabs-dropdown-item-close')
+    expect(closeButtons.length).toBe(3)
   })
 
   it('handles closing tab from dropdown', async () => {
@@ -307,10 +325,15 @@ describe('TabsBar', () => {
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
     await dropdownBtn.trigger('click')
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0)) // Allow Teleport to render
     
-    const dropdownItems = wrapper.findAll('.tabs-dropdown-item-wrapper')
-    const closeButton = dropdownItems[0].find('.tabs-dropdown-item-close')
-    await closeButton.trigger('click') // Close tab1
+    const dropdownItems = document.body.querySelectorAll('.tabs-dropdown-item-wrapper')
+    const closeButton = dropdownItems[0].querySelector('.tabs-dropdown-item-close') as HTMLElement
+    if (closeButton) {
+      closeButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
+    }
     
     expect(mockTabsStore.closeTab).toHaveBeenCalledWith('tab1')
     expect(mockVaultStore.loadNote).toHaveBeenCalledWith('/test3.md')
@@ -328,13 +351,18 @@ describe('TabsBar', () => {
     const dropdownBtn = wrapper.find('.tabs-dropdown-btn')
     
     await dropdownBtn.trigger('click')
-    expect(wrapper.find('.tabs-dropdown').exists()).toBe(true)
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0)) // Allow Teleport to render
+    expect(document.body.querySelector('.tabs-dropdown')).toBeTruthy()
     
-    const closeButton = wrapper.find('.tabs-dropdown-item-close')
-    await closeButton.trigger('click')
+    const closeButton = document.body.querySelector('.tabs-dropdown-item-close') as HTMLElement
+    if (closeButton) {
+      closeButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
+    }
     
     expect(mockTabsStore.closeTab).toHaveBeenCalled()
     expect(mockVaultStore.clearSelection).toHaveBeenCalled()
-    expect(wrapper.find('.tabs-dropdown').exists()).toBe(false) // Dropdown should close
+    expect(document.body.querySelector('.tabs-dropdown')).toBeNull() // Dropdown should close
   })
 })

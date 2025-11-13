@@ -87,16 +87,23 @@ onUnmounted(() => {
 
 <style scoped>
 .resize-handle {
-  width: 1px;
+  width: 0.5px; /* Super thin visual border */
   background-color: var(--border-color);
   cursor: col-resize;
   position: relative;
   flex-shrink: 0;
   transition: background-color 0.3s ease;
   z-index: 1001; /* Higher than sidebar z-index */
-  /* Expand hit area for easier dragging while keeping visual border thin */
-  padding: 0 3px;
-  margin: 0 -3px;
+}
+
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -3px; /* Extend hit area 3px to each side */
+  width: 6px; /* Total hit area width */
+  height: 100%;
+  cursor: col-resize;
 }
 
 .resize-handle:hover {
@@ -113,10 +120,10 @@ onUnmounted(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 1px;
+  width: 0.5px;
   height: 20px;
   background-color: var(--text-secondary);
-  border-radius: 0.5px;
+  border-radius: 0.25px;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -128,10 +135,12 @@ onUnmounted(() => {
 /* Touch-friendly on mobile */
 @media (hover: none) and (pointer: coarse) {
   .resize-handle {
-    width: 1px; /* Keep visual border super thin */
-    /* Expand hit area for touch while keeping visual border thin */
-    padding: 0 8px;
-    margin: 0 -8px;
+    width: 0.5px; /* Keep visual border super thin */
+  }
+
+  .resize-handle::before {
+    left: -8px; /* Extend hit area 8px to each side for touch */
+    width: 16px; /* Total hit area width */
   }
 
   .resize-handle-indicator {

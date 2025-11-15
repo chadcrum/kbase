@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { apiClient } from '@/api/client'
 import type { FileTreeNode, NoteData } from '@/types'
 import { useTabsStore } from './tabs'
+import { windowSyncService } from '@/composables/useWindowSync'
 
 export type SortBy = 'name' | 'created' | 'modified'
 export type SortOrder = 'asc' | 'desc'
@@ -272,7 +273,7 @@ export const useVaultStore = defineStore('vault', () => {
     }
   }
 
-  const selectNote = (path: string) => {
+  const selectNote = (path: string, shouldBroadcast: boolean = true) => {
     expandToPath(path)
 
     if (path === selectedNotePath.value) return
@@ -288,6 +289,11 @@ export const useVaultStore = defineStore('vault', () => {
     
     // Load the new note
     loadNote(path)
+    
+    // Broadcast note selection to other windows (unless disabled)
+    if (shouldBroadcast) {
+      windowSyncService.broadcastNoteSelection(path)
+    }
   }
 
   const clearSelection = () => {
@@ -322,6 +328,10 @@ export const useVaultStore = defineStore('vault', () => {
       // Reload the currently selected note
       await loadNote(selectedNotePath.value)
     }
+    // Broadcast file tree update to other windows
+    if (success) {
+      windowSyncService.broadcastFileTreeUpdate()
+    }
     return success
   }
 
@@ -338,6 +348,9 @@ export const useVaultStore = defineStore('vault', () => {
       if (selectedNote.value && selectedNote.value.path === path) {
         selectedNote.value.content = content
       }
+      
+      // Broadcast note update to other windows
+      windowSyncService.broadcastNoteUpdate(path, content)
       
       return true
     } catch (err: any) {
@@ -371,6 +384,8 @@ export const useVaultStore = defineStore('vault', () => {
       
       // Refresh file tree
       await loadFileTree()
+      // Broadcast file tree update to other windows
+      windowSyncService.broadcastFileTreeUpdate()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to delete file'
@@ -405,6 +420,8 @@ export const useVaultStore = defineStore('vault', () => {
       
       // Refresh file tree
       await loadFileTree()
+      // Broadcast file tree update to other windows
+      windowSyncService.broadcastFileTreeUpdate()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to rename file'
@@ -438,6 +455,8 @@ export const useVaultStore = defineStore('vault', () => {
       
       // Refresh file tree
       await loadFileTree()
+      // Broadcast file tree update to other windows
+      windowSyncService.broadcastFileTreeUpdate()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to move file'
@@ -457,6 +476,8 @@ export const useVaultStore = defineStore('vault', () => {
       
       // Refresh file tree
       await loadFileTree()
+      // Broadcast file tree update to other windows
+      windowSyncService.broadcastFileTreeUpdate()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to delete directory'
@@ -470,6 +491,8 @@ export const useVaultStore = defineStore('vault', () => {
       
       // Refresh file tree
       await loadFileTree()
+      // Broadcast file tree update to other windows
+      windowSyncService.broadcastFileTreeUpdate()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to rename directory'
@@ -492,6 +515,8 @@ export const useVaultStore = defineStore('vault', () => {
       
       // Refresh file tree
       await loadFileTree()
+      // Broadcast file tree update to other windows
+      windowSyncService.broadcastFileTreeUpdate()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to move directory'
@@ -505,6 +530,8 @@ export const useVaultStore = defineStore('vault', () => {
       
       // Refresh file tree
       await loadFileTree()
+      // Broadcast file tree update to other windows
+      windowSyncService.broadcastFileTreeUpdate()
       return true
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Failed to create directory'
@@ -518,6 +545,8 @@ export const useVaultStore = defineStore('vault', () => {
       
       // Refresh file tree
       await loadFileTree()
+      // Broadcast file tree update to other windows
+      windowSyncService.broadcastFileTreeUpdate()
       
       // Optionally open the newly created note
       if (path) {

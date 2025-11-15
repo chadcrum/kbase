@@ -226,6 +226,9 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
       { label: 'Create Directory', icon: '📁', action: 'create-folder' },
       { label: 'Create Note', icon: '📄', action: 'create-note' }
     )
+  } else {
+    // Add "Open in New Window" option for files only
+    items.push({ label: 'Open in New Window', icon: '🪟', action: 'open-in-popup' })
   }
   
   items.push({ label: 'Rename', icon: '✏️', action: 'rename' })
@@ -386,6 +389,42 @@ onBeforeUnmount(() => {
   cancelLongPressTimer()
 })
 
+// Open note in popup window
+const openNoteInPopup = () => {
+  if (props.node.type !== 'file') return
+  
+  // Encode the note path as a URL parameter
+  const encodedPath = encodeURIComponent(props.node.path)
+  const popupUrl = `/?popup=true&note=${encodedPath}`
+  
+  // Open popup window with appropriate features
+  // Using a unique window name allows reusing the same popup window
+  const windowName = `kbase-popup-${props.node.path.replace(/[^a-zA-Z0-9]/g, '-')}`
+  
+  const windowFeatures = [
+    'width=1000',
+    'height=700',
+    'left=' + Math.round((screen.width - 1000) / 2),  // Center horizontally
+    'top=' + Math.round((screen.height - 700) / 2),   // Center vertically
+    'resizable=yes',
+    'scrollbars=yes',
+    'menubar=no',
+    'toolbar=no',
+    'status=no'
+  ].join(',')
+  
+  const popupWindow = window.open(popupUrl, windowName, windowFeatures)
+  
+  // Handle popup blocker
+  if (!popupWindow || popupWindow.closed || typeof popupWindow.closed === 'undefined') {
+    alert('Popup blocked. Please allow popups for this site to open notes in a new window.')
+    return
+  }
+  
+  // Focus the popup window
+  popupWindow.focus()
+}
+
 const handleContextMenuAction = async (action: string) => {
   switch (action) {
     case 'create-folder':
@@ -393,6 +432,9 @@ const handleContextMenuAction = async (action: string) => {
       break
     case 'create-note':
       showCreateFileDialog.value = true
+      break
+    case 'open-in-popup':
+      openNoteInPopup()
       break
     case 'rename':
       startRename()

@@ -1,12 +1,18 @@
 <template>
   <div class="note-viewer">
-    <!-- Tabs Bar -->
+    <!-- Tabs Bar (hidden in popup mode) -->
     <TabsBar
+      v-if="!isPopup"
       :file-path="selectedNote?.path"
       @open-search="handleOpenSearch"
     />
     
-    <div v-if="selectedNote" class="note-content">
+    <!-- Popup title bar (shown only in popup mode) -->
+    <div v-if="isPopup && selectedNote" class="popup-title-bar">
+      <h2 class="popup-title">{{ getNoteTitle(selectedNote.path) }}</h2>
+    </div>
+    
+    <div v-if="selectedNote" class="note-content" :class="{ 'is-popup': isPopup }">
       <!-- Viewer Toolbar -->
       <ViewerToolbar
         :file-name="getNoteTitle(selectedNote.path)"
@@ -68,6 +74,15 @@ import TabsBar from './TabsBar.vue'
 import ViewerToolbar from './ViewerToolbar.vue'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
 import MilkdownEditor from '@/components/editor/MilkdownEditor.vue'
+
+// Props
+interface Props {
+  isPopup?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  isPopup: false
+})
 
 // Emits
 const emit = defineEmits<{
@@ -133,6 +148,7 @@ const handleSave = async (content: string) => {
 
   if (success) {
     saveStatus.value = 'saved'
+    // Note: Window sync is handled by vault store's updateNote method
     // Clear the saved status after 2 seconds
     saveStatusTimeout = setTimeout(() => {
       saveStatus.value = null
@@ -201,6 +217,37 @@ const handleOpenSearch = () => {
   flex-direction: column;
   overflow: hidden;
   padding-top: var(--tabs-bar-height);
+}
+
+.note-content.is-popup {
+  padding-top: 3rem; /* Account for popup title bar */
+}
+
+.popup-title-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+  z-index: 10;
+}
+
+.popup-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .note-scroll-content {

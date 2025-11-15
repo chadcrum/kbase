@@ -7,9 +7,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import { windowSyncService } from '@/composables/useWindowSync'
 import InstallPrompt from '@/components/common/InstallPrompt.vue'
 import UpdatePrompt from '@/components/common/UpdatePrompt.vue'
 
@@ -21,8 +22,16 @@ onMounted(async () => {
   // Initialize theme first (sync operation)
   themeStore.initializeTheme()
   
+  // Initialize window sync for cross-window communication
+  windowSyncService.initialize()
+  
   // Then initialize authentication
   await authStore.initializeAuth()
+})
+
+onBeforeUnmount(() => {
+  // Cleanup window sync service
+  windowSyncService.cleanup()
 })
 </script>
 

@@ -28,10 +28,12 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Monaco Editor**: Full-featured code editor with VS Code experience
   - Syntax highlighting for 30+ programming languages
   - Available for all file types
+  - Undo/Redo: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
 - **Milkdown Editor**: WYSIWYG markdown editor (optional for .md files)
   - WYSIWYG editing experience for markdown
   - CommonMark and GitHub Flavored Markdown support
   - Tab indentation: Tab key indents, Shift+Tab outdents
+  - Undo/Redo: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
   - Toggle between Monaco and Milkdown via toolbar button
 - **Auto-Save**: Automatic saving with 1-second debounce (both editors)
 - **Save Status**: Visual feedback for saving/saved/error states

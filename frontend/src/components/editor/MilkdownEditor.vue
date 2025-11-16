@@ -21,6 +21,7 @@ import {
 } from '@milkdown/core'
 import { commonmark, sinkListItemCommand, liftListItemCommand } from '@milkdown/preset-commonmark'
 import { gfm } from '@milkdown/preset-gfm'
+import { history, undoCommand, redoCommand } from '@milkdown/plugin-history'
 import { indent } from '@milkdown/plugin-indent'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { nord } from '@milkdown/theme-nord'
@@ -143,6 +144,30 @@ const textIndentPlugin: MilkdownPlugin = (ctx) => {
           return true
         }
         return removeSpacesCommand(state, dispatch)
+      },
+    })
+
+    return () => {
+      dispose()
+    }
+  }
+}
+
+// History keymap plugin for undo/redo shortcuts
+const historyKeymapPlugin: MilkdownPlugin = (ctx) => {
+  return async () => {
+    await ctx.wait(KeymapReady)
+    const keymapManager = ctx.get(keymapCtx)
+    const commandManager = ctx.get(commandsCtx)
+    const dispose = keymapManager.addObjectKeymap({
+      'Mod-z': () => {
+        return commandManager.call(undoCommand.key)
+      },
+      'Mod-r': () => {
+        return commandManager.call(redoCommand.key)
+      },
+      'Mod-y': () => {
+        return commandManager.call(redoCommand.key)
       },
     })
 
@@ -370,6 +395,8 @@ onMounted(async () => {
       .config(nord)
       .use(commonmark)
       .use(gfm)
+      .use(history)
+      .use(historyKeymapPlugin)
       .use(indent)
       .use(textIndentPlugin)
       .use(milkdownTaskListPlugin)
@@ -411,6 +438,8 @@ watch(() => props.modelValue, async (newValue) => {
         .config(nord)
         .use(commonmark)
         .use(gfm)
+        .use(history)
+        .use(historyKeymapPlugin)
         .use(indent)
         .use(textIndentPlugin)
         .use(milkdownTaskListPlugin)

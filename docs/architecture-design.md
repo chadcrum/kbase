@@ -398,11 +398,13 @@ frontend/src/
     - Syntax highlighting for 30+ languages
     - Dark theme matching VS Code
     - Language detection from file extensions
+    - Undo/Redo keyboard shortcuts: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
 - **Milkdown Editor**: WYSIWYG markdown editor available for `.md` files
     - Interactive task list checkboxes with markdown sync using a custom ProseMirror plugin. Checked items display with strikethrough text styling.
     - Shares the same auto-save cadence and state restoration (cursor + scroll) as Monaco.
     - Nord theme integration keeps checkbox widgets aligned with light/dark theme variables.
     - Checkbox widgets honor Tab / Shift+Tab for indent and outdent, keeping keyboard ergonomics consistent with the text caret.
+    - Undo/Redo keyboard shortcuts: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
 - **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
 - **Sidebar Toggle**: Collapsible file explorer for maximizing editor space
   - Toggle button in toolbar (left side, before file name)

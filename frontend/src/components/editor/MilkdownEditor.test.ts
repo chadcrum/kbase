@@ -87,6 +87,16 @@ vi.mock('@milkdown/plugin-indent', () => ({
   indent: Symbol('indent'),
 }))
 
+const { historySymbol } = vi.hoisted(() => ({
+  historySymbol: Symbol('history'),
+}))
+
+vi.mock('@milkdown/plugin-history', () => ({
+  history: historySymbol,
+  undoCommand: { key: 'undo' },
+  redoCommand: { key: 'redo' },
+}))
+
 vi.mock('@milkdown/plugin-listener', () => ({
   listener: Symbol('listener'),
   listenerCtx: Symbol('listenerCtx'),
@@ -137,6 +147,19 @@ describe('MilkdownEditor', () => {
     await flushPromises()
 
     expect(focusMock).not.toHaveBeenCalled()
+  })
+
+  it('uses history plugin for undo/redo functionality', async () => {
+    mount(MilkdownEditor, {
+      props: {
+        modelValue: 'test content',
+        path: '/test.md',
+      },
+    })
+
+    await flushPromises()
+
+    expect(useCalls).toContain(historySymbol)
   })
 })
 

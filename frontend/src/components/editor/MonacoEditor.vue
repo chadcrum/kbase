@@ -149,6 +149,17 @@ onMounted(async () => {
 
     eventDisposables = [cursorDisposable, selectionDisposable, scrollDisposable]
 
+    // Add Ctrl+R keybinding for redo
+    if (monaco && editor) {
+      editor.addCommand(
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyR,
+        () => {
+          if (!editor || props.readonly || props.disabled) return
+          editor.trigger('keyboard', 'redo', {})
+        }
+      )
+    }
+
     // Restore editor view state if available
     nextTick(() => {
       restoreEditorState()

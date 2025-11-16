@@ -1,5 +1,10 @@
 <template>
-  <div ref="editorContainer" class="monaco-editor-container"></div>
+  <div 
+    ref="editorContainer" 
+    class="monaco-editor-container"
+    @mousedown="handleEditorClick"
+    @touchstart="handleEditorClick"
+  ></div>
 </template>
 
 <script setup lang="ts">
@@ -7,6 +12,7 @@ import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import loader from '@monaco-editor/loader'
 import { detectLanguage } from '@/utils/languageDetection'
 import { useThemeStore } from '@/stores/theme'
+import { useVaultStore } from '@/stores/vault'
 import type * as Monaco from 'monaco-editor'
 import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 
@@ -31,6 +37,7 @@ const emit = defineEmits<{
 
 // Store
 const themeStore = useThemeStore()
+const vaultStore = useVaultStore()
 
 // Refs
 const editorContainer = ref<HTMLElement | null>(null)
@@ -79,6 +86,12 @@ const setEditorTheme = () => {
   if (!editor || !monaco) return
   const theme = themeStore.isDarkMode ? 'vs-dark' : 'vs-light'
   monaco.editor.setTheme(theme)
+}
+
+// Handle editor click to auto-collapse sidebar if not pinned
+const handleEditorClick = () => {
+  if (props.disabled) return
+  vaultStore.collapseSidebarIfNotPinned()
 }
 
 // Initialize Monaco editor

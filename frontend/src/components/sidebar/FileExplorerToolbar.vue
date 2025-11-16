@@ -10,6 +10,15 @@
       >
         <span class="icon">☰</span>
       </button>
+      <button
+        @click="handleTogglePin"
+        class="toolbar-button toolbar-pin-btn"
+        :class="{ 'is-pinned': vaultStore.isSidebarPinned }"
+        :title="pinButtonTitle"
+        aria-label="Pin sidebar"
+      >
+        <span class="icon">{{ pinIcon }}</span>
+      </button>
       <div
         v-if="showMenu"
         class="toolbar-dropdown"
@@ -182,6 +191,19 @@ const themeIcon = computed(() => {
 const themeToggleLabel = computed(() => {
   return themeStore.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'
 })
+
+// Pin button
+const pinIcon = computed(() => {
+  return vaultStore.isSidebarPinned ? '📌' : '📍'
+})
+
+const pinButtonTitle = computed(() => {
+  return vaultStore.isSidebarPinned ? 'Unpin sidebar (auto-collapse enabled)' : 'Pin sidebar (prevent auto-collapse)'
+})
+
+const handleTogglePin = () => {
+  vaultStore.toggleSidebarPin()
+}
 
 /**
  * Validates folder name to prevent path traversal and invalid characters
@@ -553,6 +575,16 @@ onUnmounted(() => {
 
 .toolbar-button .icon {
   font-size: 0.85rem;
+}
+
+.toolbar-pin-btn.is-pinned {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-color);
+}
+
+.toolbar-pin-btn.is-pinned:hover {
+  background-color: var(--accent-color);
+  color: white;
 }
 
 .refresh-button:disabled {

@@ -85,6 +85,7 @@ export const useVaultStore = defineStore('vault', () => {
 
   // Sidebar state
   const isSidebarCollapsed = ref(false)
+  const isSidebarPinned = ref(false)
   const sidebarWidth = ref<number>(readSidebarWidthPreference())
 
   // Getters
@@ -598,6 +599,16 @@ export const useVaultStore = defineStore('vault', () => {
     isSidebarCollapsed.value = !isSidebarCollapsed.value
   }
 
+  const toggleSidebarPin = () => {
+    isSidebarPinned.value = !isSidebarPinned.value
+  }
+
+  const collapseSidebarIfNotPinned = () => {
+    if (!isSidebarPinned.value) {
+      isSidebarCollapsed.value = true
+    }
+  }
+
   return {
     // State
     fileTree,
@@ -610,6 +621,7 @@ export const useVaultStore = defineStore('vault', () => {
     sortBy,
     sortOrder,
     isSidebarCollapsed,
+    isSidebarPinned,
     sidebarWidth,
     // Getters
     hasError,
@@ -647,6 +659,8 @@ export const useVaultStore = defineStore('vault', () => {
     collapseAll,
     // Sidebar actions
     toggleSidebar,
+    toggleSidebarPin,
+    collapseSidebarIfNotPinned,
     setSidebarWidth
   }
 })

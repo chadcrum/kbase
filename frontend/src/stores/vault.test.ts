@@ -999,5 +999,60 @@ describe('VaultStore', () => {
       expect(vaultStore.isSidebarCollapsed).toBe(true)
     })
   })
+
+  describe('sidebar pin', () => {
+    it('should have sidebar unpinned by default', () => {
+      expect(vaultStore.isSidebarPinned).toBe(false)
+    })
+
+    it('should pin sidebar when toggleSidebarPin is called', () => {
+      expect(vaultStore.isSidebarPinned).toBe(false)
+      
+      vaultStore.toggleSidebarPin()
+      
+      expect(vaultStore.isSidebarPinned).toBe(true)
+    })
+
+    it('should unpin sidebar when toggleSidebarPin is called again', () => {
+      vaultStore.toggleSidebarPin() // Pin
+      expect(vaultStore.isSidebarPinned).toBe(true)
+      
+      vaultStore.toggleSidebarPin() // Unpin
+      
+      expect(vaultStore.isSidebarPinned).toBe(false)
+    })
+
+    it('should collapse sidebar when collapseSidebarIfNotPinned is called and not pinned', () => {
+      expect(vaultStore.isSidebarPinned).toBe(false)
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      
+      vaultStore.collapseSidebarIfNotPinned()
+      
+      expect(vaultStore.isSidebarCollapsed).toBe(true)
+    })
+
+    it('should not collapse sidebar when collapseSidebarIfNotPinned is called and pinned', () => {
+      vaultStore.toggleSidebarPin() // Pin
+      expect(vaultStore.isSidebarPinned).toBe(true)
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      
+      vaultStore.collapseSidebarIfNotPinned()
+      
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+    })
+
+    it('should allow manual toggle regardless of pin state', () => {
+      vaultStore.toggleSidebarPin() // Pin
+      expect(vaultStore.isSidebarPinned).toBe(true)
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      
+      // Manual toggle should still work when pinned
+      vaultStore.toggleSidebar()
+      expect(vaultStore.isSidebarCollapsed).toBe(true)
+      
+      vaultStore.toggleSidebar()
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+    })
+  })
 })
 

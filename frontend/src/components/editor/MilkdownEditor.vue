@@ -29,6 +29,7 @@ import { TextSelection, type Command } from '@milkdown/prose/state'
 import type { EditorView } from '@milkdown/prose/view'
 import type { Options } from 'remark-stringify'
 import { useThemeStore } from '@/stores/theme'
+import { useVaultStore } from '@/stores/vault'
 import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 import { milkdownTaskListPlugin } from './plugins/milkdownTaskListPlugin'
 
@@ -53,6 +54,7 @@ const emit = defineEmits<{
 
 // Store
 const themeStore = useThemeStore()
+const vaultStore = useVaultStore()
 
 // Refs
 const editorContainer = ref<HTMLElement | null>(null)
@@ -459,6 +461,7 @@ const updateTheme = () => {
 
 const handleContainerPointerDown = () => {
   if (props.disabled) return
+  vaultStore.collapseSidebarIfNotPinned()
   void focusEditor()
 }
 

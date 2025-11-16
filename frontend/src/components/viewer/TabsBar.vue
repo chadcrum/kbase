@@ -26,7 +26,7 @@
         @dragleave="handleDragLeave"
         @drop="handleDrop($event, tab.id)"
         @touchstart="handleTouchStart($event, tab.id)"
-        @touchmove="handleTouchMove"
+        @touchmove="handleTouchMove($event)"
         @touchend="handleTouchEnd"
         @contextmenu.prevent="handleTabContextMenu($event, tab.id)"
       >
@@ -156,9 +156,10 @@ const tabsDropdownBtnRef = ref<HTMLElement | null>(null)
 const showTabsDropdown = ref(false)
 const dropdownStyle = ref<{ right?: string }>({})
 
-// State for long-press detection (mobile pinning)
+// State for long-press detection (mobile context menu)
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
 let currentLongPressTabId: string | null = null
+let longPressTouchCoords: { x: number; y: number } | null = null
 const LONG_PRESS_DURATION = 500 // ms
 
 // State for drag and drop (desktop only)
@@ -372,7 +373,7 @@ const handleDrop = (event: DragEvent, tabId: string) => {
   handleDragEnd()
 }
 
-// Touch handlers for mobile (simplified - just long press for pinning, no drag)
+// Touch handlers for mobile (long press shows context menu)
 const handleTouchStart = (event: TouchEvent, tabId: string) => {
   // Only start long press if not on close button
   if ((event.target as HTMLElement).closest('.tab-close')) {
@@ -384,12 +385,23 @@ const handleTouchStart = (event: TouchEvent, tabId: string) => {
     clearTimeout(longPressTimer)
   }
 
-  // Set up long press for pinning
+  // Store touch coordinates for context menu positioning
+  const touch = event.touches[0]
+  longPressTouchCoords = { x: touch.clientX, y: touch.clientY }
+
+  // Set up long press for context menu
   currentLongPressTabId = tabId
   longPressTimer = setTimeout(() => {
-    if (currentLongPressTabId === tabId) {
-      tabsStore.togglePinTab(tabId)
+    if (currentLongPressTabId === tabId && longPressTouchCoords) {
+      // Show context menu at touch coordinates
+      contextMenuTabId.value = tabId
+      contextMenuX.value = longPressTouchCoords.x
+      contextMenuY.value = longPressTouchCoords.y
+      showContextMenu.value = true
+      
+      // Clean up
       currentLongPressTabId = null
+      longPressTouchCoords = null
     }
   }, LONG_PRESS_DURATION)
 }
@@ -401,15 +413,31 @@ const handleTouchEnd = () => {
     longPressTimer = null
   }
   currentLongPressTabId = null
+  longPressTouchCoords = null
 }
 
-const handleTouchMove = () => {
-  // Cancel long press if user starts moving (prevents accidental pinning during scroll)
+const handleTouchMove = (event: TouchEvent) => {
+  // Cancel long press if user starts moving (prevents accidental menu during scroll)
   if (longPressTimer) {
-    clearTimeout(longPressTimer)
-    longPressTimer = null
+    const touch = event.touches[0]
+    if (longPressTouchCoords) {
+      const deltaX = Math.abs(touch.clientX - longPressTouchCoords.x)
+      const deltaY = Math.abs(touch.clientY - longPressTouchCoords.y)
+      const distance = Math.hypot(deltaX, deltaY)
+      
+      // Only cancel if moved more than threshold
+      if (distance > 10) {
+        clearTimeout(longPressTimer)
+        longPressTimer = null
+        currentLongPressTabId = null
+        longPressTouchCoords = null
+      }
+    } else {
+      clearTimeout(longPressTimer)
+      longPressTimer = null
+      currentLongPressTabId = null
+    }
   }
-  currentLongPressTabId = null
 }
 
 // Context menu handlers

@@ -28,6 +28,7 @@
         @touchstart="handleTouchStart($event, tab.id)"
         @touchmove="handleTouchMove"
         @touchend="handleTouchEnd"
+        @contextmenu.prevent="handleTabContextMenu($event, tab.id)"
       >
         <span class="tab-title" :class="{ 'is-italic': !tab.isPinned }">
           {{ tab.title }}
@@ -35,6 +36,7 @@
         <button
           class="tab-close"
           @click.stop="handleCloseTab(tab.id)"
+          @contextmenu.stop
           :title="'Close tab'"
         >
           ×
@@ -108,6 +110,16 @@
         <span class="search-icon">🔍</span>
       </button>
     </div>
+
+    <!-- Context Menu -->
+    <ContextMenu
+      :is-open="showContextMenu"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      :items="contextMenuItems"
+      @close="showContextMenu = false"
+      @select="handleContextMenuAction"
+    />
   </div>
 </template>
 
@@ -116,6 +128,7 @@ import { computed, ref, watch, onBeforeUnmount, onMounted, onUnmounted, nextTick
 import { useTabsStore } from '@/stores/tabs'
 import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
+import ContextMenu, { type ContextMenuItem } from '@/components/sidebar/ContextMenu.vue'
 
 // Props
 interface Props {
@@ -153,6 +166,12 @@ let draggingTabId: string | null = null
 let dragOverTabId: string | null = null
 let dragStartIndex = -1
 let dragOverIndex = -1
+
+// State for context menu
+const showContextMenu = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const contextMenuTabId = ref<string | null>(null)
 
 // Computed
 const tabs = computed(() => tabsStore.tabs)
@@ -391,6 +410,147 @@ const handleTouchMove = () => {
     longPressTimer = null
   }
   currentLongPressTabId = null
+}
+
+// Context menu handlers
+const handleTabContextMenu = (event: MouseEvent, tabId: string) => {
+  event.stopPropagation()
+  contextMenuTabId.value = tabId
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  showContextMenu.value = true
+}
+
+const contextMenuItems = computed((): ContextMenuItem[] => {
+  if (!contextMenuTabId.value) return []
+  
+  const tab = tabsStore.tabs.find(t => t.id === contextMenuTabId.value)
+  if (!tab) return []
+  
+  const items: ContextMenuItem[] = []
+  
+  // Pin/Unpin option
+  items.push({
+    label: tab.isPinned ? 'Unpin' : 'Pin',
+    icon: tab.isPinned ? '📌' : '📌',
+    action: 'toggle-pin'
+  })
+  
+  // Open in New Window option (for file tabs)
+  if (tab.path) {
+    items.push({
+      label: 'Open in New Window',
+      icon: '🪟',
+      action: 'open-in-popup'
+    })
+  }
+  
+  // Close option
+  items.push({
+    label: 'Close',
+    icon: '✖️',
+    action: 'close'
+  })
+  
+  // Close Others option (only if there are other tabs)
+  if (tabsStore.tabs.length > 1) {
+    items.push({
+      label: 'Close Others',
+      icon: '🗙',
+      action: 'close-others'
+    })
+  }
+  
+  // Close All option
+  if (tabsStore.tabs.length > 1) {
+    items.push({
+      label: 'Close All',
+      icon: '🗑️',
+      action: 'close-all',
+      isDanger: true
+    })
+  }
+  
+  return items
+})
+
+const handleContextMenuAction = (action: string) => {
+  if (!contextMenuTabId.value) return
+  
+  const tab = tabsStore.tabs.find(t => t.id === contextMenuTabId.value)
+  if (!tab) return
+  
+  switch (action) {
+    case 'toggle-pin':
+      tabsStore.togglePinTab(contextMenuTabId.value)
+      break
+    case 'open-in-popup':
+      openTabInPopup(tab.path)
+      break
+    case 'close':
+      handleCloseTab(contextMenuTabId.value)
+      break
+    case 'close-others':
+      closeOtherTabs(contextMenuTabId.value)
+      break
+    case 'close-all':
+      closeAllTabs()
+      break
+  }
+  
+  showContextMenu.value = false
+  contextMenuTabId.value = null
+}
+
+const openTabInPopup = (path: string) => {
+  // Encode the note path as a URL parameter
+  const encodedPath = encodeURIComponent(path)
+  const popupUrl = `/?popup=true&note=${encodedPath}`
+  
+  // Open popup window with appropriate features
+  // Using a unique window name allows reusing the same popup window
+  const windowName = `kbase-popup-${path.replace(/[^a-zA-Z0-9]/g, '-')}`
+  
+  const windowFeatures = [
+    'width=1000',
+    'height=700',
+    'left=' + Math.round((screen.width - 1000) / 2),  // Center horizontally
+    'top=' + Math.round((screen.height - 700) / 2),   // Center vertically
+    'resizable=yes',
+    'scrollbars=yes',
+    'menubar=no',
+    'toolbar=no',
+    'status=no'
+  ].join(',')
+  
+  const popupWindow = window.open(popupUrl, windowName, windowFeatures)
+  
+  // Handle popup blocker
+  if (!popupWindow || popupWindow.closed || typeof popupWindow.closed === 'undefined') {
+    alert('Popup blocked. Please allow popups for this site to open notes in a new window.')
+    return
+  }
+  
+  // Focus the popup window
+  popupWindow.focus()
+}
+
+const closeOtherTabs = (keepTabId: string) => {
+  const tabsToClose = tabsStore.tabs.filter(tab => tab.id !== keepTabId)
+  tabsToClose.forEach(tab => {
+    tabsStore.closeTab(tab.id)
+  })
+  
+  // Ensure the kept tab is active
+  tabsStore.setActiveTab(keepTabId)
+  if (tabsStore.activeTabPath) {
+    vaultStore.loadNote(tabsStore.activeTabPath)
+  }
+}
+
+const closeAllTabs = () => {
+  tabsStore.clearAllTabs()
+  vaultStore.clearSelection()
 }
 
 // Watch for active tab changes to scroll into view

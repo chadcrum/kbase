@@ -67,6 +67,28 @@ onMounted(() => {
   padding: 0;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-tertiary, rgba(128, 128, 128, 0.3)) transparent;
+}
+
+/* Thin scrollbar styling - only visible when scrolling is needed */
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background-color: var(--text-tertiary, rgba(128, 128, 128, 0.3));
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary, rgba(128, 128, 128, 0.5));
 }
 
 /* Mobile responsive - side-by-side layout */

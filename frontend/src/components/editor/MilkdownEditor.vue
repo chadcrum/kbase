@@ -585,11 +585,26 @@ const insertImageAtCursor = async (imagePath: string, filename: string) => {
   await editor.action((ctx) => {
     const view = ctx.get(editorViewCtx)
     const { state, dispatch } = view
+    const { schema, selection } = state
 
-    // Insert image markdown at cursor
-    const imageMarkdown = `![${altText}](${imageUrl})`
-    const tr = state.tr.insertText(imageMarkdown)
+    // Get the image node type from the schema
+    const imageType = schema.nodes.image
+    if (!imageType) {
+      // Fallback: insert as markdown text if image node type not available
+      const imageMarkdown = `![${altText}](${imageUrl})`
+      const tr = state.tr.insertText(imageMarkdown)
+      dispatch(tr)
+      return
+    }
 
+    // Create an image node with the URL and alt text
+    const imageNode = imageType.create({
+      src: imageUrl,
+      alt: altText,
+    })
+
+    // Insert the image node at the current cursor position
+    const tr = state.tr.replaceSelectionWith(imageNode)
     dispatch(tr)
   })
 }

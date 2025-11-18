@@ -4,6 +4,7 @@
     class="monaco-editor-container"
     @mousedown="handleEditorClick"
     @touchstart="handleEditorClick"
+    @paste="handlePaste"
   ></div>
 </template>
 
@@ -15,6 +16,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useVaultStore } from '@/stores/vault'
 import type * as Monaco from 'monaco-editor'
 import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
+import { apiClient } from '@/api/client'
 
 // Props
 interface Props {
@@ -92,6 +94,73 @@ const setEditorTheme = () => {
 const handleEditorClick = () => {
   if (props.disabled) return
   vaultStore.collapseSidebarIfNotPinned()
+}
+
+// Handle image paste
+const handlePaste = async (event: ClipboardEvent) => {
+  if (props.disabled || props.readonly || !editor) return
+
+  const items = event.clipboardData?.items
+  if (!items) return
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    if (item.type.startsWith('image/')) {
+      event.preventDefault()
+
+      try {
+        const file = item.getAsFile()
+        if (file) {
+          const imagePath = await apiClient.uploadImage(file)
+          await insertImageAtCursor(imagePath, file.name)
+        }
+      } catch (error) {
+        console.error('Failed to upload pasted image:', error)
+      }
+      break // Only handle the first image
+    }
+  }
+}
+
+// Insert image markdown at cursor position
+const insertImageAtCursor = async (imagePath: string, filename: string) => {
+  if (!editor) return
+
+  const altText = filename.replace(/\.[^/.]+$/, '') // Remove extension for alt text
+
+  // Convert image path to API endpoint URL
+  // Backend returns paths like "/_resources/image.png"
+  // We need to convert to "/api/v1/images/_resources/image.png"
+  let imageUrl = imagePath
+  if (imagePath.startsWith('/_resources/')) {
+    // Extract just the filename from the path
+    const filename = imagePath.replace('/_resources/', '')
+    imageUrl = `/api/v1/images/${filename}`
+  } else if (imagePath.startsWith('_resources/')) {
+    imageUrl = `/api/v1/images/${imagePath}`
+  }
+
+  // Get current selection/cursor position
+  const selection = editor.getSelection()
+  if (!selection) return
+
+  // Create markdown image syntax
+  const imageMarkdown = `![${altText}](${imageUrl})`
+
+  // Insert the markdown at cursor position
+  editor.executeEdits('insert-image', [
+    {
+      range: selection,
+      text: imageMarkdown,
+    },
+  ])
+
+  // Move cursor after the inserted text
+  const position = selection.startColumn + imageMarkdown.length
+  editor.setPosition({
+    lineNumber: selection.startLineNumber,
+    column: position,
+  })
 }
 
 // Initialize Monaco editor

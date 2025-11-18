@@ -3,9 +3,10 @@
     <FileExplorerToolbar 
       :is-loading="isLoading"
       @refresh="handleRefresh"
+      @scroll-to-top="handleScrollToTop"
     />
     
-    <div class="sidebar-content">
+    <div ref="sidebarContentRef" class="sidebar-content">
       <FileTree
         :file-tree="fileTree"
         @refresh="handleRefresh"
@@ -15,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import FileTree from './FileTree.vue'
 import FileExplorerToolbar from './FileExplorerToolbar.vue'
@@ -23,6 +24,9 @@ import FileExplorerToolbar from './FileExplorerToolbar.vue'
 
 // Store
 const vaultStore = useVaultStore()
+
+// Template ref
+const sidebarContentRef = ref<HTMLElement | null>(null)
 
 // Computed properties
 const fileTree = computed(() => vaultStore.fileTree)
@@ -32,6 +36,18 @@ const sidebarWidth = computed(() => `${vaultStore.sidebarWidth}px`)
 // Methods
 const handleRefresh = () => {
   vaultStore.refresh()
+}
+
+/**
+ * Scrolls the sidebar content to the top
+ */
+const handleScrollToTop = () => {
+  if (sidebarContentRef.value) {
+    sidebarContentRef.value.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
 }
 
 // Lifecycle

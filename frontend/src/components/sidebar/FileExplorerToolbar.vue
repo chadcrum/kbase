@@ -19,6 +19,23 @@
       >
         <span class="icon">{{ pinIcon }}</span>
       </button>
+      <button
+        @click="handleCollapseAll"
+        class="toolbar-button toolbar-collapse-btn"
+        :disabled="!hasExpandedPaths"
+        title="Collapse all directories"
+        aria-label="Collapse all directories"
+      >
+        <span class="icon">⬇️</span>
+      </button>
+      <button
+        @click="handleScrollToTop"
+        class="toolbar-button toolbar-scroll-top-btn"
+        title="Scroll to top"
+        aria-label="Scroll to top"
+      >
+        <span class="icon">⬆️</span>
+      </button>
       <div
         v-if="showMenu"
         class="toolbar-dropdown"
@@ -61,18 +78,6 @@
         >
           <span class="icon">{{ sortBy === option.value ? '✓' : '' }}</span>
           <span class="label">{{ option.label }}</span>
-        </button>
-
-        <div class="toolbar-dropdown-divider" role="separator"></div>
-
-        <button
-          class="toolbar-dropdown-item"
-          role="menuitem"
-          @click="handleCollapseAll"
-          :disabled="!hasExpandedPaths"
-        >
-          <span class="icon">⬇️</span>
-          <span class="label">Collapse All</span>
         </button>
 
         <div class="toolbar-dropdown-divider" role="separator"></div>
@@ -148,6 +153,7 @@ defineProps<{
 // Emits
 const emit = defineEmits<{
   refresh: []
+  'scroll-to-top': []
 }>()
 
 const vaultStore = useVaultStore()
@@ -345,7 +351,14 @@ const handleSortByChange = (newSortBy: SortBy) => {
  */
 const handleCollapseAll = () => {
   vaultStore.collapseAll()
-  closeMenu()
+  // Don't close menu since it's now a toolbar button
+}
+
+/**
+ * Handles scroll to top button click
+ */
+const handleScrollToTop = () => {
+  emit('scroll-to-top')
 }
 
 /**
@@ -598,6 +611,11 @@ onUnmounted(() => {
 
 .refresh-button:hover:not(:disabled) .refresh-icon {
   transform: rotate(180deg);
+}
+
+.toolbar-collapse-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Touch device accessibility */

@@ -12,6 +12,7 @@
         'is-drag-over': isDragOver,
         'is-selected': isSelected
       }"
+      :data-file-path="node.type === 'file' ? node.path : undefined"
       :style="{ paddingLeft: level * 16 + 8 + 'px' }"
       :draggable="true"
       @click="handleClick"
@@ -126,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, nextTick, onBeforeUnmount } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import ContextMenu, { type ContextMenuItem } from './ContextMenu.vue'
 import ConfirmDialog from '../common/ConfirmDialog.vue'
@@ -205,17 +206,8 @@ const scrollSelectedIntoView = () => {
   })
 }
 
-watch(isSelected, (selected) => {
-  if (selected) {
-    scrollSelectedIntoView()
-  }
-})
-
-onMounted(() => {
-  if (isSelected.value) {
-    scrollSelectedIntoView()
-  }
-})
+// Note: Automatic scrolling on selection has been removed.
+// Use the "Locate the file" option from the tab context menu to scroll to a file.
 
 const contextMenuItems = computed((): ContextMenuItem[] => {
   const items: ContextMenuItem[] = []

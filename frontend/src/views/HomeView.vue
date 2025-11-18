@@ -12,9 +12,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useVaultStore } from '@/stores/vault'
+import { useTabsStore } from '@/stores/tabs'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import NoteViewer from '@/components/viewer/NoteViewer.vue'
 import OmniSearch from '@/components/common/OmniSearch.vue'
@@ -24,6 +25,7 @@ const route = useRoute()
 
 // Store
 const vaultStore = useVaultStore()
+const tabsStore = useTabsStore()
 
 // State
 const isOmniSearchOpen = ref(false)
@@ -63,12 +65,53 @@ watch(() => vaultStore.selectedNotePath, (newPath) => {
   }
 })
 
+// Locate file in explorer (same logic as in TabsBar)
+const locateFileInExplorer = (path: string) => {
+  if (!path) return
+  
+  // Expand the path to the file so it's visible in the tree
+  vaultStore.expandToPath(path)
+  
+  // Wait for DOM to update (double nextTick to ensure Vue has rendered the expanded tree)
+  nextTick(() => {
+    nextTick(() => {
+      // Find the file node element by data attribute
+      const fileElement = document.querySelector(`[data-file-path="${path}"]`) as HTMLElement
+      if (fileElement) {
+        fileElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+        
+        // Add a temporary highlight effect to draw attention
+        fileElement.style.transition = 'background-color 0.3s ease'
+        const originalBg = fileElement.style.backgroundColor
+        fileElement.style.backgroundColor = 'var(--bg-tertiary)'
+        
+        setTimeout(() => {
+          fileElement.style.backgroundColor = originalBg || ''
+          setTimeout(() => {
+            fileElement.style.transition = ''
+          }, 300)
+        }, 1000)
+      }
+    })
+  })
+}
+
 // Keyboard shortcut handler
 const handleKeyDown = (event: KeyboardEvent) => {
-  // Check for Ctrl+P (Windows/Linux) or Cmd+P (Mac)
+  // Check for Ctrl+P (Windows/Linux) or Cmd+P (Mac) - Open search
   if ((event.ctrlKey || event.metaKey) && event.key === 'p') {
     event.preventDefault()
     isOmniSearchOpen.value = true
+  }
+  
+  // Check for Ctrl+L (Windows/Linux) or Cmd+L (Mac) - Locate file in explorer
+  if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+    event.preventDefault()
+    // Get the currently active tab's path, or fall back to selected note path
+    const activePath = tabsStore.activeTabPath || vaultStore.selectedNotePath
+    if (activePath) {
+      locateFileInExplorer(activePath)
+    }
   }
 }
 

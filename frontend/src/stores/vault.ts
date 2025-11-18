@@ -661,7 +661,9 @@ export const useVaultStore = defineStore('vault', () => {
     toggleSidebar,
     toggleSidebarPin,
     collapseSidebarIfNotPinned,
-    setSidebarWidth
+    setSidebarWidth,
+    // Path expansion utility
+    expandToPath
   }
 })
 

@@ -471,6 +471,13 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
       icon: '🪟',
       action: 'open-in-popup'
     })
+    
+    // Locate the file option (for file tabs)
+    items.push({
+      label: 'Locate the file',
+      icon: '📍',
+      action: 'locate-file'
+    })
   }
   
   // Close option
@@ -514,6 +521,9 @@ const handleContextMenuAction = (action: string) => {
       break
     case 'open-in-popup':
       openTabInPopup(tab.path)
+      break
+    case 'locate-file':
+      locateFileInExplorer(tab.path)
       break
     case 'close':
       handleCloseTab(contextMenuTabId.value)
@@ -561,6 +571,36 @@ const openTabInPopup = (path: string) => {
   
   // Focus the popup window
   popupWindow.focus()
+}
+
+const locateFileInExplorer = (path: string) => {
+  if (!path) return
+  
+  // Expand the path to the file so it's visible in the tree
+  vaultStore.expandToPath(path)
+  
+  // Wait for DOM to update (double nextTick to ensure Vue has rendered the expanded tree)
+  nextTick(() => {
+    nextTick(() => {
+      // Find the file node element by data attribute
+      const fileElement = document.querySelector(`[data-file-path="${path}"]`) as HTMLElement
+      if (fileElement) {
+        fileElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+        
+        // Add a temporary highlight effect to draw attention
+        fileElement.style.transition = 'background-color 0.3s ease'
+        const originalBg = fileElement.style.backgroundColor
+        fileElement.style.backgroundColor = 'var(--bg-tertiary)'
+        
+        setTimeout(() => {
+          fileElement.style.backgroundColor = originalBg || ''
+          setTimeout(() => {
+            fileElement.style.transition = ''
+          }, 300)
+        }, 1000)
+      }
+    })
+  })
 }
 
 const closeOtherTabs = (keepTabId: string) => {

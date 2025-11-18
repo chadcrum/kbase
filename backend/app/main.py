@@ -53,6 +53,20 @@ if os.path.exists(static_dir):
     
     app.mount("/assets", CacheStaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
     
+    # Mount icons directory for PWA icons and favicons
+    icons_dir = os.path.join(static_dir, "icons")
+    if os.path.exists(icons_dir):
+        app.mount("/icons", CacheStaticFiles(directory=icons_dir), name="icons")
+    
+    # Serve favicon.ico explicitly
+    @app.get("/favicon.ico")
+    async def serve_favicon():
+        """Serve the favicon file."""
+        favicon_path = os.path.join(static_dir, "favicon.ico")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path, headers={"Cache-Control": "public, max-age=31536000, immutable"})
+        return {"detail": "Favicon not found"}
+    
     # Serve manifest files
     @app.get("/manifest.webmanifest")
     async def serve_manifest():
@@ -69,6 +83,10 @@ if os.path.exists(static_dir):
         """Serve the SPA for all non-API routes."""
         # Don't interfere with API routes
         if full_path.startswith("api/"):
+            return {"detail": "Not Found"}
+        
+        # Don't serve index.html for known static file requests
+        if full_path in ["favicon.ico", "manifest.webmanifest"] or full_path.startswith("icons/"):
             return {"detail": "Not Found"}
         
         # Serve index.html for SPA routing

@@ -39,16 +39,17 @@
 
 ```
 vault/                           # Mounted Docker volume
-├── _attachments/                # Images and media
-│   └── {note-name}/            # Organized by source note
-│       └── image-{uuid}.png
+├── _resources/                  # Single directory for all images
+│   ├── image-uuid-1.png        # All uploaded images stored here
+│   ├── image-uuid-2.jpg        # Referenced with absolute paths
+│   └── image-uuid-3.gif
 ├── folder-1/
-│   ├── note-1.md
+│   ├── note-1.md               # References: /_resources/image-uuid-1.png
 │   └── note-2.md
 ├── folder-2/
 │   └── nested/
 │       └── note-3.md
-└── quick-note.md
+└── quick-note.md                # References: /_resources/image-uuid-2.jpg
 ```
 
 ### 2. Backend API Structure
@@ -70,6 +71,7 @@ vault/                           # Mounted Docker volume
 - `DELETE /directories/{path}` - Delete directory
 - `POST /directories/{path}/move` - Move directory
 - `POST /directories/{path}/copy` - Copy directory
+- `POST /images/upload` - Upload image file
 - `GET /notes/search/` - Omni-search (content, fuzzy, with snippets, sorted by modified date)
 - `GET /config` - Get public config settings
 
@@ -600,6 +602,16 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
 7. **Empty Document Handling**:
    - The Milkdown container uses a flex layout and ProseMirror `focus` action to keep the editor interactive even when a markdown file is completely empty.
    - Container pointer listeners redirect clicks and taps to Milkdown, removing the need for placeholder content in newly created notes.
+
+8. **Image Support**:
+   - **Upload Methods**: Images can be uploaded via paste from clipboard or drag-and-drop
+   - **Storage**: All images stored in single `/_resources` directory at vault root with UUID-based filenames
+   - **References**: Images referenced with absolute paths (`/_resources/image-uuid.png`) for consistent access regardless of note location
+   - **Formats**: Supports PNG, JPEG, GIF, WebP, SVG (10MB max file size)
+   - **Backend API**: `POST /api/v1/images/upload` endpoint handles file validation and storage
+   - **Frontend Integration**: `apiClient.uploadImage()` method and paste/drag handlers in `MilkdownEditor.vue`
+   - **Image Plugin**: `milkdownImagePlugin.ts` provides basic image handling and selection support
+   - **Path Management**: Absolute paths eliminate need for path updates when notes are moved
 
 **File Explorer CRUD Operations**:
 

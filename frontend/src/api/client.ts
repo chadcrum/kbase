@@ -166,6 +166,20 @@ export class ApiClient {
   async createDirectory(path: string): Promise<void> {
     await this.client.post(`/directories/${encodeURIComponent(path)}`)
   }
+
+  // Images API
+  async uploadImage(file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await this.client.post('/images/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    return response.data.path
+  }
 }
 
 // Export singleton instance

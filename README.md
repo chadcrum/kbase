@@ -38,6 +38,10 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Auto-Save**: Automatic saving with 1-second debounce (both editors)
 - **Save Status**: Visual feedback for saving/saved/error states
 - **Editor Preference**: Per-file-type preference stored in localStorage
+- **Image Support**: Paste images from clipboard or drag-and-drop to upload
+  - Images stored in `/_resources` directory with automatic naming
+  - Supports PNG, JPEG, GIF, WebP, SVG formats (up to 10MB)
+  - Referenced with absolute paths for consistent access
 
 ### Security & Performance
 - **JWT Authentication**: Secure token-based authentication

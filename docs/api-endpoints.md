@@ -404,6 +404,34 @@ All endpoints (except login and config) require authentication via JWT token in 
 }
 ```
 
+## Images API (`/api/v1/images/`)
+
+### Upload Image
+- **POST** `/upload`
+- **Description**: Upload an image file to the vault's `_resources` directory
+- **Request Body**: Multipart form data with `file` field
+- **Response**: Success message and image path
+- **Example Request**:
+  ```bash
+  curl -X POST "http://localhost:8000/api/v1/images/upload" \
+    -H "Authorization: Bearer <token>" \
+    -F "file=@image.png"
+  ```
+- **Example Response**:
+  ```json
+  {
+    "message": "Image uploaded successfully",
+    "path": "/_resources/abc123def.png"
+  }
+  ```
+- **Supported Formats**: PNG, JPEG, GIF, WebP, SVG
+- **File Size Limit**: 10MB maximum
+- **Status Codes**:
+  - 200: Success
+  - 400: Invalid file type or size
+  - 401: Unauthorized
+  - 500: Server error
+
 ## Error Responses
 
 All endpoints return consistent error responses:

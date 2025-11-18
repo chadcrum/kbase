@@ -4,6 +4,9 @@
     class="milkdown-editor-container"
     @mousedown="handleContainerPointerDown"
     @touchstart="handleContainerPointerDown"
+    @paste="handlePaste"
+    @drop="handleDrop"
+    @dragover.prevent
   ></div>
 </template>
 
@@ -33,6 +36,8 @@ import { useThemeStore } from '@/stores/theme'
 import { useVaultStore } from '@/stores/vault'
 import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 import { milkdownTaskListPlugin } from './plugins/milkdownTaskListPlugin'
+import { milkdownImagePlugin } from './plugins/milkdownImagePlugin'
+import { apiClient } from '@/api/client'
 
 // Props
 interface Props {
@@ -373,16 +378,31 @@ const restoreMilkdownState = async () => {
   }
 }
 
+// Transform image URLs in markdown to use API endpoint
+const transformImageUrls = (markdown: string): string => {
+  // Transform image references like ![alt](/_resources/image.png) to use API endpoint
+  return markdown.replace(
+    /!\[([^\]]*)\]\((\/_resources\/[^)]+)\)/g,
+    (match, alt, path) => {
+      // Extract filename from path
+      const filename = path.replace('/_resources/', '')
+      return `![${alt}](/api/v1/images/${filename})`
+    }
+  )
+}
+
 // Initialize Milkdown editor
 onMounted(async () => {
   if (!editorContainer.value) return
 
   try {
+    // Transform image URLs before initializing editor
+    const transformedContent = transformImageUrls(props.modelValue)
     // Create editor instance
     editor = await Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, editorContainer.value!)
-        ctx.set(defaultValueCtx, props.modelValue)
+        ctx.set(defaultValueCtx, transformedContent)
         ctx.set(remarkStringifyOptionsCtx, customRemarkOptions)
 
         // Configure listener for content changes
@@ -400,6 +420,7 @@ onMounted(async () => {
       .use(indent)
       .use(textIndentPlugin)
       .use(milkdownTaskListPlugin)
+      .use(milkdownImagePlugin)
       .use(listener)
       .create()
 
@@ -421,12 +442,14 @@ watch(() => props.modelValue, async (newValue) => {
   if (newValue !== currentMarkdown.value) {
     try {
       cleanupMilkdownListeners()
+      // Transform image URLs before loading into editor
+      const transformedContent = transformImageUrls(newValue)
       // Destroy and recreate editor with new content
       editor.destroy()
       editor = await Editor.make()
         .config((ctx) => {
           ctx.set(rootCtx, editorContainer.value!)
-          ctx.set(defaultValueCtx, newValue)
+          ctx.set(defaultValueCtx, transformedContent)
           ctx.set(remarkStringifyOptionsCtx, customRemarkOptions)
 
           ctx.get(listenerCtx).markdownUpdated((ctx, markdown, prevMarkdown) => {
@@ -443,6 +466,7 @@ watch(() => props.modelValue, async (newValue) => {
         .use(indent)
         .use(textIndentPlugin)
         .use(milkdownTaskListPlugin)
+        .use(milkdownImagePlugin)
         .use(listener)
         .create()
       
@@ -492,6 +516,82 @@ const handleContainerPointerDown = () => {
   if (props.disabled) return
   vaultStore.collapseSidebarIfNotPinned()
   void focusEditor()
+}
+
+const handlePaste = async (event: ClipboardEvent) => {
+  if (props.disabled || props.readonly || !editor) return
+
+  const items = event.clipboardData?.items
+  if (!items) return
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    if (item.type.startsWith('image/')) {
+      event.preventDefault()
+
+      try {
+        const file = item.getAsFile()
+        if (file) {
+          const imagePath = await apiClient.uploadImage(file)
+          await insertImageAtCursor(imagePath, file.name)
+        }
+      } catch (error) {
+        console.error('Failed to upload pasted image:', error)
+      }
+      break // Only handle the first image
+    }
+  }
+}
+
+const handleDrop = async (event: DragEvent) => {
+  if (props.disabled || props.readonly || !editor) return
+
+  event.preventDefault()
+
+  const files = event.dataTransfer?.files
+  if (!files || files.length === 0) return
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    if (file.type.startsWith('image/')) {
+      try {
+        const imagePath = await apiClient.uploadImage(file)
+        await insertImageAtCursor(imagePath, file.name)
+      } catch (error) {
+        console.error('Failed to upload dropped image:', error)
+      }
+      break // Only handle the first image
+    }
+  }
+}
+
+const insertImageAtCursor = async (imagePath: string, filename: string) => {
+  if (!editor) return
+
+  const altText = filename.replace(/\.[^/.]+$/, '') // Remove extension for alt text
+
+  // Convert image path to API endpoint URL
+  // Backend returns paths like "/_resources/image.png"
+  // We need to convert to "/api/v1/images/_resources/image.png"
+  let imageUrl = imagePath
+  if (imagePath.startsWith('/_resources/')) {
+    // Extract just the filename from the path
+    const filename = imagePath.replace('/_resources/', '')
+    imageUrl = `/api/v1/images/${filename}`
+  } else if (imagePath.startsWith('_resources/')) {
+    imageUrl = `/api/v1/images/${imagePath}`
+  }
+
+  await editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx)
+    const { state, dispatch } = view
+
+    // Insert image markdown at cursor
+    const imageMarkdown = `![${altText}](${imageUrl})`
+    const tr = state.tr.insertText(imageMarkdown)
+
+    dispatch(tr)
+  })
 }
 
 // Cleanup on unmount
@@ -716,6 +816,67 @@ onBeforeUnmount(() => {
 
 .milkdown-editor-container :deep(.milkdown ul.contains-task-list > .task-list-item) {
   margin-left: 1.5em;
+}
+
+/* Image resize styles */
+.milkdown-editor-container :deep(.milkdown .image-wrapper) {
+  position: relative;
+  display: inline-block;
+  margin: 8px 0;
+  cursor: pointer;
+}
+
+.milkdown-editor-container :deep(.milkdown .image-wrapper img) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.milkdown-editor-container :deep(.milkdown .image-wrapper.ProseMirror-selectednode) {
+  outline: 2px solid #007acc;
+  outline-offset: 2px;
+}
+
+.milkdown-editor-container :deep(.milkdown .image-resize-handle) {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #007acc;
+  border: 2px solid white;
+  border-radius: 50%;
+  z-index: 1000;
+  pointer-events: auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.milkdown-editor-container :deep(.milkdown .image-resize-handle-nw) {
+  top: -4px;
+  left: -4px;
+  cursor: nw-resize;
+}
+
+.milkdown-editor-container :deep(.milkdown .image-resize-handle-ne) {
+  top: -4px;
+  right: -4px;
+  cursor: ne-resize;
+}
+
+.milkdown-editor-container :deep(.milkdown .image-resize-handle-sw) {
+  bottom: -4px;
+  left: -4px;
+  cursor: sw-resize;
+}
+
+.milkdown-editor-container :deep(.milkdown .image-resize-handle-se) {
+  bottom: -4px;
+  right: -4px;
+  cursor: se-resize;
+}
+
+.milkdown-editor-container :deep(.milkdown .image-resize-handle:hover) {
+  background-color: #005a9e;
+  transform: scale(1.2);
 }
 </style>
 

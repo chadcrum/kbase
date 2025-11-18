@@ -632,5 +632,20 @@ onUnmounted(() => {
     font-size: 0.875rem;
   }
 }
+
+/* Mobile layout - larger buttons for big thumbs */
+@media (max-width: 768px) {
+  .toolbar-button {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0.375rem;
+  }
+
+  .toolbar-button .icon {
+    font-size: 1.125rem;
+  }
+}
 </style>
 

@@ -1047,10 +1047,16 @@ onUnmounted(() => {
 
 /* Responsive design */
 @media (max-width: 768px) {
+  .sidebar-toggle-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.25rem;
+  }
+
   .tab {
     min-width: 100px;
     max-width: 180px;
-    padding: 0.5rem 0.625rem;
+    padding: 0.625rem 0.75rem;
   }
 
   .tab-title {
@@ -1058,9 +1064,23 @@ onUnmounted(() => {
   }
 
   .tab-close {
-    width: 20px;
-    height: 20px;
-    font-size: 1.5rem;
+    width: 24px;
+    height: 24px;
+    font-size: 1.75rem;
+  }
+
+  .editor-toggle-btn,
+  .search-btn,
+  .tabs-dropdown-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.125rem;
+  }
+
+  .editor-icon,
+  .search-icon,
+  .tabs-dropdown-icon {
+    font-size: 1.125rem;
   }
 }
 </style>

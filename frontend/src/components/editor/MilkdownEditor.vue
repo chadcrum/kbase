@@ -737,6 +737,13 @@ onBeforeUnmount(() => {
   color: var(--text-secondary);
 }
 
+.milkdown-editor-container :deep(.milkdown hr) {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 1.5em 0;
+  height: 0;
+}
+
 .milkdown-editor-container :deep(.milkdown ul),
 .milkdown-editor-container :deep(.milkdown ol) {
   margin: 0.125em 0;

@@ -222,7 +222,7 @@ const transformMarkdownForInProgress = (markdown: string): string => {
     // Find lines that contain this text and have a checkbox
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].includes(text) && /\[[ x]\]/.test(lines[i])) {
-        lines[i] = lines[i].replace(/\[([ x])\]/g, '[>]')
+        lines[i] = lines[i].replace(/\[([ x])\]/g, '[/]')
         break // Only replace the first match
       }
     }
@@ -454,7 +454,7 @@ const transformImageUrls = (markdown: string): string => {
   )
 }
 
-// Update task list items in the editor to set in-progress state for [>] checkboxes
+// Update task list items in the editor to set in-progress state for [/] checkboxes
 const updateInProgressCheckboxes = async (originalMarkdown: string) => {
   if (!editor || !editorView) return
   
@@ -466,10 +466,10 @@ const updateInProgressCheckboxes = async (originalMarkdown: string) => {
     const lines = originalMarkdown.split('\n')
     let docPos = 0
     
-    // Find all lines with [>] checkboxes
+    // Find all lines with [/] checkboxes
     const inProgressLines: number[] = []
     lines.forEach((line, index) => {
-      if (/\[>\]/.test(line)) {
+      if (/\[\/\]/.test(line)) {
         inProgressLines.push(index)
       }
     })
@@ -486,7 +486,7 @@ const updateInProgressCheckboxes = async (originalMarkdown: string) => {
         // We approximate by checking if we've passed enough lines
         const nodeText = node.textContent.trim()
         for (const targetLine of inProgressLines) {
-          if (lines[targetLine] && lines[targetLine].includes(nodeText) && /\[>\]/.test(lines[targetLine])) {
+          if (lines[targetLine] && lines[targetLine].includes(nodeText) && /\[\/\]/.test(lines[targetLine])) {
             // This node should be in-progress
             if (node.attrs.checked !== 'in-progress') {
               tr.setNodeMarkup(pos, undefined, {

@@ -618,14 +618,15 @@ const scrollSelectedIntoView = () => {
 @media (max-width: 768px) {
   .omni-search-overlay {
     padding-top: 5vh;
-    padding-left: 0;
-    padding-right: 0;
+    padding-left: 2.5vw;
+    padding-right: 2.5vw;
   }
 
   .omni-search-modal {
-    width: 100%;
-    max-height: 85vh;
-    border-radius: 16px 16px 0 0;
+    width: 95%;
+    max-width: 95%;
+    max-height: 75vh;
+    border-radius: 12px;
   }
 
   .search-input-container {

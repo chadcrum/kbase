@@ -608,11 +608,11 @@ onUnmounted(() => {
 /* Responsive design */
 @media (max-width: 768px) {
   .history-container {
-    width: 100vw;
-    height: 100vh;
-    max-width: 100vw;
-    max-height: 100vh;
-    border-radius: 0;
+    width: 95vw;
+    height: 85vh;
+    max-width: 95vw;
+    max-height: 85vh;
+    border-radius: 12px;
   }
 
   .history-header {

@@ -36,6 +36,9 @@ class GitService:
                 timeout=5
             )
             self._git_available = result.returncode == 0
+            # Configure safe directory when we first detect git is available
+            if self._git_available:
+                self._configure_safe_directory()
             return self._git_available
         except (FileNotFoundError, subprocess.TimeoutExpired):
             self._git_available = False
@@ -89,6 +92,38 @@ class GitService:
         
         return False
     
+    def _configure_safe_directory(self) -> bool:
+        """
+        Configure git to trust the vault directory.
+        This is needed when the vault directory is owned by a different user
+        (e.g., in containers where the directory is mounted from the host).
+        
+        Returns:
+            bool: True if configuration was successful or already set
+        """
+        try:
+            vault_path_str = str(self.vault_path.resolve())
+            result = subprocess.run(
+                ['git', 'config', '--global', '--add', 'safe.directory', vault_path_str],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode == 0:
+                logger.info(f"Configured git safe.directory for {vault_path_str}")
+                return True
+            else:
+                # If it's already configured, that's fine
+                if 'already exists' in result.stderr.lower():
+                    logger.debug(f"Git safe.directory already configured for {vault_path_str}")
+                    return True
+                logger.warning(f"Failed to configure git safe.directory: {result.stderr}")
+                return False
+        except Exception as e:
+            logger.warning(f"Error configuring git safe.directory: {str(e)}")
+            return False
+    
     def initialize_git(self) -> bool:
         """
         Initialize git repository if it doesn't exist.
@@ -102,6 +137,9 @@ class GitService:
             self._last_error_time = time.time()
             logger.warning(error_msg)
             return False
+        
+        # Configure safe directory to avoid ownership issues
+        self._configure_safe_directory()
         
         git_dir = self.vault_path / '.git'
         if git_dir.exists() and git_dir.is_dir():

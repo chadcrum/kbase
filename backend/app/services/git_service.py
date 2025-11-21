@@ -4,7 +4,7 @@ import logging
 import subprocess
 import time
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Union
 
 from app.config import settings
 
@@ -342,4 +342,385 @@ _resources/
             "last_error": self._last_error,
             "last_error_time": self._last_error_time
         }
+    
+    def get_file_commits(self, path: str) -> List[Dict[str, Union[str, int]]]:
+        """
+        Get commit history for a specific file.
+        
+        Args:
+            path: The file path (relative to vault root)
+            
+        Returns:
+            List[Dict]: List of commits with hash, timestamp, and message
+            Each dict contains: hash (str), timestamp (int), message (str)
+            
+        Raises:
+            ValueError: If git is not available or path is invalid
+        """
+        if not self._is_git_available():
+            raise ValueError("Git is not available on this system")
+        
+        # Ensure git is initialized
+        if not self._initialized:
+            if not self.initialize_git():
+                raise ValueError("Failed to initialize git repository")
+        
+        # Validate path is within vault
+        file_path = self.vault_path / path.lstrip('/')
+        logger.info(f"Looking for file at: {file_path}")
+        logger.info(f"File exists: {file_path.exists()}, Is file: {file_path.is_file() if file_path.exists() else 'N/A'}")
+        
+        if not file_path.exists() or not file_path.is_file():
+            raise ValueError(f"File not found: {path}")
+        
+        # Get relative path from vault root
+        try:
+            rel_path = file_path.relative_to(self.vault_path.resolve())
+            logger.info(f"Relative path: {rel_path}")
+        except ValueError:
+            raise ValueError(f"Path is outside vault: {path}")
+        
+        try:
+            # Use git log --follow to track file renames
+            # Format: hash|timestamp|message
+            # Use as_posix() to ensure forward slashes (git expects this)
+            git_path = rel_path.as_posix()
+            logger.info(f"Running git log for path: {repr(git_path)}")
+            logger.info(f"Full command: git log --follow --format=%H|%ct|%s -- {repr(git_path)}")
+            
+            result = subprocess.run(
+                ['git', 'log', '--follow', '--format=%H|%ct|%s', '--', git_path],
+                cwd=str(self.vault_path),
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            logger.info(f"Git log return code: {result.returncode}")
+            logger.info(f"Git log stdout length: {len(result.stdout)}")
+            logger.info(f"Git log stderr: {result.stderr[:200] if result.stderr else 'None'}")
+            
+            if result.returncode != 0:
+                # Log the error for debugging
+                logger.warning(f"Git log failed for path '{git_path}': {result.stderr}")
+                # If file has no history, return empty list
+                if 'does not exist' in result.stderr or 'no such path' in result.stderr.lower() or 'fatal:' in result.stderr.lower():
+                    logger.info(f"No history found for path '{git_path}' (file may not be tracked)")
+                    return []
+                error_msg = f"Git log failed: {result.stderr}"
+                self._last_error = error_msg
+                self._last_error_time = time.time()
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+            commits = []
+            for line in result.stdout.strip().split('\n'):
+                if not line.strip():
+                    continue
+                parts = line.split('|', 2)
+                if len(parts) >= 2:
+                    commit_hash = parts[0]
+                    try:
+                        timestamp = int(parts[1])
+                        message = parts[2] if len(parts) > 2 else ""
+                        commits.append({
+                            "hash": commit_hash,
+                            "timestamp": timestamp,
+                            "message": message
+                        })
+                    except ValueError:
+                        # Skip invalid timestamp
+                        continue
+            
+            return commits
+            
+        except subprocess.TimeoutExpired:
+            error_msg = "Git log operation timed out"
+            self._last_error = error_msg
+            self._last_error_time = time.time()
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        except Exception as e:
+            error_msg = f"Error getting file commits: {str(e)}"
+            self._last_error = error_msg
+            self._last_error_time = time.time()
+            logger.error(error_msg, exc_info=True)
+            raise ValueError(error_msg)
+    
+    def get_file_content_at_commit(self, path: str, commit_hash: str) -> str:
+        """
+        Get file content from a specific commit.
+        
+        Args:
+            path: The file path (relative to vault root)
+            commit_hash: The commit hash
+            
+        Returns:
+            str: File content at that commit
+            
+        Raises:
+            ValueError: If git is not available, commit is invalid, or file doesn't exist in that commit
+        """
+        if not self._is_git_available():
+            raise ValueError("Git is not available on this system")
+        
+        # Ensure git is initialized
+        if not self._initialized:
+            if not self.initialize_git():
+                raise ValueError("Failed to initialize git repository")
+        
+        # Validate path is within vault
+        file_path = self.vault_path / path.lstrip('/')
+        try:
+            rel_path = file_path.relative_to(self.vault_path.resolve())
+        except ValueError:
+            raise ValueError(f"Path is outside vault: {path}")
+        
+        try:
+            # Use git show to get file content at specific commit
+            # Use as_posix() to ensure forward slashes (git expects this)
+            git_path = rel_path.as_posix()
+            result = subprocess.run(
+                ['git', 'show', f'{commit_hash}:{git_path}'],
+                cwd=str(self.vault_path),
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                error_msg = f"Failed to get file content: {result.stderr}"
+                if 'not found' in result.stderr.lower() or 'does not exist' in result.stderr.lower():
+                    raise ValueError(f"File not found in commit {commit_hash[:8]}")
+                self._last_error = error_msg
+                self._last_error_time = time.time()
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            
+            return result.stdout
+            
+        except subprocess.TimeoutExpired:
+            error_msg = "Git show operation timed out"
+            self._last_error = error_msg
+            self._last_error_time = time.time()
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        except ValueError:
+            # Re-raise ValueError (file not found)
+            raise
+        except Exception as e:
+            error_msg = f"Error getting file content at commit: {str(e)}"
+            self._last_error = error_msg
+            self._last_error_time = time.time()
+            logger.error(error_msg, exc_info=True)
+            raise ValueError(error_msg)
+    
+    def commit_single_file(self, path: str) -> bool:
+        """
+        Commit only the specified file.
+        
+        Args:
+            path: The file path (relative to vault root)
+            
+        Returns:
+            bool: True if commit was successful or no changes, False on error
+        """
+        if not self._is_git_available():
+            error_msg = "Git is not available on this system"
+            self._last_error = error_msg
+            self._last_error_time = time.time()
+            logger.warning(error_msg)
+            return False
+        
+        # Ensure git is initialized
+        if not self._initialized:
+            if not self.initialize_git():
+                return False
+        
+        # Ensure .gitignore exists
+        if not self.ensure_gitignore():
+            return False
+        
+        # Validate path is within vault
+        file_path = self.vault_path / path.lstrip('/')
+        if not file_path.exists() or not file_path.is_file():
+            error_msg = f"File not found: {path}"
+            self._last_error = error_msg
+            self._last_error_time = time.time()
+            logger.error(error_msg)
+            return False
+        
+        # Check if file is binary
+        if self._is_binary_file(file_path):
+            error_msg = f"Cannot commit binary file: {path}"
+            self._last_error = error_msg
+            self._last_error_time = time.time()
+            logger.error(error_msg)
+            return False
+        
+        try:
+            # Get relative path from vault root
+            try:
+                rel_path = file_path.relative_to(self.vault_path.resolve())
+            except ValueError:
+                error_msg = f"Path is outside vault: {path}"
+                self._last_error = error_msg
+                self._last_error_time = time.time()
+                logger.error(error_msg)
+                return False
+            
+            # Use as_posix() to ensure forward slashes (git expects this)
+            git_path = rel_path.as_posix()
+            
+            # Check if file has changes
+            status_result = subprocess.run(
+                ['git', 'status', '--porcelain', git_path],
+                cwd=str(self.vault_path),
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if status_result.returncode != 0:
+                error_msg = f"Git status failed: {status_result.stderr}"
+                self._last_error = error_msg
+                self._last_error_time = time.time()
+                logger.error(error_msg)
+                return False
+            
+            # If no changes, nothing to commit
+            if not status_result.stdout.strip():
+                return True
+            
+            # Stage the file
+            add_result = subprocess.run(
+                ['git', 'add', git_path],
+                cwd=str(self.vault_path),
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if add_result.returncode != 0:
+                error_msg = f"Git add failed: {add_result.stderr}"
+                self._last_error = error_msg
+                self._last_error_time = time.time()
+                logger.error(error_msg)
+                return False
+            
+            # Check if there are staged changes
+            diff_result = subprocess.run(
+                ['git', 'diff', '--cached', '--quiet', git_path],
+                cwd=str(self.vault_path),
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            # If diff returns 0, there are no staged changes
+            if diff_result.returncode == 0:
+                return True
+            
+            # Commit the file with descriptive message
+            filename = file_path.name
+            commit_result = subprocess.run(
+                ['git', 'commit', '-m', f'Auto-commit: {filename}'],
+                cwd=str(self.vault_path),
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if commit_result.returncode == 0:
+                self._last_commit_time = time.time()
+                self._last_error = None
+                self._last_error_time = None
+                logger.info(f"Successfully committed file: {path}")
+                return True
+            else:
+                error_msg = f"Git commit failed: {commit_result.stderr}"
+                self._last_error = error_msg
+                self._last_error_time = time.time()
+                logger.error(error_msg)
+                return False
+                
+        except subprocess.TimeoutExpired:
+            error_msg = "Git operation timed out"
+            self._last_error = error_msg
+            self._last_error_time = time.time()
+            logger.error(error_msg)
+            return False
+        except Exception as e:
+            error_msg = f"Error committing file: {str(e)}"
+            self._last_error = error_msg
+            self._last_error_time = time.time()
+            logger.error(error_msg, exc_info=True)
+            return False
+    
+    def get_current_commit_for_file(self, path: str) -> Optional[str]:
+        """
+        Get the commit hash that contains the current working tree version of the file.
+        Returns None if file has uncommitted changes or no history.
+        
+        Args:
+            path: The file path (relative to vault root)
+            
+        Returns:
+            Optional[str]: Commit hash if file matches HEAD, None if uncommitted changes or no history
+        """
+        if not self._is_git_available():
+            return None
+        
+        # Ensure git is initialized
+        if not self._initialized:
+            if not self.initialize_git():
+                return None
+        
+        # Validate path is within vault
+        file_path = self.vault_path / path.lstrip('/')
+        if not file_path.exists() or not file_path.is_file():
+            return None
+        
+        try:
+            # Get relative path from vault root
+            try:
+                rel_path = file_path.relative_to(self.vault_path.resolve())
+            except ValueError:
+                return None
+            
+            # Use as_posix() to ensure forward slashes (git expects this)
+            git_path = rel_path.as_posix()
+            
+            # Check if file has uncommitted changes
+            status_result = subprocess.run(
+                ['git', 'status', '--porcelain', git_path],
+                cwd=str(self.vault_path),
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if status_result.returncode != 0:
+                return None
+            
+            # If file has changes, return None (not committed)
+            if status_result.stdout.strip():
+                return None
+            
+            # Get the commit hash for HEAD version of this file
+            log_result = subprocess.run(
+                ['git', 'log', '-1', '--format=%H', '--', git_path],
+                cwd=str(self.vault_path),
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if log_result.returncode == 0 and log_result.stdout.strip():
+                return log_result.stdout.strip()
+            
+            return None
+            
+        except (subprocess.TimeoutExpired, Exception):
+            return None
 

@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError } from 'axios'
-import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteData, SearchResponse, ConfigResponse, HealthResponse } from '@/types'
+import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteData, SearchResponse, ConfigResponse, HealthResponse, FileHistoryResponse, FileContentAtCommitResponse } from '@/types'
 
 export class ApiClient {
   private client: AxiosInstance
@@ -188,6 +188,27 @@ export class ApiClient {
     })
 
     return response.data.path
+  }
+
+  // Git History API
+  async getFileHistory(path: string): Promise<FileHistoryResponse> {
+    const response: AxiosResponse<FileHistoryResponse> = await this.client.get(`/notes/${encodeURIComponent(path)}/history`)
+    return response.data
+  }
+
+  async getFileContentAtCommit(path: string, commitHash: string): Promise<FileContentAtCommitResponse> {
+    const response: AxiosResponse<FileContentAtCommitResponse> = await this.client.get(`/notes/${encodeURIComponent(path)}/history/${commitHash}`)
+    return response.data
+  }
+
+  async commitFile(path: string): Promise<void> {
+    await this.client.post(`/notes/${encodeURIComponent(path)}/history/commit`)
+  }
+
+  async restoreFileFromCommit(path: string, commitHash: string): Promise<void> {
+    await this.client.post(`/notes/${encodeURIComponent(path)}/history/restore`, {
+      commit_hash: commitHash
+    })
   }
 }
 

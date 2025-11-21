@@ -131,6 +131,14 @@
       @close="showContextMenu = false"
       @select="handleContextMenuAction"
     />
+
+    <!-- File History Modal -->
+    <FileHistoryModal
+      :is-open="showHistoryModal"
+      :note-path="historyModalPath"
+      @close="showHistoryModal = false; historyModalPath = null"
+      @restored="handleHistoryRestored"
+    />
   </div>
 </template>
 
@@ -140,6 +148,7 @@ import { useTabsStore } from '@/stores/tabs'
 import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
 import ContextMenu, { type ContextMenuItem } from '@/components/sidebar/ContextMenu.vue'
+import FileHistoryModal from '@/components/common/FileHistoryModal.vue'
 
 // Props
 interface Props {
@@ -186,6 +195,8 @@ const showContextMenu = ref(false)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
 const contextMenuTabId = ref<string | null>(null)
+const showHistoryModal = ref(false)
+const historyModalPath = ref<string | null>(null)
 
 // Computed
 const tabs = computed(() => tabsStore.tabs)
@@ -604,6 +615,13 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
       icon: '📍',
       action: 'locate-file'
     })
+    
+    // History option (for file tabs)
+    items.push({
+      label: 'History',
+      icon: '📜',
+      action: 'history'
+    })
   }
   
   // Close option
@@ -648,6 +666,12 @@ const handleContextMenuAction = (action: string) => {
     case 'locate-file':
       locateFileInExplorer(tab.path)
       break
+    case 'history':
+      if (tab.path) {
+        historyModalPath.value = tab.path
+        showHistoryModal.value = true
+      }
+      break
     case 'close':
       handleCloseTab(contextMenuTabId.value)
       break
@@ -661,6 +685,14 @@ const handleContextMenuAction = (action: string) => {
   
   showContextMenu.value = false
   contextMenuTabId.value = null
+}
+
+const handleHistoryRestored = async () => {
+  // Reload the note if it's currently selected
+  if (historyModalPath.value && vaultStore.selectedNotePath === historyModalPath.value) {
+    await vaultStore.loadNote(historyModalPath.value)
+  }
+  historyModalPath.value = null
 }
 
 const openTabInPopup = (path: string) => {

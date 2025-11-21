@@ -123,6 +123,15 @@
       @confirm="handleMoveConfirm"
       @cancel="showMoveDialog = false"
     />
+
+    <!-- File History Modal -->
+    <FileHistoryModal
+      v-if="!isDirectory"
+      :is-open="showHistoryModal"
+      :note-path="props.node.path"
+      @close="showHistoryModal = false"
+      @restored="handleHistoryRestored"
+    />
   </div>
 </template>
 
@@ -133,6 +142,7 @@ import ContextMenu, { type ContextMenuItem } from './ContextMenu.vue'
 import ConfirmDialog from '../common/ConfirmDialog.vue'
 import InputDialog from '../common/InputDialog.vue'
 import DirectoryPickerDialog from './DirectoryPickerDialog.vue'
+import FileHistoryModal from '../common/FileHistoryModal.vue'
 import type { FileTreeNode as FileTreeNodeType } from '@/types'
 
 // Props
@@ -167,6 +177,7 @@ const dragHoverTimer = ref<number | null>(null)
 const showCreateFolderDialog = ref(false)
 const showCreateFileDialog = ref(false)
 const showMoveDialog = ref(false)
+const showHistoryModal = ref(false)
 const nodeItem = ref<HTMLDivElement | null>(null)
 const longPressTimer = ref<number | null>(null)
 const longPressTriggered = ref(false)
@@ -221,6 +232,8 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
   } else {
     // Add "Open in New Window" option for files only
     items.push({ label: 'Open in New Window', icon: '🪟', action: 'open-in-popup' })
+    // Add "History" option for files only
+    items.push({ label: 'History', icon: '📜', action: 'history' })
   }
   
   items.push({ label: 'Rename', icon: '✏️', action: 'rename' })
@@ -428,6 +441,11 @@ const handleContextMenuAction = async (action: string) => {
     case 'open-in-popup':
       openNoteInPopup()
       break
+    case 'history':
+      if (!isDirectory.value) {
+        showHistoryModal.value = true
+      }
+      break
     case 'rename':
       startRename()
       break
@@ -437,6 +455,15 @@ const handleContextMenuAction = async (action: string) => {
     case 'delete':
       showDeleteConfirm.value = true
       break
+  }
+}
+
+const handleHistoryRestored = async () => {
+  // Reload the file tree to reflect changes
+  await vaultStore.refresh()
+  // If this file is currently selected, reload it
+  if (vaultStore.selectedNotePath === props.node.path) {
+    await vaultStore.loadNote(props.node.path)
   }
 }
 

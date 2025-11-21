@@ -262,6 +262,104 @@ All endpoints (except login and config) require authentication via JWT token in 
   - Results are limited by the `limit` parameter (default 50)
   - Results sorted by modified date (most recent first)
 
+### Get File History
+- **GET** `/{path}/history`
+- **Description**: Get commit history for a file
+- **Parameters**: 
+  - `path` (path parameter): The file path
+- **Response**: List of commits with metadata
+- **Example Response**:
+```json
+{
+  "commits": [
+    {
+      "hash": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
+      "timestamp": 1640995200,
+      "message": "Auto-commit: note.md",
+      "is_current": true
+    },
+    {
+      "hash": "b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1",
+      "timestamp": 1640995100,
+      "message": "Auto-commit: note.md",
+      "is_current": false
+    }
+  ]
+}
+```
+- **Status Codes**: 
+  - 200 (success)
+  - 404 (file not found)
+  - 400 (invalid path or git error)
+- **Notes**:
+  - Returns empty commits array if file has no git history
+  - `is_current` indicates if commit matches current working tree version
+  - Commits are ordered from most recent to oldest
+  - Requires git to be initialized and available
+
+### Get File Content at Commit
+- **GET** `/{path}/history/{commit_hash}`
+- **Description**: Get file content from a specific commit
+- **Parameters**: 
+  - `path` (path parameter): The file path
+  - `commit_hash` (path parameter): The full commit hash
+- **Response**: File content and commit metadata
+- **Example Response**:
+```json
+{
+  "content": "# My Note\n\nThis is the note content from that commit.",
+  "hash": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
+  "timestamp": 1640995200
+}
+```
+- **Status Codes**: 
+  - 200 (success)
+  - 404 (file or commit not found)
+  - 400 (invalid path or commit hash)
+- **Notes**:
+  - Returns raw file content (no markdown rendering)
+  - Use full commit hash (40 characters)
+  - File must exist in the specified commit
+
+### Commit File
+- **POST** `/{path}/history/commit`
+- **Description**: Commit the current state of a file
+- **Parameters**: 
+  - `path` (path parameter): The file path
+- **Response**: Success message and path
+- **Status Codes**: 
+  - 200 (committed or no changes)
+  - 404 (file not found)
+  - 400 (invalid path or git error)
+- **Notes**:
+  - Ensures current state is saved before restore operations
+  - Creates commit with message "Auto-commit: {filename}"
+  - Returns success even if no changes to commit
+  - Requires git to be initialized and available
+
+### Restore File from Commit
+- **POST** `/{path}/history/restore`
+- **Description**: Restore a file from a specific commit
+- **Parameters**: 
+  - `path` (path parameter): The file path
+- **Request Body**:
+```json
+{
+  "commit_hash": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
+}
+```
+- **Response**: Success message and path
+- **Status Codes**: 
+  - 200 (restored)
+  - 404 (file or commit not found)
+  - 400 (invalid path or commit hash)
+- **Notes**:
+  - Automatically commits current state before restoring
+  - Replaces file content with content from specified commit
+  - Creates a new commit with the restored version
+  - Current version remains in git history for recovery
+  - Requires git to be initialized and available
+
 ## Directories API (`/api/v1/directories/`)
 
 ### Create Directory

@@ -65,6 +65,10 @@ vault/                           # Mounted Docker volume
 - `DELETE /notes/{path}` - Delete note
 - `POST /notes/{path}/move` - Move/rename note
 - `POST /notes/{path}/copy` - Copy note 
+- `GET /notes/{path}/history` - Get commit history for a file
+- `GET /notes/{path}/history/{commit_hash}` - Get file content at specific commit
+- `POST /notes/{path}/history/commit` - Commit current state of file
+- `POST /notes/{path}/history/restore` - Restore file from commit
 - `POST /directories/{path}` - Create directory
 - `GET /directories/{path}` - Get directory metadata
 - `PUT /directories/{path}` - Rename directory
@@ -225,6 +229,13 @@ The application includes comprehensive backend connectivity monitoring to provid
 - Error tracking and reporting via health check endpoint
 - Graceful degradation when git is not installed
 - Low-impact background task that doesn't interfere with normal operations
+- **Git History Features**:
+  - `get_file_commits()` - Retrieve commit history for a specific file
+  - `get_file_content_at_commit()` - Get file content from a specific commit
+  - `commit_single_file()` - Commit a single file (for saving current state before restore)
+  - `get_current_commit_for_file()` - Identify which commit contains the current working tree version
+  - Supports file history viewing and restoration through API endpoints
+  - Tracks file renames using `git log --follow`
 
 ### 4. Frontend Architecture
 

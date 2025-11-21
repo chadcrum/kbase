@@ -450,3 +450,4 @@ out/
 # PWA files
 sw.js
 workbox-*.js
+a.out

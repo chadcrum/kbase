@@ -24,6 +24,7 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
   - Input validation prevents path traversal and invalid characters
 - **Drag & Drop**: Drag files and directories into other directories to move them
 - **Context Menus**: Right-click on any file or directory for quick actions
+  - **History**: View and restore previous versions of files (files only)
 - **Inline Rename**: Double-click any file/directory name to rename it
 - **Delete Confirmation**: Safety dialogs for all delete operations with warnings for recursive deletion
 - **Input Validation**: Security-focused validation for all file and folder names
@@ -70,6 +71,10 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Error Reporting**: Git errors are displayed in the web UI via health check endpoint
 - **Low Impact**: Background task runs with minimal system load
 - **History Tracking**: Full file history available for viewing and reverting changes
+- **File History Viewing**: Right-click any file or tab to view its commit history
+- **Version Restoration**: Restore any previous version of a file with automatic current state preservation
+- **Commit Browser**: Browse all commits for a file with timestamps and commit messages
+- **Safe Restore**: Current state is automatically saved before restoring, allowing easy reversion
 
 ### Progressive Web App (PWA)
 - **Installable**: Add to home screen on mobile devices and desktop browsers
@@ -414,6 +419,10 @@ uv run python -m app.main
 - `DELETE /api/v1/notes/{path}` - Delete note
 - `POST /api/v1/notes/{path}/move` - Move note
 - `POST /api/v1/notes/{path}/copy` - Copy note
+- `GET /api/v1/notes/{path}/history` - Get commit history for a file
+- `GET /api/v1/notes/{path}/history/{commit_hash}` - Get file content at specific commit
+- `POST /api/v1/notes/{path}/history/commit` - Commit current state of file
+- `POST /api/v1/notes/{path}/history/restore` - Restore file from commit
 
 ### Directories (Protected)
 - `POST /api/v1/directories/{path}` - Create directory

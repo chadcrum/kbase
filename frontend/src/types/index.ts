@@ -91,3 +91,20 @@ export interface HealthResponse {
   git_status: GitStatus
 }
 
+export interface CommitInfo {
+  hash: string
+  timestamp: number
+  message: string
+  is_current: boolean
+}
+
+export interface FileHistoryResponse {
+  commits: CommitInfo[]
+}
+
+export interface FileContentAtCommitResponse {
+  content: string
+  hash: string
+  timestamp: number
+}
+

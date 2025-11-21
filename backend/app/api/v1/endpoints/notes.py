@@ -7,9 +7,11 @@ from pydantic import BaseModel
 
 from app.core.auth import get_current_user
 from app.services.file_service import FileService
+from app.services.git_service import GitService
 
 router = APIRouter()
 file_service = FileService()
+git_service = GitService()
 
 
 class NoteContent(BaseModel):
@@ -66,6 +68,31 @@ class SearchResponse(BaseModel):
     total: int
 
 
+class CommitInfo(BaseModel):
+    """Model for a single commit."""
+    hash: str
+    timestamp: int
+    message: str
+    is_current: bool = False
+
+
+class FileHistoryResponse(BaseModel):
+    """Response model for file history."""
+    commits: List[CommitInfo]
+
+
+class FileContentAtCommitResponse(BaseModel):
+    """Response model for file content at a specific commit."""
+    content: str
+    hash: str
+    timestamp: int
+
+
+class RestoreRequest(BaseModel):
+    """Request model for restoring a file from a commit."""
+    commit_hash: str
+
+
 @router.get("/", response_model=FileTreeNode)
 async def list_notes(current_user: str = Depends(get_current_user)):
     """
@@ -109,6 +136,252 @@ async def search_notes(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Search failed: {str(e)}"
+        )
+
+
+# Git history routes must be defined BEFORE the generic {path:path} route
+# to ensure they match correctly
+@router.get("/{path:path}/history", response_model=FileHistoryResponse)
+async def get_file_history(path: str, current_user: str = Depends(get_current_user)):
+    """
+    Get commit history for a file.
+    
+    Args:
+        path: The file path
+        
+    Returns:
+        FileHistoryResponse: List of commits with metadata
+        
+    Raises:
+        HTTPException: 404 if file not found, 400 if invalid path or git error
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info(f"Getting history for path: {repr(path)}")
+        # Validate file exists
+        file_service.get_note(path)
+        
+        # Get commit history
+        commits = git_service.get_file_commits(path)
+        logger.info(f"Found {len(commits)} commits for path: {repr(path)}")
+        
+        # Get current commit hash
+        current_commit_hash = git_service.get_current_commit_for_file(path)
+        
+        # Mark current commit
+        commit_info_list = []
+        for commit in commits:
+            commit_info_list.append(CommitInfo(
+                hash=commit["hash"],
+                timestamp=commit["timestamp"],
+                message=commit["message"],
+                is_current=(commit["hash"] == current_commit_hash)
+            ))
+        
+        return FileHistoryResponse(commits=commit_info_list)
+        
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File not found: {path}"
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get file history: {str(e)}"
+        )
+
+
+@router.get("/{path:path}/history/{commit_hash}", response_model=FileContentAtCommitResponse)
+async def get_file_content_at_commit(
+    path: str, 
+    commit_hash: str,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Get file content at a specific commit.
+    
+    Args:
+        path: The file path
+        commit_hash: The commit hash
+        
+    Returns:
+        FileContentAtCommitResponse: File content and commit metadata
+        
+    Raises:
+        HTTPException: 404 if file/commit not found, 400 if invalid path or hash
+    """
+    try:
+        # Validate file exists
+        file_service.get_note(path)
+        
+        # Get commit info to get timestamp
+        commits = git_service.get_file_commits(path)
+        commit_info = None
+        for commit in commits:
+            if commit["hash"] == commit_hash:
+                commit_info = commit
+                break
+        
+        if not commit_info:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Commit not found: {commit_hash[:8]}"
+            )
+        
+        # Get file content at commit
+        content = git_service.get_file_content_at_commit(path, commit_hash)
+        
+        return FileContentAtCommitResponse(
+            content=content,
+            hash=commit_hash,
+            timestamp=commit_info["timestamp"]
+        )
+        
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File not found: {path}"
+        )
+    except ValueError as e:
+        if "not found in commit" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get file content at commit: {str(e)}"
+        )
+
+
+@router.post("/{path:path}/history/commit", response_model=NoteResponse)
+async def commit_file(path: str, current_user: str = Depends(get_current_user)):
+    """
+    Commit the current state of a file.
+    
+    This ensures the current state is saved before restore operations.
+    
+    Args:
+        path: The file path
+        
+    Returns:
+        NoteResponse: Success message and path
+        
+    Raises:
+        HTTPException: 404 if file not found, 400 if invalid path or git error
+    """
+    try:
+        # Validate file exists
+        file_service.get_note(path)
+        
+        # Commit the file
+        success = git_service.commit_single_file(path)
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to commit file"
+            )
+        
+        return NoteResponse(
+            message="File committed successfully",
+            path=path
+        )
+        
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File not found: {path}"
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to commit file: {str(e)}"
+        )
+
+
+@router.post("/{path:path}/history/restore", response_model=NoteResponse)
+async def restore_file_from_commit(
+    path: str,
+    restore_request: RestoreRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Restore a file from a specific commit.
+    
+    This will:
+    1. Save and commit the current state (if not already committed)
+    2. Restore the file content from the specified commit
+    3. Commit the restored version
+    
+    Args:
+        path: The file path
+        restore_request: The restore request with commit hash
+        
+    Returns:
+        NoteResponse: Success message and path
+        
+    Raises:
+        HTTPException: 404 if file/commit not found, 400 if invalid path or hash
+    """
+    try:
+        # Validate file exists
+        file_service.get_note(path)
+        
+        # Ensure current state is committed first
+        git_service.commit_single_file(path)
+        
+        # Get file content at the specified commit
+        content = git_service.get_file_content_at_commit(path, restore_request.commit_hash)
+        
+        # Update the file with restored content
+        file_service.update_note(path, content)
+        
+        # Commit the restored version
+        git_service.commit_single_file(path)
+        
+        return NoteResponse(
+            message=f"File restored from commit {restore_request.commit_hash[:8]}",
+            path=path
+        )
+        
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"File not found: {path}"
+        )
+    except ValueError as e:
+        if "not found in commit" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e)
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to restore file: {str(e)}"
         )
 
 

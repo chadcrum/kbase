@@ -23,6 +23,7 @@
         }"
         draggable="true"
         @click="handleTabClick(tab.id)"
+        @mousedown="handleTabMouseDown($event, tab.id)"
         @dragstart="handleDragStart($event, tab.id)"
         @dragend="handleDragEnd"
         @dragover="handleDragOver($event, tab.id)"
@@ -302,6 +303,24 @@ const handleTabClick = (id: string) => {
   if (tab) {
     tabsStore.setActiveTab(id)
     vaultStore.loadNote(tab.path)
+  }
+}
+
+const handleTabMouseDown = (event: MouseEvent, id: string) => {
+  // Middle mouse button (button 1) closes the tab
+  if (event.button === 1) {
+    event.preventDefault()
+    event.stopPropagation()
+    // Prevent drag from starting
+    const tabElement = event.currentTarget as HTMLElement
+    if (tabElement) {
+      tabElement.draggable = false
+      // Re-enable draggable after a short delay to allow the close to complete
+      setTimeout(() => {
+        tabElement.draggable = true
+      }, 0)
+    }
+    handleCloseTab(id)
   }
 }
 

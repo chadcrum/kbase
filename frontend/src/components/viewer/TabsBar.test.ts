@@ -101,6 +101,25 @@ describe('TabsBar', () => {
     expect(mockTabsStore.closeTab).toHaveBeenCalled()
   })
 
+  it('handles middle mouse button click to close tab', async () => {
+    mockTabsStore.closeTab = vi.fn()
+    mockTabsStore.activeTabPath = '/test2.md'
+    mockVaultStore.loadNote = vi.fn()
+
+    const wrapper = mount(TabsBar)
+    const tab = wrapper.find('.tab')
+
+    // Simulate middle mouse button click (button 1)
+    const mouseDownEvent = new MouseEvent('mousedown', {
+      button: 1,
+      bubbles: true,
+      cancelable: true
+    })
+    await tab.element.dispatchEvent(mouseDownEvent)
+
+    expect(mockTabsStore.closeTab).toHaveBeenCalled()
+  })
+
 
   it('makes tabs draggable', () => {
     const wrapper = mount(TabsBar)

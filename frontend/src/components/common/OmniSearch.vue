@@ -11,7 +11,7 @@
               type="text"
               class="search-input"
               placeholder="Search notes..."
-              @keydown.esc="close"
+              @keydown.esc="handleEscape"
               @keydown="handleKeyDown"
               @input="handleSearchInput"
             />
@@ -27,7 +27,11 @@
               v-for="(result, index) in results"
               :key="result.path"
               :class="['result-item', { selected: index === selectedIndex }]"
-              @click="selectFile(result.path)"
+              @click="handleResultClick(result.path, $event)"
+              @click.shift="handleShiftClick(result.path, $event)"
+              @touchstart="handleTouchStart(result.path, $event)"
+              @touchend="handleTouchEnd(result.path, $event)"
+              @touchmove="handleTouchMove(result.path, $event)"
             >
               <div class="result-icon">📄</div>
               <div class="result-info">
@@ -53,6 +57,14 @@
         </div>
       </div>
     </Transition>
+    
+    <!-- Note Preview Modal -->
+    <NotePreviewModal
+      :is-open="isPreviewOpen"
+      :note-path="previewNotePath"
+      @close="closePreview"
+      @open="handlePreviewOpen"
+    />
   </Teleport>
 </template>
 
@@ -62,6 +74,7 @@ import { apiClient } from '@/api/client'
 import { useVaultStore } from '@/stores/vault'
 import type { SearchResult } from '@/types'
 import { highlightSearchTerms } from '@/utils/highlightSearch'
+import NotePreviewModal from './NotePreviewModal.vue'
 
 // Props
 interface Props {
@@ -82,6 +95,20 @@ const isSearching = ref(false)
 const searchInput = ref<HTMLInputElement | null>(null)
 const selectedIndex = ref(0)
 
+// Preview state
+const isPreviewOpen = ref(false)
+const previewNotePath = ref<string | null>(null)
+
+// Touch state for long press detection
+interface TouchState {
+  startTime: number
+  startX: number
+  startY: number
+  timer: number | null
+  cancelled: boolean
+}
+const touchStates = ref<Map<string, TouchState>>(new Map())
+
 // Debounce timer
 let debounceTimer: number | null = null
 
@@ -93,15 +120,22 @@ watch(() => props.isOpen, async (newValue) => {
   if (newValue) {
     await nextTick()
     searchInput.value?.focus()
-    // Reset state when opening
-    searchQuery.value = ''
-    results.value = []
-    selectedIndex.value = 0
+    // Only reset state when explicitly opening (not when preview opens/closes)
+    // State is preserved when preview modal opens/closes
+    if (!isPreviewOpen.value) {
+      searchQuery.value = ''
+      results.value = []
+      selectedIndex.value = 0
+    }
   } else {
     // Clear debounce timer when closing
     if (debounceTimer) {
       clearTimeout(debounceTimer)
       debounceTimer = null
+    }
+    // Close preview if omni search is closed
+    if (isPreviewOpen.value) {
+      closePreview()
     }
   }
 })
@@ -166,7 +200,135 @@ const close = () => {
 
 // Handle backdrop click
 const handleBackdropClick = () => {
-  close()
+  // Don't close if preview is open
+  if (!isPreviewOpen.value) {
+    close()
+  }
+}
+
+// Show preview modal
+const showPreview = (path: string) => {
+  previewNotePath.value = path
+  isPreviewOpen.value = true
+}
+
+// Close preview modal
+const closePreview = () => {
+  isPreviewOpen.value = false
+  previewNotePath.value = null
+  // Clear any pending touch timers
+  touchStates.value.forEach((state) => {
+    if (state.timer) {
+      clearTimeout(state.timer)
+    }
+  })
+  touchStates.value.clear()
+}
+
+// Handle preview open (when user clicks open button in preview)
+const handlePreviewOpen = (path: string) => {
+  closePreview()
+  selectFile(path)
+}
+
+// Handle result item click (regular click)
+const handleResultClick = (path: string, event: MouseEvent) => {
+  // Don't handle regular click if shift was held (preview was shown)
+  if (event.shiftKey) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
+  // Don't handle if this was after a long press
+  const touchState = touchStates.value.get(path)
+  if (touchState?.cancelled) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
+  selectFile(path)
+}
+
+// Handle shift+click on result item
+const handleShiftClick = (path: string, event: MouseEvent) => {
+  event.preventDefault()
+  event.stopPropagation()
+  showPreview(path)
+}
+
+// Handle touch start for long press detection
+const handleTouchStart = (path: string, event: TouchEvent) => {
+  const touch = event.touches[0]
+  if (!touch) return
+
+  // Cancel any existing touch state for this path
+  const existingState = touchStates.value.get(path)
+  if (existingState?.timer) {
+    clearTimeout(existingState.timer)
+  }
+
+  // Create new touch state
+  const touchState: TouchState = {
+    startTime: Date.now(),
+    startX: touch.clientX,
+    startY: touch.clientY,
+    timer: null,
+    cancelled: false
+  }
+
+  // Set timer for long press (500ms)
+  touchState.timer = window.setTimeout(() => {
+    if (!touchState.cancelled) {
+      showPreview(path)
+      touchState.cancelled = true // Prevent regular click
+    }
+  }, 500)
+
+  touchStates.value.set(path, touchState)
+}
+
+// Handle touch end
+const handleTouchEnd = (path: string, event: TouchEvent) => {
+  const touchState = touchStates.value.get(path)
+  if (!touchState) return
+
+  // Clear the timer
+  if (touchState.timer) {
+    clearTimeout(touchState.timer)
+  }
+
+  // If long press was triggered, prevent regular click
+  if (touchState.cancelled) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  // Clean up touch state after a short delay to allow click event
+  setTimeout(() => {
+    touchStates.value.delete(path)
+  }, 100)
+}
+
+// Handle touch move (cancel long press if moved too much)
+const handleTouchMove = (path: string, event: TouchEvent) => {
+  const touchState = touchStates.value.get(path)
+  if (!touchState) return
+
+  const touch = event.touches[0]
+  if (!touch) return
+
+  // Calculate distance moved
+  const deltaX = Math.abs(touch.clientX - touchState.startX)
+  const deltaY = Math.abs(touch.clientY - touchState.startY)
+  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+
+  // Cancel if moved more than 10px
+  if (distance > 10) {
+    if (touchState.timer) {
+      clearTimeout(touchState.timer)
+    }
+    touchState.cancelled = false // Allow regular click
+  }
 }
 
 // Highlight search terms in snippet content
@@ -174,8 +336,23 @@ const getHighlightedContent = (content: string): string => {
   return highlightSearchTerms(content, searchQuery.value)
 }
 
+// Handle Escape key
+const handleEscape = (event: KeyboardEvent) => {
+  // Close preview first if open, otherwise close omni search
+  if (isPreviewOpen.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    closePreview()
+  } else {
+    close()
+  }
+}
+
 // Handle keyboard navigation
 const handleKeyDown = (event: KeyboardEvent) => {
+  // Don't handle keys if preview is open (except Escape which is handled separately)
+  if (isPreviewOpen.value) return
+
   // Only handle arrow keys and Enter when there are results
   if (results.value.length === 0) return
 

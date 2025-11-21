@@ -284,6 +284,7 @@ frontend/src/
   - `InstallPrompt.vue`: PWA install prompt with localStorage persistence
   - `ContextMenu.vue`: Right-click context menu with customizable items
   - `OmniSearch.vue`: Modal search interface with content snippets and line numbers
+  - `NotePreviewModal.vue`: Large preview modal for viewing full note content from search results
   - `UpdatePrompt.vue`: PWA update notification with reload functionality
 
 **State Management (Pinia)**:
@@ -326,7 +327,7 @@ frontend/src/
   - **Monaco Integration**: Monaco editor theme matches app theme (vs-dark in dark mode, vs-light in light mode)
   - **CSS Variables**: Uses CSS custom properties for consistent theming across all components
     - **Variable System**: Light and dark theme variables defined in `App.vue`
-    - **Modal Components**: All modals (ConfirmDialog, InputDialog, OmniSearch) use CSS variables
+    - **Modal Components**: All modals (ConfirmDialog, InputDialog, OmniSearch, NotePreviewModal) use CSS variables
     - **Automatic Switching**: Components automatically adapt when `[data-theme="dark"]` is applied
 
 **Key Features** (Current MVP):
@@ -338,7 +339,7 @@ frontend/src/
   - **Persistence**: User preference saved in localStorage across sessions
   - **System Sync**: Watches system preference changes when no manual override set
   - **Consistent Theming**: All components use CSS variables for theme switching
-    - **Modal Dark Mode**: ConfirmDialog, InputDialog, and OmniSearch fully support dark mode
+    - **Modal Dark Mode**: ConfirmDialog, InputDialog, OmniSearch, and NotePreviewModal fully support dark mode
     - **CSS Variables**: `--bg-primary`, `--bg-secondary`, `--text-primary`, `--text-secondary`, `--border-color`
   - **Monaco Editor**: Theme matches app (vs-dark in dark mode, vs-light in light mode)
   - **Smooth Transitions**: 0.3s ease transitions between theme changes
@@ -354,6 +355,15 @@ frontend/src/
     - First result auto-selected when results appear
     - Selection resets to first item on new search
     - Visual indication of selected item with blue highlight
+  - **Note Preview**: Full note preview modal for quick content inspection
+    - **Trigger**: Shift+click on any result item (desktop) or long press (mobile, 500ms)
+    - **Large Viewport**: 90% width/height modal with raw text display (no markdown rendering)
+    - **Read-only Content**: Scrollable, selectable text for easy copying
+    - **Controls**: Close button (X) and Open button (↗) in header corners
+    - **State Preservation**: Omni search query and results preserved when preview opens/closes
+    - **Close Triggers**: X button, Escape key, or click outside preview
+    - **Z-index**: Appears above omni search modal (z-index 10000+)
+    - **Mobile Support**: Full-screen preview on mobile devices
   - **Fuzzy Search**: Case-insensitive, flexible partial matching
   - **Multi-phrase Search**: All space-separated phrases must match
   - **File & Content Search**: Searches both filenames and file contents

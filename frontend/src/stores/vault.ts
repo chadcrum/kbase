@@ -365,8 +365,9 @@ export const useVaultStore = defineStore('vault', () => {
     // Load the new note
     loadNote(path)
     
-    // Broadcast note selection to other windows (unless disabled)
+    // Collapse sidebar if not pinned (only for user-initiated selections)
     if (shouldBroadcast) {
+      collapseSidebarIfNotPinned()
       windowSyncService.broadcastNoteSelection(path)
     }
   }

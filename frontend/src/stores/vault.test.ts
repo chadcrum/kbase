@@ -401,6 +401,70 @@ describe('VaultStore', () => {
       expect(vaultStore.expandedPaths.has('/')).toBe(true)
       expect(vaultStore.expandedPaths.size).toBe(1)
     })
+
+    it('should collapse sidebar when selecting a note and sidebar is not pinned', async () => {
+      const mockNote: NoteData = {
+        content: '# Test Note',
+        path: '/test.md',
+        size: 15,
+        modified: 1234567890
+      }
+
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      // Ensure sidebar is not pinned and not collapsed
+      vaultStore.isSidebarPinned = false
+      vaultStore.isSidebarCollapsed = false
+
+      vaultStore.selectNote('/test.md')
+
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(vaultStore.isSidebarCollapsed).toBe(true)
+    })
+
+    it('should not collapse sidebar when selecting a note and sidebar is pinned', async () => {
+      const mockNote: NoteData = {
+        content: '# Test Note',
+        path: '/test.md',
+        size: 15,
+        modified: 1234567890
+      }
+
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      // Ensure sidebar is pinned and not collapsed
+      vaultStore.isSidebarPinned = true
+      vaultStore.isSidebarCollapsed = false
+
+      vaultStore.selectNote('/test.md')
+
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+    })
+
+    it('should not collapse sidebar when selecting a note with shouldBroadcast=false', async () => {
+      const mockNote: NoteData = {
+        content: '# Test Note',
+        path: '/test.md',
+        size: 15,
+        modified: 1234567890
+      }
+
+      mockedApiClient.getNote.mockResolvedValue(mockNote)
+
+      // Ensure sidebar is not pinned and not collapsed
+      vaultStore.isSidebarPinned = false
+      vaultStore.isSidebarCollapsed = false
+
+      vaultStore.selectNote('/test.md', false)
+
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      // Should not collapse when shouldBroadcast is false (e.g., window sync)
+      expect(vaultStore.isSidebarCollapsed).toBe(false)
+    })
   })
 
   describe('clearSelection', () => {

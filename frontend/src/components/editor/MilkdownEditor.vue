@@ -222,7 +222,7 @@ const transformMarkdownForInProgress = (markdown: string): string => {
     // Find lines that contain this text and have a checkbox
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].includes(text) && /\[[ x]\]/.test(lines[i])) {
-        lines[i] = lines[i].replace(/\[([ x])\]/g, '[/]')
+        lines[i] = lines[i].replace(/\[([ x])\]/g, '[>]')
         break // Only replace the first match
       }
     }
@@ -454,14 +454,16 @@ const transformImageUrls = (markdown: string): string => {
   )
 }
 
-// Pre-process markdown to convert [/] to [x] so GFM parser recognizes it as a task list item
-// We'll convert it back to [/] after parsing and setting the in-progress state
+// Pre-process markdown to convert [>] to [x] so GFM parser recognizes it as a task list item
+// We'll convert it back to [>] after parsing and setting the in-progress state
 const preprocessMarkdownForParsing = (markdown: string): string => {
-  // Convert [/] to [x] temporarily so GFM parser recognizes it as a task list item
-  return markdown.replace(/\[\/\]/g, '[x]')
+  // Convert [>] to [x] temporarily so GFM parser recognizes it as a task list item
+  return markdown.replace(/\[>\]/g, '[x]')
 }
 
-// Update task list items in the editor to set in-progress state for [/] checkboxes
+// Update task list items in the editor to set in-progress state for [>] checkboxes
+// Since we pre-process [>] to [x] before parsing, all [>] items become checked task list items
+// We need to find which checked items correspond to [>] in the original markdown
 const updateInProgressCheckboxes = async (originalMarkdown: string) => {
   if (!editor || !editorView) return
   
@@ -471,30 +473,35 @@ const updateInProgressCheckboxes = async (originalMarkdown: string) => {
     
     const { doc, tr } = view.state
     const lines = originalMarkdown.split('\n')
-    let docPos = 0
     
-    // Find all lines with [/] checkboxes
-    const inProgressLines: number[] = []
+    // Find all lines with [>] checkboxes and extract their text content
+    const inProgressItems: Array<{ lineIndex: number; text: string }> = []
     lines.forEach((line, index) => {
-      if (/\[\/\]/.test(line)) {
-        inProgressLines.push(index)
+      const match = line.match(/^\s*[-*+]\s+\[>\]\s+(.+)$/)
+      if (match) {
+        inProgressItems.push({
+          lineIndex: index,
+          text: match[1].trim()
+        })
       }
     })
     
-    if (inProgressLines.length === 0) return
+    if (inProgressItems.length === 0) return
     
-    // Find corresponding nodes in the document and update them
-    let lineIndex = 0
+    // Find corresponding task list items in the document and update them
+    // Since we pre-processed [>] to [x], these should be checked task list items
     let updated = false
     
     doc.descendants((node, pos) => {
-      if ((node.type.name === 'list_item' || node.type.name === 'task_list_item') && node.attrs.checked != null) {
-        // Check if this node's line should be in-progress
-        // We approximate by checking if we've passed enough lines
+      if ((node.type.name === 'list_item' || node.type.name === 'task_list_item') && 
+          node.attrs.checked === true) {
+        // This is a checked task list item - check if it should be in-progress
         const nodeText = node.textContent.trim()
-        for (const targetLine of inProgressLines) {
-          if (lines[targetLine] && lines[targetLine].includes(nodeText) && /\[\/\]/.test(lines[targetLine])) {
-            // This node should be in-progress
+        
+        // Find matching in-progress item by text content
+        for (const item of inProgressItems) {
+          if (item.text === nodeText || lines[item.lineIndex].includes(nodeText)) {
+            // This checked item should be in-progress
             if (node.attrs.checked !== 'in-progress') {
               tr.setNodeMarkup(pos, undefined, {
                 ...node.attrs,
@@ -556,6 +563,8 @@ onMounted(async () => {
     await setupMilkdownStateListeners()
     await restoreMilkdownState()
     // Update in-progress checkboxes from markdown
+    // Use a small delay to ensure editor is fully initialized
+    await new Promise(resolve => setTimeout(resolve, 100))
     await updateInProgressCheckboxes(props.modelValue)
   } catch (error) {
     console.error('Failed to initialize Milkdown editor:', error)
@@ -606,6 +615,8 @@ watch(() => props.modelValue, async (newValue) => {
       await setupMilkdownStateListeners()
       await restoreMilkdownState()
       // Update in-progress checkboxes from markdown
+      // Use a small delay to ensure editor is fully initialized
+      await new Promise(resolve => setTimeout(resolve, 100))
       await updateInProgressCheckboxes(newValue)
     } catch (error) {
       console.error('Failed to update editor content:', error)

@@ -194,14 +194,54 @@ const historyKeymapPlugin: MilkdownPlugin = (ctx) => {
   }
 }
 
+// Transform markdown to handle in-progress checkboxes
+// This function maps document nodes to markdown lines and replaces checkbox markers
+const transformMarkdownForInProgress = (markdown: string): string => {
+  if (!editorView) return markdown
+  
+  const lines = markdown.split('\n')
+  const { doc } = editorView.state
+  const taskItems: Array<{ text: string }> = []
+  
+  // Collect task list items that are in-progress
+  doc.descendants((node) => {
+    if ((node.type.name === 'list_item' || node.type.name === 'task_list_item') && node.attrs.checked != null) {
+      const state = node.attrs.checked === 'in-progress' ? 'in-progress' : 
+                   node.attrs.checked === true ? true : false
+      if (state === 'in-progress') {
+        taskItems.push({ text: node.textContent.trim() })
+      }
+    }
+    return true
+  })
+  
+  // For each in-progress item, find and replace the checkbox marker in markdown
+  // We'll match by text content since position mapping is complex
+  taskItems.forEach(({ text }) => {
+    if (!text) return
+    // Find lines that contain this text and have a checkbox
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes(text) && /\[[ x]\]/.test(lines[i])) {
+        lines[i] = lines[i].replace(/\[([ x])\]/g, '[>]')
+        break // Only replace the first match
+      }
+    }
+  })
+  
+  return lines.join('\n')
+}
+
 // Handle content change
 const handleContentChange = (markdown: string) => {
   if (props.disabled) return
   
-  currentMarkdown.value = markdown
+  // Transform markdown to handle in-progress checkboxes
+  const transformedMarkdown = transformMarkdownForInProgress(markdown)
+  
+  currentMarkdown.value = transformedMarkdown
   
   // Emit update for v-model
-  emit('update:modelValue', markdown)
+  emit('update:modelValue', transformedMarkdown)
   
   // Debounced auto-save
   if (saveTimeout) {
@@ -209,7 +249,7 @@ const handleContentChange = (markdown: string) => {
   }
   
   saveTimeout = setTimeout(() => {
-    emit('save', markdown)
+    emit('save', transformedMarkdown)
   }, AUTO_SAVE_DELAY)
 }
 
@@ -280,7 +320,7 @@ const handleCheckboxClick = (event: Event) => {
     doc.descendants((node, nodePos) => {
       if (found) return false
 
-      if (node.type.name === 'task_list_item') {
+      if (node.type.name === 'task_list_item' || node.type.name === 'list_item') {
         // Get the DOM node for this position
         const domNode = view.domAtPos(nodePos + 1).node
         if (domNode && (domNode === taskListItem || domNode.contains(taskListItem as Node) || taskListItem.contains(domNode))) {
@@ -294,9 +334,20 @@ const handleCheckboxClick = (event: Event) => {
 
     if (pos !== -1) {
       const node = doc.nodeAt(pos)
-      if (node && node.type.name === 'task_list_item') {
-        // Toggle the checked attribute
-        const newAttrs = { ...node.attrs, checked: !node.attrs.checked }
+      if (node && (node.type.name === 'task_list_item' || node.type.name === 'list_item') && node.attrs.checked != null) {
+        // Cycle through states: unchecked -> in-progress -> checked -> unchecked
+        const currentState = node.attrs.checked
+        let newState: false | 'in-progress' | true
+        
+        if (currentState === false || currentState === null || currentState === undefined) {
+          newState = 'in-progress'
+        } else if (currentState === 'in-progress') {
+          newState = true
+        } else {
+          newState = false
+        }
+        
+        const newAttrs = { ...node.attrs, checked: newState }
         dispatch(tr.setNodeMarkup(pos, undefined, newAttrs))
       }
     }
@@ -403,6 +454,60 @@ const transformImageUrls = (markdown: string): string => {
   )
 }
 
+// Update task list items in the editor to set in-progress state for [>] checkboxes
+const updateInProgressCheckboxes = async (originalMarkdown: string) => {
+  if (!editor || !editorView) return
+  
+  await editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx)
+    if (!view) return
+    
+    const { doc, tr } = view.state
+    const lines = originalMarkdown.split('\n')
+    let docPos = 0
+    
+    // Find all lines with [>] checkboxes
+    const inProgressLines: number[] = []
+    lines.forEach((line, index) => {
+      if (/\[>\]/.test(line)) {
+        inProgressLines.push(index)
+      }
+    })
+    
+    if (inProgressLines.length === 0) return
+    
+    // Find corresponding nodes in the document and update them
+    let lineIndex = 0
+    let updated = false
+    
+    doc.descendants((node, pos) => {
+      if ((node.type.name === 'list_item' || node.type.name === 'task_list_item') && node.attrs.checked != null) {
+        // Check if this node's line should be in-progress
+        // We approximate by checking if we've passed enough lines
+        const nodeText = node.textContent.trim()
+        for (const targetLine of inProgressLines) {
+          if (lines[targetLine] && lines[targetLine].includes(nodeText) && /\[>\]/.test(lines[targetLine])) {
+            // This node should be in-progress
+            if (node.attrs.checked !== 'in-progress') {
+              tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                checked: 'in-progress'
+              })
+              updated = true
+            }
+            break
+          }
+        }
+      }
+      return true
+    })
+    
+    if (updated) {
+      view.dispatch(tr)
+    }
+  })
+}
+
 // Initialize Milkdown editor
 onMounted(async () => {
   if (!editorContainer.value) return
@@ -441,6 +546,8 @@ onMounted(async () => {
     await focusEditor()
     await setupMilkdownStateListeners()
     await restoreMilkdownState()
+    // Update in-progress checkboxes from markdown
+    await updateInProgressCheckboxes(props.modelValue)
   } catch (error) {
     console.error('Failed to initialize Milkdown editor:', error)
   }
@@ -487,6 +594,8 @@ watch(() => props.modelValue, async (newValue) => {
       await focusEditor()
       await setupMilkdownStateListeners()
       await restoreMilkdownState()
+      // Update in-progress checkboxes from markdown
+      await updateInProgressCheckboxes(newValue)
     } catch (error) {
       console.error('Failed to update editor content:', error)
     }
@@ -839,9 +948,52 @@ onBeforeUnmount(() => {
   accent-color: #667eea;
 }
 
+/* In-progress checkbox styling - green box with yellow arrow */
+.milkdown-editor-container :deep(.milkdown input[type="checkbox"][data-task-state="in-progress"]),
+.milkdown-editor-container :deep(.milkdown .task-list-item input[type="checkbox"][data-task-state="in-progress"]),
+.milkdown-editor-container :deep(.milkdown .milkdown-task-checkbox[data-task-state="in-progress"]) {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 1em;
+  height: 1em;
+  border: 2px solid #22c55e;
+  background-color: #22c55e;
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+}
+
+.milkdown-editor-container :deep(.milkdown input[type="checkbox"][data-task-state="in-progress"]::after),
+.milkdown-editor-container :deep(.milkdown .task-list-item input[type="checkbox"][data-task-state="in-progress"]::after),
+.milkdown-editor-container :deep(.milkdown .milkdown-task-checkbox[data-task-state="in-progress"]::after) {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid #fbbf24;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  margin-left: 1px;
+}
+
 .milkdown-editor-container :deep(.milkdown .task-list-item > p) {
   margin: 0;
   display: inline;
+}
+
+/* In-progress text color */
+.milkdown-editor-container.dark :deep(.milkdown .milkdown-task-item--in-progress > p:first-of-type),
+.milkdown-editor-container.dark :deep(.milkdown .task-list-item.milkdown-task-item--in-progress > p) {
+  color: #4ade80; /* bright green for dark mode */
+}
+
+.milkdown-editor-container.light :deep(.milkdown .milkdown-task-item--in-progress > p:first-of-type),
+.milkdown-editor-container.light :deep(.milkdown .task-list-item.milkdown-task-item--in-progress > p) {
+  color: #16a34a; /* darker green for light mode */
 }
 
 .milkdown-editor-container :deep(.milkdown ul.contains-task-list) {

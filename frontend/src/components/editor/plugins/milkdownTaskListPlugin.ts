@@ -7,17 +7,27 @@ import { liftListItem, sinkListItem } from '@milkdown/prose/schema-list'
 
 const TASK_ITEM_CLASS = 'milkdown-task-item'
 const TASK_ITEM_CHECKED_CLASS = 'milkdown-task-item--checked'
+const TASK_ITEM_IN_PROGRESS_CLASS = 'milkdown-task-item--in-progress'
 const TASK_CHECKBOX_CLASS = 'milkdown-task-checkbox'
 const TASK_POS_DATA_KEY = 'milkdownTaskPos'
 
-const createTaskCheckbox = (pos: number, checked: boolean) => {
+type TaskState = false | 'in-progress' | true
+
+const getTaskState = (checked: unknown): TaskState => {
+  if (checked === 'in-progress') return 'in-progress'
+  if (checked === true) return true
+  return false
+}
+
+const createTaskCheckbox = (pos: number, state: TaskState) => {
   const checkbox = document.createElement('input')
   checkbox.type = 'checkbox'
   checkbox.classList.add(TASK_CHECKBOX_CLASS)
   checkbox.dataset[TASK_POS_DATA_KEY] = String(pos)
+  checkbox.dataset.taskState = state === 'in-progress' ? 'in-progress' : state ? 'checked' : 'unchecked'
   checkbox.contentEditable = 'false'
   checkbox.tabIndex = 0
-  checkbox.checked = checked
+  checkbox.checked = state === true
 
   return checkbox
 }
@@ -30,7 +40,8 @@ const createDecorations = (doc: ProseMirrorNode) => {
       return
     }
 
-    const checkbox = createTaskCheckbox(pos, Boolean(node.attrs.checked))
+    const taskState = getTaskState(node.attrs.checked)
+    const checkbox = createTaskCheckbox(pos, taskState)
     decorations.push(
       Decoration.widget(pos + 1, checkbox, {
         side: -1,
@@ -39,8 +50,10 @@ const createDecorations = (doc: ProseMirrorNode) => {
     )
 
     const classes = [TASK_ITEM_CLASS]
-    if (Boolean(node.attrs.checked)) {
+    if (taskState === true) {
       classes.push(TASK_ITEM_CHECKED_CLASS)
+    } else if (taskState === 'in-progress') {
+      classes.push(TASK_ITEM_IN_PROGRESS_CLASS)
     }
 
     decorations.push(
@@ -53,6 +66,12 @@ const createDecorations = (doc: ProseMirrorNode) => {
   return DecorationSet.create(doc, decorations)
 }
 
+const cycleTaskState = (currentState: TaskState): TaskState => {
+  if (currentState === false) return 'in-progress'
+  if (currentState === 'in-progress') return true
+  return false
+}
+
 const handleCheckboxChange = (view: EditorView, target: EventTarget | null): boolean => {
   if (!(target instanceof HTMLInputElement)) return false
   if (!target.classList.contains(TASK_CHECKBOX_CLASS)) return false
@@ -63,9 +82,12 @@ const handleCheckboxChange = (view: EditorView, target: EventTarget | null): boo
   const node = view.state.doc.nodeAt(pos)
   if (!node || node.type.name !== 'list_item') return false
 
+  const currentState = getTaskState(node.attrs.checked)
+  const newState = cycleTaskState(currentState)
+
   const tr = view.state.tr.setNodeMarkup(pos, undefined, {
     ...node.attrs,
-    checked: target.checked,
+    checked: newState,
   })
 
   view.dispatch(tr)

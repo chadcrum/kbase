@@ -32,6 +32,7 @@
           />
           <MonacoEditor
             v-else
+            ref="monacoEditorRef"
             :key="`monaco-${selectedNote.path}-${editorKey}`"
             v-model="editableContent"
             :path="selectedNote.path"
@@ -69,13 +70,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
 import TabsBar from './TabsBar.vue'
 import ViewerToolbar from './ViewerToolbar.vue'
 import MonacoEditor from '@/components/editor/MonacoEditor.vue'
 import MilkdownEditor from '@/components/editor/MilkdownEditor.vue'
+import type { ComponentPublicInstance } from 'vue'
 
 // Props
 interface Props {
@@ -99,6 +101,7 @@ const editorStore = useEditorStore()
 const editableContent = ref('')
 const saveStatus = ref<'saving' | 'saved' | 'error' | null>(null)
 const editorKey = ref(0) // Key to force editor re-render when needed
+const monacoEditorRef = ref<ComponentPublicInstance<{ focus: () => void }> | null>(null)
 let saveStatusTimeout: ReturnType<typeof setTimeout> | null = null
 
 // Computed properties
@@ -127,7 +130,7 @@ const shouldUseMilkdown = computed(() => {
 })
 
 // Watch for note changes to update editable content
-watch(selectedNote, (newNote, oldNote) => {
+watch(selectedNote, async (newNote, oldNote) => {
   if (newNote) {
     // Check if this is a content update for the same path (e.g., after restore)
     const isContentUpdate = oldNote && oldNote.path === newNote.path && oldNote.content !== newNote.content
@@ -149,6 +152,18 @@ watch(selectedNote, (newNote, oldNote) => {
     if (isContentUpdate || (oldNote?.path === newNote.path && previousContent === newNote.content)) {
       editorKey.value++
       console.log('Forcing editor refresh - content update for same path or forced refresh')
+    }
+    
+    // Focus the editor when a new note is selected (only if path changed)
+    if (!oldNote || oldNote.path !== newNote.path) {
+      // Wait for editor to be ready, then focus
+      await nextTick()
+      // Use setTimeout to ensure editor is fully initialized
+      setTimeout(() => {
+        if (monacoEditorRef.value && !shouldUseMilkdown.value) {
+          monacoEditorRef.value.focus()
+        }
+      }, 100)
     }
   } else {
     editableContent.value = ''

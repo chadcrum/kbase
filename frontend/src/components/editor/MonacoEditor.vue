@@ -83,6 +83,17 @@ const restoreEditorState = () => {
   editor.focus()
 }
 
+// Public method to focus the editor
+const focus = () => {
+  if (!editor || props.disabled) return
+  editor.focus()
+}
+
+// Expose focus method to parent component
+defineExpose({
+  focus
+})
+
 // Helper to set theme based on dark mode
 const setEditorTheme = () => {
   if (!editor || !monaco) return
@@ -313,7 +324,7 @@ watch(() => props.modelValue, (newValue, oldValue) => {
 })
 
 // Watch for path changes (language detection)
-watch(() => props.path, (newPath) => {
+watch(() => props.path, (newPath, oldPath) => {
   if (!editor || !monaco) return
 
   const language = detectLanguage(newPath)
@@ -323,7 +334,18 @@ watch(() => props.path, (newPath) => {
   }
 
   nextTick(() => {
+    if (!editor) return
     restoreEditorState()
+    // If path changed and there's no stored state, focus the editor
+    // This ensures focus when switching between notes
+    if (oldPath !== newPath) {
+      const stored = loadNoteState(newPath)
+      if (!stored?.monaco?.viewState) {
+        // No stored state, so focus at the beginning
+        editor.setPosition({ lineNumber: 1, column: 1 })
+        editor.focus()
+      }
+    }
   })
 })
 

@@ -29,8 +29,10 @@ import { indent } from '@milkdown/plugin-indent'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { nord } from '@milkdown/theme-nord'
 import type { MilkdownPlugin } from '@milkdown/ctx'
-import { TextSelection, type Command } from '@milkdown/prose/state'
+import { $prose } from '@milkdown/utils'
+import { TextSelection, type Command, Plugin, PluginKey } from '@milkdown/prose/state'
 import type { EditorView } from '@milkdown/prose/view'
+import { splitListItem } from '@milkdown/prose/schema-list'
 import type { Options } from 'remark-stringify'
 import { useThemeStore } from '@/stores/theme'
 import { useVaultStore } from '@/stores/vault'
@@ -157,6 +159,130 @@ const textIndentPlugin: MilkdownPlugin = (ctx) => {
     }
   }
 }
+
+// Command to split task list item (the appendTransaction plugin will ensure new item is unchecked)
+const splitTaskListItemCommand: Command = (state, dispatch) => {
+  const { selection, schema } = state
+  const { $from } = selection
+  
+  // Find the list item node we're in
+  const listItemType = schema.nodes.list_item
+  if (!listItemType) return false
+  
+  // Check if we're in a list item with a checked attribute (task list item)
+  let depth = $from.depth
+  let listItemNode = null
+  
+  while (depth > 0) {
+    const node = $from.node(depth)
+    if (node.type === listItemType && node.attrs.checked != null) {
+      listItemNode = node
+      break
+    }
+    depth--
+  }
+  
+  // If we're not in a task list item, let default behavior handle it
+  if (!listItemNode) {
+    return false
+  }
+  
+  // Split the list item - the appendTransaction plugin will fix the checked state
+  return splitListItem(listItemType)(state, dispatch)
+}
+
+// Plugin to ensure new task list items are unchecked after Enter
+const taskListUncheckPluginKey = new PluginKey('task-list-uncheck')
+
+// ProseMirror plugin to fix new task list items after split
+const createTaskListUncheckPlugin = () =>
+  new Plugin({
+    key: taskListUncheckPluginKey,
+    appendTransaction: (transactions, oldState, newState) => {
+      // Check if any transaction split a list item
+      const schema = newState.schema
+      const listItemType = schema.nodes.list_item
+      if (!listItemType) return null
+      
+      // Only process if there were document changes
+      const hasChanges = transactions.some(tr => tr.docChanged && tr.steps.length > 0)
+      if (!hasChanges) return null
+      
+      // Check if we're currently in a task list item
+      const selection = newState.selection
+      const $from = selection.$from
+      
+      let depth = $from.depth
+      let currentItemNode = null
+      let currentItemPos = -1
+      
+      while (depth > 0) {
+        const node = $from.node(depth)
+        if (node.type === listItemType && node.attrs.checked != null) {
+          currentItemNode = node
+          currentItemPos = $from.before(depth)
+          break
+        }
+        depth--
+      }
+      
+      if (!currentItemNode || currentItemPos === -1) return null
+      
+      // Check if this item is newly created by seeing if its position maps back to old state
+      // Apply mappings in reverse order to get the original position
+      let mappedPos = currentItemPos
+      for (let i = transactions.length - 1; i >= 0; i--) {
+        const tr = transactions[i]
+        if (tr?.mapping) {
+          mappedPos = tr.mapping.invert().map(mappedPos, -1)
+          if (mappedPos === -1) break
+        }
+      }
+      
+      // If position doesn't map back or maps to invalid position, it's a new item
+      const isNewItem = mappedPos === -1 || 
+                       mappedPos >= oldState.doc.content.size ||
+                       !oldState.doc.nodeAt(mappedPos)
+      
+      if (isNewItem && currentItemNode.attrs.checked !== false && currentItemNode.attrs.checked !== null) {
+        // This is a new task list item that needs to be unchecked
+        const tr = newState.tr
+        tr.setNodeMarkup(currentItemPos, undefined, {
+          ...currentItemNode.attrs,
+          checked: false
+        })
+        return tr
+      }
+      
+      return null
+    }
+  })
+
+// Task list Enter key handler plugin
+const taskListEnterPlugin: MilkdownPlugin = (ctx) => {
+  return async () => {
+    await ctx.wait(KeymapReady)
+    const keymapManager = ctx.get(keymapCtx)
+    
+    const dispose = keymapManager.addObjectKeymap({
+      Enter: (state, dispatch) => {
+        // Try our custom command first
+        if (splitTaskListItemCommand(state, dispatch)) {
+          return true
+        }
+        // Otherwise let default behavior handle it
+        return false
+      },
+    })
+
+    return () => {
+      dispose()
+    }
+  }
+}
+
+// ProseMirror plugin wrapper for Milkdown
+const taskListUncheckProsePlugin = $prose(() => createTaskListUncheckPlugin())
 
 // History keymap plugin for undo/redo shortcuts
 const historyKeymapPlugin: MilkdownPlugin = (ctx) => {
@@ -584,6 +710,8 @@ onMounted(async () => {
       .use(historyKeymapPlugin)
       .use(indent)
       .use(textIndentPlugin)
+      .use(taskListEnterPlugin)
+      .use(taskListUncheckProsePlugin)
       .use(milkdownTaskListPlugin)
       .use(milkdownImagePlugin)
       .use(listener)
@@ -636,6 +764,8 @@ watch(() => props.modelValue, async (newValue) => {
         .use(historyKeymapPlugin)
         .use(indent)
         .use(textIndentPlugin)
+        .use(taskListEnterPlugin)
+        .use(taskListUncheckProsePlugin)
         .use(milkdownTaskListPlugin)
         .use(milkdownImagePlugin)
         .use(listener)

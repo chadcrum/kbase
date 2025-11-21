@@ -198,10 +198,19 @@ const historyKeymapPlugin: MilkdownPlugin = (ctx) => {
 // This function maps document nodes to markdown lines and replaces checkbox markers
 // Since GFM serializes in-progress as [x], we need to convert those [x] back to [>]
 const transformMarkdownForInProgress = (markdown: string): string => {
-  if (!editorView) return markdown
+  // editorView should be set when markdownUpdated is called, but if not, we can't transform
+  if (!editorView) {
+    // Log a warning in development to help debug
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('transformMarkdownForInProgress: editorView not available, skipping transformation')
+    }
+    return markdown
+  }
+  
+  const view = editorView
   
   const lines = markdown.split('\n')
-  const { doc } = editorView.state
+  const { doc } = view.state
   const inProgressItems: Array<{ text: string; lineIndex: number }> = []
   
   // First, find all task list items that are in-progress in the document

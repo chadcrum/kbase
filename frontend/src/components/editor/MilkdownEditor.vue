@@ -955,13 +955,17 @@ onBeforeUnmount(() => {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  width: 1em;
-  height: 1em;
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+  min-height: 1rem;
   border: 2px solid #22c55e;
   background-color: #22c55e;
   border-radius: 3px;
   position: relative;
   cursor: pointer;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .milkdown-editor-container :deep(.milkdown input[type="checkbox"][data-task-state="in-progress"]::after),

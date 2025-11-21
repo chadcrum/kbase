@@ -129,15 +129,27 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 const formatTimestamp = (timestamp: number): string => {
   const date = new Date(timestamp * 1000)
+  // Use shorter format on mobile (detect via window width)
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768
+  if (isMobile) {
+    // Compact format: MM/DD HH:MM
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${month}/${day} ${hours}:${minutes}`
+  }
   return date.toLocaleString()
 }
 
 const formatCommitDisplay = (commit: CommitInfo): string => {
   const timestamp = formatTimestamp(commit.timestamp)
-  const shortHash = commit.hash.substring(0, 8)
-  const currentLabel = commit.is_current ? ' (Current)' : ''
-  // Include commit message if available (truncate if too long)
-  const message = commit.message ? (commit.message.length > 50 ? commit.message.substring(0, 47) + '...' : commit.message) : ''
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768
+  const shortHash = commit.hash.substring(0, isMobile ? 6 : 8)
+  const currentLabel = commit.is_current ? (isMobile ? ' (✓)' : ' (Current)') : ''
+  // Include commit message if available (truncate more aggressively on mobile)
+  const maxMessageLength = isMobile ? 20 : 50
+  const message = commit.message ? (commit.message.length > maxMessageLength ? commit.message.substring(0, maxMessageLength - 3) + '...' : commit.message) : ''
   const messagePart = message ? ` - ${message}` : ''
   return `${timestamp} - ${shortHash}${messagePart}${currentLabel}`
 }
@@ -472,6 +484,9 @@ onUnmounted(() => {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   cursor: pointer;
   transition: border-color 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .commit-select:hover:not(:disabled) {
@@ -641,6 +656,25 @@ onUnmounted(() => {
 
   .history-controls {
     padding: 0.75rem 1rem;
+  }
+
+  .commit-selector {
+    gap: 0.5rem;
+  }
+
+  .commit-label {
+    font-size: 0.75rem;
+  }
+
+  .commit-select {
+    font-size: 0.7rem;
+    padding: 0.35rem 0.4rem;
+    max-width: 100%;
+  }
+
+  .commit-select option {
+    font-size: 0.7rem;
+    padding: 0.25rem;
   }
 }
 </style>

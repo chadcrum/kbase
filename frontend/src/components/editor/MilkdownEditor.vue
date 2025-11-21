@@ -196,35 +196,44 @@ const historyKeymapPlugin: MilkdownPlugin = (ctx) => {
 
 // Transform markdown to handle in-progress checkboxes
 // This function maps document nodes to markdown lines and replaces checkbox markers
+// Since GFM serializes in-progress as [x], we need to convert those [x] back to [>]
 const transformMarkdownForInProgress = (markdown: string): string => {
   if (!editorView) return markdown
   
   const lines = markdown.split('\n')
   const { doc } = editorView.state
-  const taskItems: Array<{ text: string }> = []
+  const inProgressItems: Array<{ text: string; lineIndex: number }> = []
   
-  // Collect task list items that are in-progress
-  doc.descendants((node) => {
+  // First, find all task list items that are in-progress in the document
+  doc.descendants((node, pos) => {
     if ((node.type.name === 'list_item' || node.type.name === 'task_list_item') && node.attrs.checked != null) {
       const state = node.attrs.checked === 'in-progress' ? 'in-progress' : 
                    node.attrs.checked === true ? true : false
       if (state === 'in-progress') {
-        taskItems.push({ text: node.textContent.trim() })
+        const text = node.textContent.trim()
+        if (text) {
+          // Find the corresponding line in markdown
+          // We'll match by finding lines that contain this text and have [x] (since GFM serializes in-progress as checked)
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i]
+            // Match task list item format: - [x] text or * [x] text or + [x] text
+            const taskMatch = line.match(/^(\s*[-*+])\s+\[x\]\s+(.+)$/)
+            if (taskMatch && taskMatch[2].trim() === text) {
+              // This line corresponds to an in-progress item
+              inProgressItems.push({ text, lineIndex: i })
+              break
+            }
+          }
+        }
       }
     }
     return true
   })
   
-  // For each in-progress item, find and replace the checkbox marker in markdown
-  // We'll match by text content since position mapping is complex
-  taskItems.forEach(({ text }) => {
-    if (!text) return
-    // Find lines that contain this text and have a checkbox
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes(text) && /\[[ x]\]/.test(lines[i])) {
-        lines[i] = lines[i].replace(/\[([ x])\]/g, '[>]')
-        break // Only replace the first match
-      }
+  // Replace [x] with [>] for in-progress items
+  inProgressItems.forEach(({ lineIndex }) => {
+    if (lines[lineIndex]) {
+      lines[lineIndex] = lines[lineIndex].replace(/\[x\]/, '[>]')
     }
   })
   

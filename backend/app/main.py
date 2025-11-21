@@ -1,6 +1,9 @@
 """Main FastAPI application."""
 
+import asyncio
 import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -8,6 +11,54 @@ from fastapi.responses import FileResponse
 
 from app.api.v1 import api_router
 from app.config import settings
+from app.services.git_service import GitService
+
+# Initialize git service
+git_service = GitService()
+
+
+async def git_commit_task():
+    """Background task that commits changes every 5 minutes."""
+    # Wait a bit before first commit to let server start
+    await asyncio.sleep(60)
+    
+    while True:
+        try:
+            git_service.commit_changes()
+        except Exception as e:
+            # Log error but don't crash the task
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in git commit task: {e}", exc_info=True)
+        
+        # Wait 5 minutes (300 seconds) before next commit
+        await asyncio.sleep(300)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup: Initialize git and start background task
+    try:
+        git_service.initialize_git()
+        git_service.ensure_gitignore()
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Git initialization failed: {e}", exc_info=True)
+    
+    # Start background task
+    task = asyncio.create_task(git_commit_task())
+    
+    yield
+    
+    # Shutdown: Cancel background task
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
 
 # Create FastAPI application
 app = FastAPI(
@@ -16,7 +67,8 @@ app = FastAPI(
     description="A web-based note-taking application with markdown support",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
+    lifespan=lifespan
 )
 
 # Configure CORS
@@ -114,7 +166,12 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "vault_path": str(settings.vault_path)}
+    git_status = git_service.get_status()
+    return {
+        "status": "healthy",
+        "vault_path": str(settings.vault_path),
+        "git_status": git_status
+    }
 
 
 if __name__ == "__main__":

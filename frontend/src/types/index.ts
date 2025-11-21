@@ -78,3 +78,16 @@ export interface SearchResponse {
   total: number
 }
 
+export interface GitStatus {
+  enabled: boolean
+  last_commit: number | null
+  last_error: string | null
+  last_error_time: number | null
+}
+
+export interface HealthResponse {
+  status: string
+  vault_path: string
+  git_status: GitStatus
+}
+

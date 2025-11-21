@@ -486,3 +486,38 @@ All endpoints validate file paths to prevent directory traversal attacks:
   - All other file types use Monaco editor only
   - Editor toggle button only appears for markdown files
 - Directory operations work with any valid directory name
+
+## Health Check Endpoint
+
+### Health Check
+- **GET** `/health`
+- **Description**: Health check endpoint that returns server status and git version control information
+- **Authentication**: Not required (public endpoint)
+- **Response**:
+```json
+{
+  "status": "healthy",
+  "vault_path": "/path/to/vault",
+  "git_status": {
+    "enabled": true,
+    "last_commit": 1640995200.0,
+    "last_error": null,
+    "last_error_time": null
+  }
+}
+```
+- **Status Codes**: 
+  - 200 (success)
+- **Response Fields**:
+  - `status`: Server status (always "healthy" if endpoint is reachable)
+  - `vault_path`: Path to the vault directory
+  - `git_status`: Git version control status object
+    - `enabled`: Boolean indicating if git is available and initialized
+    - `last_commit`: Unix timestamp (seconds) of last successful commit, or null if no commits yet
+    - `last_error`: Error message from last failed git operation, or null if no errors
+    - `last_error_time`: Unix timestamp (seconds) of last error, or null if no errors
+- **Notes**:
+  - This endpoint is always accessible (no authentication required)
+  - Used by frontend to monitor git version control status and display errors
+  - Git status is updated every 5 minutes when background commit task runs
+  - If git is not installed, `enabled` will be `false` and errors will be reported

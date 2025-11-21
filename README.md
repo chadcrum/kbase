@@ -62,6 +62,15 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Smart Dismissal**: Auto-dismisses when backend reconnects, reappears on new failures
 - **Cross-Platform**: Works on both login screen and main editor interface
 
+### Git Version Control
+- **Automatic Versioning**: Vault directory is automatically version controlled with git
+- **Auto-Initialization**: Git repository is initialized automatically if it doesn't exist
+- **Periodic Commits**: All text files are committed every 5 minutes
+- **Binary File Exclusion**: Binary files and `_resources/` directory are automatically excluded
+- **Error Reporting**: Git errors are displayed in the web UI via health check endpoint
+- **Low Impact**: Background task runs with minimal system load
+- **History Tracking**: Full file history available for viewing and reverting changes
+
 ### Progressive Web App (PWA)
 - **Installable**: Add to home screen on mobile devices and desktop browsers
 - **Offline Support**: Cache static assets and recently accessed notes

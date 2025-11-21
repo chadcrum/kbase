@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError } from 'axios'
-import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteData, SearchResponse, ConfigResponse } from '@/types'
+import type { LoginRequest, LoginResponse, VerifyResponse, FileTreeNode, NoteData, SearchResponse, ConfigResponse, HealthResponse } from '@/types'
 
 export class ApiClient {
   private client: AxiosInstance
@@ -106,6 +106,15 @@ export class ApiClient {
   // Health monitoring
   setHealthCallback(callback: (isOnline: boolean) => void): void {
     this.healthCallback = callback
+  }
+
+  async getHealth(): Promise<HealthResponse> {
+    // Health endpoint is at root, not under /api/v1
+    const baseURL = this.client.defaults.baseURL?.replace('/api/v1', '') || ''
+    const response: AxiosResponse<HealthResponse> = await axios.get(`${baseURL}/health`, {
+      timeout: 5000
+    })
+    return response.data
   }
 
   // Notes API

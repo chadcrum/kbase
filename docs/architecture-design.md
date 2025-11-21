@@ -212,6 +212,20 @@ The application includes comprehensive backend connectivity monitoring to provid
 - Debounce rapid changes
 - Triggers database index updates
 
+**GitService** (`backend/app/services/git_service.py`):
+
+- Automatic git version control for the vault directory
+- Initializes git repository if it doesn't exist
+- Creates and maintains `.gitignore` file with appropriate patterns:
+  - Binary file extensions (png, jpg, pdf, etc.)
+  - `_resources/` directory (where images are stored)
+  - `.git/` directory itself
+- Periodic background commits every 5 minutes
+- Only commits text files (non-binary files detected using same logic as FileService)
+- Error tracking and reporting via health check endpoint
+- Graceful degradation when git is not installed
+- Low-impact background task that doesn't interfere with normal operations
+
 ### 4. Frontend Architecture
 
 **Component Structure** (Current Implementation):
@@ -222,11 +236,13 @@ frontend/src/
 │   └── client.ts                   # Axios HTTP client with JWT auth
 ├── composables/
 │   ├── useBackendHealth.ts         # Backend connectivity monitoring
+│   ├── useGitStatus.ts             # Git version control status monitoring
 │   └── usePWA.ts                   # PWA installation & update management
 ├── components/
 │   ├── common/
 │   │   ├── BackendWarning.vue      # Backend connectivity warning
 │   │   ├── ConfirmDialog.vue       # Reusable confirmation dialog
+│   │   ├── GitErrorWarning.vue     # Git version control error warning
 │   │   ├── InstallPrompt.vue         # PWA install prompt
 │   │   ├── InputDialog.vue         # Reusable input dialog for user input
 │   │   ├── OmniSearch.vue          # Modal search interface

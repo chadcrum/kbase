@@ -3,6 +3,7 @@
     <RouterView />
     <InstallPrompt />
     <UpdatePrompt />
+    <GitErrorWarning />
   </div>
 </template>
 
@@ -13,6 +14,7 @@ import { useThemeStore } from '@/stores/theme'
 import { windowSyncService } from '@/composables/useWindowSync'
 import InstallPrompt from '@/components/common/InstallPrompt.vue'
 import UpdatePrompt from '@/components/common/UpdatePrompt.vue'
+import GitErrorWarning from '@/components/common/GitErrorWarning.vue'
 
 // Initialize stores
 const authStore = useAuthStore()

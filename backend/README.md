@@ -83,7 +83,7 @@ A minimal FastAPI backend for the KBase note-taking application.
 
 ### Public Endpoints
 - `GET /` - Root endpoint with basic information
-- `GET /health` - Health check
+- `GET /health` - Health check (includes git version control status)
 - `GET /docs` - OpenAPI documentation
 - `GET /redoc` - Alternative API documentation
 
@@ -173,14 +173,33 @@ curl -X GET "http://localhost:8000/api/v1/notes/" \
      -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
+## Git Version Control
+
+The backend automatically manages git version control for the vault directory:
+
+- **Automatic Initialization**: Git repository is initialized automatically if it doesn't exist
+- **Periodic Commits**: All text files are committed every 5 minutes via background task
+- **Binary File Exclusion**: Binary files and `_resources/` directory are automatically excluded via `.gitignore`
+- **Error Reporting**: Git errors are tracked and reported via the `/health` endpoint
+- **Low Impact**: Background task runs with minimal system load and doesn't interfere with normal operations
+- **Graceful Degradation**: If git is not installed, the service continues to operate normally with errors reported
+
+The git service (`app/services/git_service.py`) handles:
+- Git repository initialization
+- `.gitignore` file creation and maintenance
+- Text file detection (excludes binary files)
+- Periodic commits with error handling
+- Status reporting for health checks
+
 ## Development
 
 The backend follows a clean architecture pattern:
 
-- `app/main.py` - FastAPI application setup
+- `app/main.py` - FastAPI application setup with background tasks
 - `app/config.py` - Configuration management
 - `app/services/file_service.py` - File operations logic
 - `app/services/directory_service.py` - Directory operations logic
+- `app/services/git_service.py` - Git version control service
 - `app/api/v1/endpoints/notes.py` - Notes API endpoints
 - `app/api/v1/endpoints/directories.py` - Directory API endpoints
 - `tests/` - Test suite

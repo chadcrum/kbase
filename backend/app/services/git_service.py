@@ -124,6 +124,56 @@ class GitService:
             logger.warning(f"Error configuring git safe.directory: {str(e)}")
             return False
     
+    def _configure_git_user(self) -> bool:
+        """
+        Configure git user name and email for commits.
+        Uses default values if not already configured.
+        
+        Returns:
+            bool: True if configuration was successful
+        """
+        try:
+            # Check if user.name is already set
+            name_result = subprocess.run(
+                ['git', 'config', '--global', 'user.name'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            # Only set if not already configured
+            if name_result.returncode != 0 or not name_result.stdout.strip():
+                subprocess.run(
+                    ['git', 'config', '--global', 'user.name', 'KBase'],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                logger.info("Configured git user.name to 'KBase'")
+            
+            # Check if user.email is already set
+            email_result = subprocess.run(
+                ['git', 'config', '--global', 'user.email'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            # Only set if not already configured
+            if email_result.returncode != 0 or not email_result.stdout.strip():
+                subprocess.run(
+                    ['git', 'config', '--global', 'user.email', 'kbase@localhost'],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                logger.info("Configured git user.email to 'kbase@localhost'")
+            
+            return True
+        except Exception as e:
+            logger.warning(f"Error configuring git user: {str(e)}")
+            return False
+    
     def initialize_git(self) -> bool:
         """
         Initialize git repository if it doesn't exist.
@@ -140,6 +190,9 @@ class GitService:
         
         # Configure safe directory to avoid ownership issues
         self._configure_safe_directory()
+        
+        # Configure git user identity for commits
+        self._configure_git_user()
         
         git_dir = self.vault_path / '.git'
         if git_dir.exists() and git_dir.is_dir():

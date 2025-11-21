@@ -42,6 +42,8 @@ async def lifespan(app: FastAPI):
     try:
         git_service.initialize_git()
         git_service.ensure_gitignore()
+        # Perform initial commit on startup
+        git_service.commit_changes()
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)

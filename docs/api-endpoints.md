@@ -115,10 +115,14 @@ All endpoints (except login and config) require authentication via JWT token in 
 
 ### Get Note
 - **GET** `/{path}`
-- **Description**: Get note content and metadata
+- **Description**: Get file content and metadata
 - **Parameters**: 
-  - `path` (path parameter): The note path (e.g., `note1.md` or `folder/note.md`)
-- **Response**: Note content and metadata
+  - `path` (path parameter): The file path (e.g., `note1.md`, `script.py`, `config.json`, or `file-without-extension`)
+- **Response**: File content and metadata
+- **Status Codes**: 
+  - 200 (success)
+  - 404 (file not found)
+  - 400 (binary file or invalid path)
 - **Example Response**:
 ```json
 {
@@ -128,12 +132,17 @@ All endpoints (except login and config) require authentication via JWT token in 
   "modified": 1640995200
 }
 ```
+- **Notes**:
+  - Supports any file extension or no extension
+  - Binary files are rejected with a 400 error
+  - Files larger than 10MB are rejected to prevent browser crashes
+  - Only UTF-8 text files can be opened
 
 ### Create Note
 - **POST** `/{path}`
-- **Description**: Create a new note
+- **Description**: Create a new file
 - **Parameters**: 
-  - `path` (path parameter): The note path
+  - `path` (path parameter): The file path (any extension or no extension)
 - **Request Body**:
 ```json
 {
@@ -142,12 +151,15 @@ All endpoints (except login and config) require authentication via JWT token in 
 ```
 - **Response**: Success message and path
 - **Status Codes**: 200 (created), 409 (already exists), 400 (invalid path)
+- **Notes**:
+  - Supports any file extension or no extension
+  - No automatic extension enforcement
 
 ### Update Note
 - **PUT** `/{path}`
-- **Description**: Update an existing note's content
+- **Description**: Update an existing file's content
 - **Parameters**: 
-  - `path` (path parameter): The note path
+  - `path` (path parameter): The file path
 - **Request Body**:
 ```json
 {
@@ -155,13 +167,14 @@ All endpoints (except login and config) require authentication via JWT token in 
 }
 ```
 - **Response**: Success message and path
-- **Status Codes**: 200 (updated), 404 (not found), 400 (invalid path)
+- **Status Codes**: 200 (updated), 404 (not found), 400 (invalid path or binary file)
 - **Notes**:
   - Frontend editors (Monaco and Milkdown) implement auto-save with 1 second debounce
   - Changes are automatically saved after user stops typing
   - Save status feedback provided in UI (saving/saved/error states)
   - Milkdown editor available for markdown (.md) files as optional alternative to Monaco
   - Milkdown saves natively as markdown (no conversion needed)
+  - Binary files cannot be updated (returns 400 error)
 
 ### Delete Note
 - **DELETE** `/{path}`
@@ -209,7 +222,7 @@ All endpoints (except login and config) require authentication via JWT token in 
 
 ### Search Notes
 - **GET** `/search/`
-- **Description**: Search for notes by content and filename with content snippets
+- **Description**: Search for files by content and filename with content snippets
 - **Query Parameters**:
   - `q` (required): Search query (space-separated phrases, all must match)
   - `limit` (optional): Maximum number of results (1-100, default: 50)
@@ -230,7 +243,8 @@ All endpoints (except login and config) require authentication via JWT token in 
           "line_number": 42,
           "content": "Another matching line with the term"
         }
-      ]
+      ],
+      "modified": 1640995200
     }
   ],
   "total": 1
@@ -239,11 +253,14 @@ All endpoints (except login and config) require authentication via JWT token in 
 - **Status Codes**: 200 (success), 500 (search failed)
 - **Notes**:
   - Search is case-insensitive and fuzzy
+  - Searches across all file types (not just markdown)
+  - Binary files are automatically filtered out from results
   - All space-separated phrases in query must match (either in filename or content)
   - Returns up to 3 matching lines per file with line numbers
   - Uses ripgrep for fast search, falls back to Python search if unavailable
   - Empty snippets array indicates filename-only match
   - Results are limited by the `limit` parameter (default 50)
+  - Results sorted by modified date (most recent first)
 
 ## Directories API (`/api/v1/directories/`)
 
@@ -458,8 +475,14 @@ All endpoints validate file paths to prevent directory traversal attacks:
 - Path traversal protection uses `os.path.commonpath()` to verify vault boundaries
 - Invalid characters are handled appropriately
 
-## File Extensions
+## File Type Support
 
-- Note files automatically get `.md` extension if not provided
-- Only markdown files (`.md`, `.markdown`) are supported for notes
+- **All File Types**: The API supports any file extension or files without extensions
+- **Binary File Safety**: Binary files are automatically detected and rejected when attempting to open or update
+  - Detection methods: null byte check, UTF-8 validation, file size limit (10MB)
+  - Binary files cannot be opened in the browser editor
+- **Editor Behavior**:
+  - Markdown files (`.md`, `.markdown`) can use either Monaco or Milkdown editor
+  - All other file types use Monaco editor only
+  - Editor toggle button only appears for markdown files
 - Directory operations work with any valid directory name

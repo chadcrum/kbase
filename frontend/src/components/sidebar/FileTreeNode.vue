@@ -104,9 +104,9 @@
     <!-- Input Dialog for Create Note -->
     <InputDialog
       :is-open="showCreateFileDialog"
-      title="Create New Note"
-      message="Enter the note name (with .md extension):"
-      placeholder="note-name.md"
+      title="Create New File"
+      message="Enter the file name:"
+      placeholder="file-name"
       confirm-text="Create"
       :validator="validateFileName"
       @confirm="createNoteInDirectory"
@@ -595,7 +595,7 @@ const validateFolderName = (name: string): string | null => {
 }
 
 /**
- * Validates file name to prevent path traversal and ensure .md extension
+ * Validates file name to prevent path traversal and invalid characters
  * @param name - The file name to validate
  * @returns Error message if invalid, null if valid
  */
@@ -616,15 +616,9 @@ const validateFileName = (name: string): string | null => {
     return 'File name contains invalid characters'
   }
 
-  // Ensure .md extension
-  if (!name.endsWith('.md')) {
-    return 'File name must end with .md extension'
-  }
-
   // Check for reserved names (Windows)
-  const baseName = name.replace(/\.md$/, '')
   const reservedNames = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9']
-  if (reservedNames.includes(baseName.toUpperCase())) {
+  if (reservedNames.includes(name.toUpperCase())) {
     return 'This is a reserved file name'
   }
 
@@ -654,23 +648,22 @@ const createFolderInDirectory = async (folderName: string) => {
 }
 
 /**
- * Creates a new note within the current directory
- * @param fileName - The name of the file to create (must end with .md)
+ * Creates a new file within the current directory
+ * @param fileName - The name of the file to create
  */
 const createNoteInDirectory = async (fileName: string) => {
-  // Ensure .md extension (already validated, but being defensive)
-  const fullFileName = fileName.endsWith('.md') ? fileName : `${fileName}.md`
+  // Use filename as-is after validation (no extension enforcement)
   
-  // Build the full path for the new note
+  // Build the full path for the new file
   const newNotePath = props.node.path === '/' 
-    ? `/${fullFileName}` 
-    : `${props.node.path}/${fullFileName}`
+    ? `/${fileName}` 
+    : `${props.node.path}/${fileName}`
   
   const success = await vaultStore.createNote(newNotePath)
   if (success) {
     showCreateFileDialog.value = false
     
-    // Auto-expand the directory to show the newly created note
+    // Auto-expand the directory to show the newly created file
     if (!isExpanded.value) {
       emit('toggleExpand', props.node.path)
     }

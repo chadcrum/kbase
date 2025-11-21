@@ -126,8 +126,8 @@
     <InputDialog
       :is-open="showFileDialog"
       title="Create New File"
-      message="Enter the file name (with .md extension):"
-      placeholder="file-name.md"
+      message="Enter the file name:"
+      placeholder="file-name"
       confirm-text="Create"
       :validator="validateFileName"
       @confirm="createFile"
@@ -243,7 +243,7 @@ const validateFolderName = (name: string): string | null => {
 }
 
 /**
- * Validates file name to prevent path traversal and ensure .md extension
+ * Validates file name to prevent path traversal and invalid characters
  * @param name - The file name to validate
  * @returns Error message if invalid, null if valid
  */
@@ -264,15 +264,9 @@ const validateFileName = (name: string): string | null => {
     return 'File name contains invalid characters'
   }
 
-  // Ensure .md extension
-  if (!name.endsWith('.md')) {
-    return 'File name must end with .md extension'
-  }
-
   // Check for reserved names (Windows)
-  const baseName = name.replace(/\.md$/, '')
   const reservedNames = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9']
-  if (reservedNames.includes(baseName.toUpperCase())) {
+  if (reservedNames.includes(name.toUpperCase())) {
     return 'This is a reserved file name'
   }
 
@@ -317,13 +311,12 @@ const createFolder = async (folderName: string) => {
 
 /**
  * Creates a new file at the root level with empty content
- * @param fileName - The name of the file to create (must end with .md)
+ * @param fileName - The name of the file to create
  */
 const createFile = async (fileName: string) => {
-  // Ensure .md extension (already validated, but being defensive)
-  const fullFileName = fileName.endsWith('.md') ? fileName : `${fileName}.md`
+  // Use filename as-is after validation (no extension enforcement)
   
-  const success = await vaultStore.createNote(fullFileName)
+  const success = await vaultStore.createNote(fileName)
   if (success) {
     showFileDialog.value = false
   }

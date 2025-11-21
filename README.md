@@ -14,8 +14,12 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 
 ### File Management
 - **Full CRUD Operations**: Create, read, update, delete files and directories
+- **All File Types Supported**: Create and edit files with any extension or no extension
+- **Binary File Safety**: Binary files are automatically detected and prevented from being opened in the browser
+  - Detection via null byte check, UTF-8 validation, and file size limits (10MB max)
+  - Prevents browser crashes and security issues
 - **File Explorer Toolbar**: Quick access buttons above the file tree
-  - **New File**: Create new markdown files with validated input
+  - **New File**: Create new files with any extension (validated input)
   - **New Folder**: Create new folders with validated input
   - Input validation prevents path traversal and invalid characters
 - **Drag & Drop**: Drag files and directories into other directories to move them
@@ -28,13 +32,14 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
 - **Monaco Editor**: Full-featured code editor with VS Code experience
   - Syntax highlighting for 30+ programming languages
   - Available for all file types
+  - Used by default for non-markdown files
   - Undo/Redo: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
-- **Milkdown Editor**: WYSIWYG markdown editor (optional for .md files)
+- **Milkdown Editor**: WYSIWYG markdown editor (optional for .md files only)
   - WYSIWYG editing experience for markdown
   - CommonMark and GitHub Flavored Markdown support
   - Tab indentation: Tab key indents, Shift+Tab outdents
   - Undo/Redo: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
-  - Toggle between Monaco and Milkdown via toolbar button
+  - Toggle between Monaco and Milkdown via toolbar button (only visible for .md files)
 - **Auto-Save**: Automatic saving with 1-second debounce (both editors)
 - **Save Status**: Visual feedback for saving/saved/error states
 - **Editor Preference**: Per-file-type preference stored in localStorage

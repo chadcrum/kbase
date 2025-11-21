@@ -44,9 +44,60 @@ class FileService:
         
         return full_path
     
-    def _is_markdown_file(self, path: Path) -> bool:
-        """Check if file is a markdown file."""
+    def _is_markdown_extension(self, path: Path) -> bool:
+        """Check if file has a markdown extension."""
         return path.suffix.lower() in ['.md', '.markdown']
+    
+    def _is_binary_file(self, path: Path) -> bool:
+        """
+        Check if a file is binary.
+        
+        Detection methods (in order of reliability):
+        1. Null byte check: Check first 512 bytes for null bytes
+        2. UTF-8 validation: Attempt to decode entire file as UTF-8
+        3. File size limit: Reject files > 10MB to prevent browser crashes
+        
+        Args:
+            path: The file path to check
+            
+        Returns:
+            bool: True if binary, False if text
+        """
+        if not path.exists() or not path.is_file():
+            return False
+        
+        # Check file size (reject files > 10MB)
+        file_size = path.stat().st_size
+        if file_size > 10 * 1024 * 1024:  # 10MB
+            return True
+        
+        try:
+            # Read first 512 bytes to check for null bytes
+            with open(path, 'rb') as f:
+                chunk = f.read(512)
+                # Check for null bytes (binary indicator)
+                if b'\x00' in chunk:
+                    return True
+            
+            # Attempt UTF-8 validation on entire file (for small files)
+            # For larger files, we've already checked the first 512 bytes
+            if file_size <= 1024 * 1024:  # 1MB - validate entire file
+                try:
+                    path.read_text(encoding='utf-8')
+                except UnicodeDecodeError:
+                    return True
+            else:
+                # For larger files, try to decode first chunk
+                try:
+                    chunk.decode('utf-8')
+                except UnicodeDecodeError:
+                    return True
+                    
+        except (IOError, PermissionError):
+            # If we can't read the file, assume it's binary for safety
+            return True
+        
+        return False
     
     def _build_file_tree(self, directory: Path, relative_path: str = "") -> Dict:
         """
@@ -77,8 +128,8 @@ class FileService:
                     dir_tree = self._build_file_tree(item, item_relative_path)
                     # Include all directories, even if empty
                     children.append(dir_tree)
-                elif self._is_markdown_file(item):
-                    # Add markdown files with timestamps
+                elif item.is_file():
+                    # Add all files with timestamps (not just markdown)
                     stat = item.stat()
                     children.append({
                         "name": item.name,
@@ -141,8 +192,9 @@ class FileService:
         if not file_path.is_file():
             raise ValueError(f"Path is not a file: {path}")
         
-        if not self._is_markdown_file(file_path):
-            raise ValueError(f"File is not a markdown file: {path}")
+        # Check if file is binary
+        if self._is_binary_file(file_path):
+            raise ValueError(f"Binary files cannot be opened: {path}")
         
         # Get the normalized path (relative to vault)
         normalized_path = file_path.relative_to(self.vault_path.resolve())
@@ -179,14 +231,10 @@ class FileService:
         if file_path.exists():
             raise ValueError(f"File already exists: {path}")
         
-        # Ensure the file has .md extension
-        if not self._is_markdown_file(file_path):
-            file_path = file_path.with_suffix('.md')
-        
         # Create parent directories if they don't exist
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Write the file
+        # Write the file (allow any extension or no extension)
         file_path.write_text(content, encoding='utf-8')
         
         # Get the normalized path (relative to vault)
@@ -219,6 +267,10 @@ class FileService:
         
         if not file_path.is_file():
             raise ValueError(f"Path is not a file: {path}")
+        
+        # Check if file is binary before writing
+        if self._is_binary_file(file_path):
+            raise ValueError(f"Cannot update binary file: {path}")
         
         # Write the updated content
         file_path.write_text(content, encoding='utf-8')
@@ -291,10 +343,6 @@ class FileService:
         if dest_path.exists():
             raise ValueError(f"Destination already exists: {new_path}")
         
-        # Ensure the destination has .md extension
-        if not self._is_markdown_file(dest_path):
-            dest_path = dest_path.with_suffix('.md')
-        
         # Create parent directories if they don't exist
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         
@@ -348,10 +396,6 @@ class FileService:
         
         if dest_file.exists():
             raise ValueError(f"Destination already exists: {dest_path}")
-        
-        # Ensure the destination has .md extension
-        if not self._is_markdown_file(dest_file):
-            dest_file = dest_file.with_suffix('.md')
         
         # Create parent directories if they don't exist
         dest_file.parent.mkdir(parents=True, exist_ok=True)
@@ -448,14 +492,12 @@ class FileService:
             
             try:
                 # Search file contents with ripgrep (case-insensitive)
+                # Search all files, not just markdown
                 result = subprocess.run(
                     [
                         'rg',
                         '-i',  # case insensitive
                         '-l',  # list files only
-                        '--type-add', 'md:*.md',
-                        '--type-add', 'md:*.markdown',
-                        '--type', 'md',
                         phrase,
                         '.'  # Explicitly search current directory
                     ],
@@ -466,23 +508,24 @@ class FileService:
                 )
                 
                 # Parse ripgrep output (one filename per line)
+                # Filter out binary files
                 if result.returncode == 0 and result.stdout.strip():
                     for line in result.stdout.strip().split('\n'):
                         if line:
                             file_path = (self.vault_path / line.strip()).resolve()
                             if file_path.exists() and file_path.is_file():
-                                phrase_matches.add(file_path)
+                                # Skip binary files
+                                if not self._is_binary_file(file_path):
+                                    phrase_matches.add(file_path)
                 
                 # Also search filenames using ripgrep --files with case-insensitive glob
                 # This is much faster than Python's rglob
                 # Use --iglob for case-insensitive filename matching
+                # Search all files, not just markdown
                 files_result = subprocess.run(
                     [
                         'rg',
                         '--files',
-                        '--type-add', 'md:*.md',
-                        '--type-add', 'md:*.markdown',
-                        '--type', 'md',
                         '--iglob', f'*{phrase}*',  # case-insensitive glob for filename matching
                         '.'  # Explicitly search current directory
                     ],
@@ -492,13 +535,15 @@ class FileService:
                     timeout=5
                 )
                 
-                # Add matching files
+                # Add matching files (filter out binary files)
                 if files_result.returncode == 0 and files_result.stdout.strip():
                     for line in files_result.stdout.strip().split('\n'):
                         if line:
                             file_path = (self.vault_path / line.strip()).resolve()
                             if file_path.exists() and file_path.is_file():
-                                phrase_matches.add(file_path)
+                                # Skip binary files
+                                if not self._is_binary_file(file_path):
+                                    phrase_matches.add(file_path)
             
             except subprocess.TimeoutExpired:
                 # If ripgrep times out, continue with what we have
@@ -528,15 +573,13 @@ class FileService:
         
         try:
             # Search with line numbers and get matching content
+            # Search all files, not just markdown
             result = subprocess.run(
                 [
                     'rg',
                     '-i',  # case insensitive
                     '-n',  # show line numbers
                     '--max-count', '3',  # limit to first 3 matches per file
-                    '--type-add', 'md:*.md',
-                    '--type-add', 'md:*.markdown',
-                    '--type', 'md',
                     combined_pattern,
                     '.'  # Explicitly search current directory
                 ],
@@ -558,8 +601,8 @@ class FileService:
                             
                             file_path = (self.vault_path / filename).resolve()
                             
-                            # Only include files that matched all phrases
-                            if file_path in all_matches:
+                            # Only include files that matched all phrases and are not binary
+                            if file_path in all_matches and not self._is_binary_file(file_path):
                                 if file_path not in results_with_snippets:
                                     results_with_snippets[file_path] = []
                                 
@@ -601,18 +644,26 @@ class FileService:
         matches = set()
         phrase_lower = phrase.lower()
         
-        # Search all markdown files
-        for md_file in self.vault_path.rglob('*.md'):
+        # Search all files (not just markdown)
+        for file_path in self.vault_path.rglob('*'):
+            # Skip directories
+            if not file_path.is_file():
+                continue
+            
+            # Skip binary files
+            if self._is_binary_file(file_path):
+                continue
+            
             try:
                 # Check filename
-                if phrase_lower in md_file.name.lower():
-                    matches.add(md_file)
+                if phrase_lower in file_path.name.lower():
+                    matches.add(file_path)
                     continue
                 
                 # Check content
-                content = md_file.read_text(encoding='utf-8').lower()
+                content = file_path.read_text(encoding='utf-8').lower()
                 if phrase_lower in content:
-                    matches.add(md_file)
+                    matches.add(file_path)
             except (UnicodeDecodeError, PermissionError):
                 # Skip files we can't read
                 continue
@@ -638,6 +689,11 @@ class FileService:
         combined_pattern = '|'.join([p.lower() for p in phrases])
         
         for file_path in file_paths:
+            # Skip binary files
+            if self._is_binary_file(file_path):
+                results[file_path] = []
+                continue
+            
             snippets = []
             try:
                 # Read file and search for matches
@@ -655,7 +711,8 @@ class FileService:
                             break
             except (UnicodeDecodeError, PermissionError):
                 # Skip files we can't read
-                pass
+                results[file_path] = []
+                continue
             
             results[file_path] = snippets
         

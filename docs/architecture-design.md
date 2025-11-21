@@ -184,20 +184,25 @@ The application includes comprehensive backend connectivity monitoring to provid
 
 **FileService** (`backend/app/services/file_service.py`):
 
-- CRUD operations on markdown files
+- CRUD operations on all file types (not just markdown)
+- Binary file detection to prevent opening binary files in the browser
+  - Null byte detection (checks first 512 bytes)
+  - UTF-8 validation
+  - File size limit (10MB max) to prevent browser crashes
 - Conflict detection (compare mtime before write)
-- Move/rename notes between directories
-- Copy notes to new locations
+- Move/rename files between directories
+- Copy files to new locations
 - Attachment management
 - Integrates with DatabaseService for metadata caching
 
 **SearchService** (integrated in `backend/app/services/file_service.py`):
 
-- Execute ripgrep for content search with line numbers
+- Execute ripgrep for content search with line numbers across all file types
 - Returns up to 3 matching lines per file with snippets
 - Fuzzy, case-insensitive search across file content and filenames
 - All space-separated phrases in query must match
 - Combines filename matching with content search
+- Automatically filters out binary files from search results
 - Fallback to Python-based search when ripgrep unavailable
 
 **FileWatcher** (`backend/app/services/file_watcher.py`):
@@ -380,7 +385,7 @@ frontend/src/
     - Collapse All remains disabled when no directories are expanded to prevent unnecessary refreshes
   - **Mobile Layout**: Shares the same single-button action menu as desktop, maintaining consistent interaction patterns while preserving viewport space.
     - Input validation prevents path traversal attacks and invalid characters
-    - Auto-appends `.md` extension for new files
+    - Supports any file extension or no extension
   - **Drag & Drop**: Drag files and directories into other directories to move them
   - **Context Menus**: Right-click on files/directories for operations
     - Delete (with confirmation)
@@ -401,7 +406,8 @@ frontend/src/
     - Dark theme matching VS Code
     - Language detection from file extensions
     - Undo/Redo keyboard shortcuts: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
-- **Milkdown Editor**: WYSIWYG markdown editor available for `.md` files
+    - Used for all non-markdown files
+- **Milkdown Editor**: WYSIWYG markdown editor available for `.md` files only
     - Interactive task list checkboxes with markdown sync using a custom ProseMirror plugin. Checked items display with strikethrough text styling.
     - Shares the same auto-save cadence and state restoration (cursor + scroll) as Monaco.
     - Nord theme integration keeps checkbox widgets aligned with light/dark theme variables.

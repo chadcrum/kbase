@@ -195,8 +195,8 @@ const historyKeymapPlugin: MilkdownPlugin = (ctx) => {
 }
 
 // Transform markdown to handle in-progress checkboxes
-// This function maps document nodes to markdown lines and replaces checkbox markers
-// Since GFM serializes in-progress as [x], we need to convert those [x] back to [>]
+// GFM doesn't recognize checked: 'in-progress', so it serializes in-progress items as regular bullets
+// We need to find in-progress items in the document and convert their markdown representation
 const transformMarkdownForInProgress = (markdown: string): string => {
   // editorView should be set when markdownUpdated is called, but if not, we can't transform
   if (!editorView) {
@@ -208,7 +208,6 @@ const transformMarkdownForInProgress = (markdown: string): string => {
   }
   
   const view = editorView
-  
   const lines = markdown.split('\n')
   const { doc } = view.state
   const inProgressItems: Array<{ text: string; lineIndex: number }> = []
@@ -222,13 +221,23 @@ const transformMarkdownForInProgress = (markdown: string): string => {
         const text = node.textContent.trim()
         if (text) {
           // Find the corresponding line in markdown
-          // We'll match by finding lines that contain this text and have [x] (since GFM serializes in-progress as checked)
+          // GFM serializes in-progress as a regular bullet (no checkbox), so we need to find lines that:
+          // 1. Match the text content
+          // 2. Are regular list items (not task list items) OR are task list items with [x]
           for (let i = 0; i < lines.length; i++) {
             const line = lines[i]
+            // Match regular list item format: - text or * text or + text (no checkbox)
+            const regularListMatch = line.match(/^(\s*[-*+])\s+(.+)$/)
             // Match task list item format: - [x] text or * [x] text or + [x] text
-            const taskMatch = line.match(/^(\s*[-*+])\s+\[x\]\s+(.+)$/)
-            if (taskMatch && taskMatch[2].trim() === text) {
-              // This line corresponds to an in-progress item
+            const taskListMatch = line.match(/^(\s*[-*+])\s+\[x\]\s+(.+)$/)
+            
+            // Check if this line matches our in-progress item
+            if (regularListMatch && regularListMatch[2].trim() === text) {
+              // This is a regular bullet that should be a task list item with [>]
+              inProgressItems.push({ text, lineIndex: i })
+              break
+            } else if (taskListMatch && taskListMatch[2].trim() === text) {
+              // This is a checked task list item that should be in-progress [>]
               inProgressItems.push({ text, lineIndex: i })
               break
             }
@@ -239,9 +248,14 @@ const transformMarkdownForInProgress = (markdown: string): string => {
     return true
   })
   
-  // Replace [x] with [>] for in-progress items
+  // Replace regular bullets or [x] with [>] for in-progress items
   inProgressItems.forEach(({ lineIndex }) => {
     if (lines[lineIndex]) {
+      // Replace regular bullet format: - text -> - [>] text
+      lines[lineIndex] = lines[lineIndex].replace(/^(\s*[-*+])\s+(.+)$/, (match, indent, text) => {
+        return `${indent} [>] ${text}`
+      })
+      // Also handle if it's already [x]: - [x] text -> - [>] text
       lines[lineIndex] = lines[lineIndex].replace(/\[x\]/, '[>]')
     }
   })

@@ -45,14 +45,24 @@ const createLocalStorageMock = (): Storage => {
 
 const localStorageMock = createLocalStorageMock()
 
+// Mock window object for viewport detection
+const createWindowMock = (width: number) => ({
+  innerWidth: width,
+  innerHeight: 800
+})
+
 beforeAll(() => {
   vi.stubGlobal('localStorage', localStorageMock)
 })
 
 describe('VaultStore', () => {
   let vaultStore: ReturnType<typeof useVaultStore>
+  let originalWindow: Window | undefined
 
   beforeEach(() => {
+    // Store original window if it exists
+    originalWindow = typeof window !== 'undefined' ? window : undefined
+    
     // Create a fresh Pinia instance for each test
     setActivePinia(createPinia())
     vaultStore = useVaultStore()
@@ -64,6 +74,14 @@ describe('VaultStore', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    // Restore original window if it existed
+    if (originalWindow) {
+      Object.defineProperty(global, 'window', {
+        value: originalWindow,
+        writable: true,
+        configurable: true
+      })
+    }
   })
 
   describe('initial state', () => {
@@ -1001,57 +1019,127 @@ describe('VaultStore', () => {
   })
 
   describe('sidebar pin', () => {
-    it('should have sidebar unpinned by default', () => {
-      expect(vaultStore.isSidebarPinned).toBe(false)
+    it('should have sidebar pinned by default on desktop (>= 768px)', () => {
+      // Mock desktop viewport
+      Object.defineProperty(global, 'window', {
+        value: createWindowMock(1024),
+        writable: true,
+        configurable: true
+      })
+      
+      // Create a new store instance with desktop viewport
+      setActivePinia(createPinia())
+      const desktopStore = useVaultStore()
+      
+      expect(desktopStore.isSidebarPinned).toBe(true)
+    })
+
+    it('should have sidebar unpinned by default on mobile (< 768px)', () => {
+      // Mock mobile viewport
+      Object.defineProperty(global, 'window', {
+        value: createWindowMock(375),
+        writable: true,
+        configurable: true
+      })
+      
+      // Create a new store instance with mobile viewport
+      setActivePinia(createPinia())
+      const mobileStore = useVaultStore()
+      
+      expect(mobileStore.isSidebarPinned).toBe(false)
     })
 
     it('should pin sidebar when toggleSidebarPin is called', () => {
-      expect(vaultStore.isSidebarPinned).toBe(false)
+      // Start with unpinned state (mobile default)
+      Object.defineProperty(global, 'window', {
+        value: createWindowMock(375),
+        writable: true,
+        configurable: true
+      })
       
-      vaultStore.toggleSidebarPin()
+      setActivePinia(createPinia())
+      const testStore = useVaultStore()
+      expect(testStore.isSidebarPinned).toBe(false)
       
-      expect(vaultStore.isSidebarPinned).toBe(true)
+      testStore.toggleSidebarPin()
+      
+      expect(testStore.isSidebarPinned).toBe(true)
     })
 
     it('should unpin sidebar when toggleSidebarPin is called again', () => {
-      vaultStore.toggleSidebarPin() // Pin
-      expect(vaultStore.isSidebarPinned).toBe(true)
+      // Set up mobile viewport for consistent starting state
+      Object.defineProperty(global, 'window', {
+        value: createWindowMock(375),
+        writable: true,
+        configurable: true
+      })
       
-      vaultStore.toggleSidebarPin() // Unpin
+      setActivePinia(createPinia())
+      const testStore = useVaultStore()
+      expect(testStore.isSidebarPinned).toBe(false)
       
-      expect(vaultStore.isSidebarPinned).toBe(false)
+      testStore.toggleSidebarPin() // Pin
+      expect(testStore.isSidebarPinned).toBe(true)
+      
+      testStore.toggleSidebarPin() // Unpin
+      expect(testStore.isSidebarPinned).toBe(false)
     })
 
     it('should collapse sidebar when collapseSidebarIfNotPinned is called and not pinned', () => {
-      expect(vaultStore.isSidebarPinned).toBe(false)
-      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      // Set up mobile viewport (unpinned by default)
+      Object.defineProperty(global, 'window', {
+        value: createWindowMock(375),
+        writable: true,
+        configurable: true
+      })
       
-      vaultStore.collapseSidebarIfNotPinned()
+      setActivePinia(createPinia())
+      const testStore = useVaultStore()
+      expect(testStore.isSidebarPinned).toBe(false)
+      expect(testStore.isSidebarCollapsed).toBe(false)
       
-      expect(vaultStore.isSidebarCollapsed).toBe(true)
+      testStore.collapseSidebarIfNotPinned()
+      
+      expect(testStore.isSidebarCollapsed).toBe(true)
     })
 
     it('should not collapse sidebar when collapseSidebarIfNotPinned is called and pinned', () => {
-      vaultStore.toggleSidebarPin() // Pin
-      expect(vaultStore.isSidebarPinned).toBe(true)
-      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      // Set up desktop viewport (pinned by default)
+      Object.defineProperty(global, 'window', {
+        value: createWindowMock(1024),
+        writable: true,
+        configurable: true
+      })
       
-      vaultStore.collapseSidebarIfNotPinned()
+      setActivePinia(createPinia())
+      const testStore = useVaultStore()
+      expect(testStore.isSidebarPinned).toBe(true)
+      expect(testStore.isSidebarCollapsed).toBe(false)
       
-      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      testStore.collapseSidebarIfNotPinned()
+      
+      expect(testStore.isSidebarCollapsed).toBe(false)
     })
 
     it('should allow manual toggle regardless of pin state', () => {
-      vaultStore.toggleSidebarPin() // Pin
-      expect(vaultStore.isSidebarPinned).toBe(true)
-      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      // Set up desktop viewport (pinned by default)
+      Object.defineProperty(global, 'window', {
+        value: createWindowMock(1024),
+        writable: true,
+        configurable: true
+      })
+      
+      setActivePinia(createPinia())
+      const testStore = useVaultStore()
+      expect(testStore.isSidebarPinned).toBe(true)
+      expect(testStore.isSidebarCollapsed).toBe(false)
       
       // Manual toggle should still work when pinned
-      vaultStore.toggleSidebar()
-      expect(vaultStore.isSidebarCollapsed).toBe(true)
+      testStore.toggleSidebar()
+      expect(testStore.isSidebarCollapsed).toBe(true)
       
-      vaultStore.toggleSidebar()
-      expect(vaultStore.isSidebarCollapsed).toBe(false)
+      testStore.toggleSidebar()
+      expect(testStore.isSidebarCollapsed).toBe(false)
     })
   })
 })

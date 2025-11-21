@@ -69,6 +69,18 @@ const getLocalStorageItem = (key: string): string | null => {
   }
 }
 
+/**
+ * Determines if the current viewport is desktop-sized (>= 768px).
+ * Desktop mode defaults to pinned sidebar, mobile defaults to unpinned.
+ */
+const isDesktopViewport = (): boolean => {
+  if (typeof window === 'undefined') {
+    // Default to desktop for SSR
+    return true
+  }
+  return window.innerWidth >= 768
+}
+
 export const useVaultStore = defineStore('vault', () => {
   // State
   const fileTree = ref<FileTreeNode | null>(null)
@@ -84,8 +96,9 @@ export const useVaultStore = defineStore('vault', () => {
   const sortOrder = ref<SortOrder>(readSortOrderPreference())
 
   // Sidebar state
+  // Desktop: pinned by default, Mobile: unpinned by default
   const isSidebarCollapsed = ref(false)
-  const isSidebarPinned = ref(false)
+  const isSidebarPinned = ref(isDesktopViewport())
   const sidebarWidth = ref<number>(readSidebarWidthPreference())
 
   // Getters

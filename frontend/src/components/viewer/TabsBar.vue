@@ -5,7 +5,12 @@
       <span class="toggle-icon">{{ sidebarToggleIcon }}</span>
     </button>
 
-    <div class="tabs-container" ref="tabsContainerRef">
+    <div 
+      class="tabs-container" 
+      ref="tabsContainerRef"
+      @dragover="handleContainerDragOver"
+      @dragleave="handleContainerDragLeave"
+    >
       <div
         v-for="tab in tabs"
         :key="tab.id"
@@ -40,6 +45,13 @@
           ×
         </button>
       </div>
+      
+      <!-- Drop indicator - positioned dynamically -->
+      <div
+        v-if="dropIndicatorLeft !== null && draggingTabId"
+        class="tab-drop-indicator"
+        :style="{ left: `${dropIndicatorLeft}px` }"
+      ></div>
     </div>
 
     <!-- Action buttons at far right -->
@@ -165,6 +177,8 @@ let draggingTabId: string | null = null
 let dragOverTabId: string | null = null
 let dragStartIndex = -1
 let dragOverIndex = -1
+let dropPosition: 'before' | 'after' | null = null // Position indicator for drop
+let dropIndicatorLeft = ref<number | null>(null) // Pixel position for drop indicator
 
 // State for context menu
 const showContextMenu = ref(false)
@@ -332,6 +346,8 @@ const handleDragEnd = () => {
   dragOverTabId = null
   dragStartIndex = -1
   dragOverIndex = -1
+  dropPosition = null
+  dropIndicatorLeft.value = null
 }
 
 const handleDragOver = (event: DragEvent, tabId: string) => {
@@ -340,10 +356,61 @@ const handleDragOver = (event: DragEvent, tabId: string) => {
 
   if (draggingTabId && draggingTabId !== tabId) {
     dragOverTabId = tabId
-    dragOverIndex = tabsStore.tabs.findIndex(tab => tab.id === tabId)
+    const currentIndex = tabsStore.tabs.findIndex(tab => tab.id === tabId)
+    
+    // Calculate drop position based on mouse position within the tab
+    const tabElement = event.currentTarget as HTMLElement
+    if (tabElement && tabsContainerRef.value) {
+      const tabRect = tabElement.getBoundingClientRect()
+      const containerRect = tabsContainerRef.value.getBoundingClientRect()
+      const mouseX = event.clientX
+      const tabCenterX = tabRect.left + tabRect.width / 2
+      
+      // Determine if drop should be before or after this tab
+      // If mouse is in left half, drop before; if in right half, drop after
+      dropPosition = mouseX < tabCenterX ? 'before' : 'after'
+      
+      // Calculate the pixel position for the drop indicator
+      // Position relative to the tabs container
+      if (dropPosition === 'before') {
+        dropIndicatorLeft.value = tabRect.left - containerRect.left - 1
+      } else {
+        dropIndicatorLeft.value = tabRect.right - containerRect.left - 1
+      }
+      
+      // Adjust dragOverIndex based on drop position
+      // When dragging, we need to account for the fact that removing the dragged tab
+      // will shift indices. The reorderTabs function handles this, but we need to
+      // calculate the correct target index.
+      const draggedIndex = tabsStore.tabs.findIndex(tab => tab.id === draggingTabId)
+      if (dropPosition === 'after') {
+        // Dropping after this tab
+        if (draggedIndex < currentIndex) {
+          // Dragging forward: after removing dragged tab, target position shifts left by 1
+          dragOverIndex = currentIndex
+        } else {
+          // Dragging backward: target position is after current tab
+          dragOverIndex = currentIndex + 1
+        }
+      } else {
+        // Dropping before this tab
+        if (draggedIndex < currentIndex) {
+          // Dragging forward: after removing dragged tab, target position shifts left by 1
+          dragOverIndex = currentIndex - 1
+        } else {
+          // Dragging backward: target position is before current tab (no shift needed)
+          dragOverIndex = currentIndex
+        }
+      }
+      
+      // Ensure index is within bounds
+      dragOverIndex = Math.max(0, Math.min(dragOverIndex, tabsStore.tabs.length - 1))
+    }
   } else {
     dragOverTabId = null
     dragOverIndex = -1
+    dropPosition = null
+    dropIndicatorLeft.value = null
   }
 }
 
@@ -353,6 +420,55 @@ const handleDragLeave = (event: DragEvent) => {
     if (!event.currentTarget.contains(event.relatedTarget)) {
       dragOverTabId = null
       dragOverIndex = -1
+      dropPosition = null
+      // Don't clear dropIndicatorLeft here - let container handler manage it
+    }
+  }
+}
+
+const handleContainerDragOver = (event: DragEvent) => {
+  // Handle dragging over the container but not a specific tab (for end position)
+  if (draggingTabId && tabsContainerRef.value && !dragOverTabId && tabs.value.length > 0) {
+    event.preventDefault()
+    event.dataTransfer!.dropEffect = 'move'
+    
+    // Check if we're near the end of the tabs
+    const containerRect = tabsContainerRef.value.getBoundingClientRect()
+    const lastTab = tabs.value[tabs.value.length - 1]
+    const lastTabElement = tabsContainerRef.value.querySelector(`[data-tab-id="${lastTab.id}"]`) as HTMLElement
+    
+    if (lastTabElement) {
+      const lastTabRect = lastTabElement.getBoundingClientRect()
+      const mouseX = event.clientX
+      
+      // If mouse is past the middle of the last tab, show indicator at the end
+      if (mouseX > lastTabRect.left + lastTabRect.width / 2) {
+        dropIndicatorLeft.value = lastTabRect.right - containerRect.left - 1
+        // For dropping at the end, calculate the correct index
+        const draggedIndex = tabsStore.tabs.findIndex(tab => tab.id === draggingTabId)
+        const lastIndex = tabs.value.length - 1
+        if (draggedIndex < lastIndex) {
+          // Dragging forward: after removal, last index becomes lastIndex - 1, so insert at lastIndex
+          dragOverIndex = lastIndex
+        } else {
+          // Dragging backward or already at end: insert at last valid position
+          dragOverIndex = lastIndex
+        }
+        dropPosition = 'after'
+      }
+    }
+  }
+}
+
+const handleContainerDragLeave = (event: DragEvent) => {
+  // Clear indicator if leaving the container entirely
+  if (event.relatedTarget && tabsContainerRef.value) {
+    const relatedTarget = event.relatedTarget as Node
+    if (!tabsContainerRef.value.contains(relatedTarget)) {
+      dropIndicatorLeft.value = null
+      dragOverTabId = null
+      dragOverIndex = -1
+      dropPosition = null
     }
   }
 }
@@ -360,8 +476,12 @@ const handleDragLeave = (event: DragEvent) => {
 const handleDrop = (event: DragEvent, tabId: string) => {
   event.preventDefault()
 
-  if (draggingTabId && draggingTabId !== tabId && dragStartIndex !== -1 && dragOverIndex !== -1) {
-    tabsStore.reorderTabs(dragStartIndex, dragOverIndex)
+  if (draggingTabId && dragStartIndex !== -1 && dragOverIndex !== -1) {
+    // Only reorder if the indices are valid and different
+    const tabsLength = tabs.value.length
+    if (dragStartIndex !== dragOverIndex && dragOverIndex >= 0 && dragOverIndex < tabsLength) {
+      tabsStore.reorderTabs(dragStartIndex, dragOverIndex)
+    }
   }
 
   handleDragEnd()
@@ -726,6 +846,7 @@ defineExpose({
   scrollbar-color: var(--border-color) transparent;
   -webkit-overflow-scrolling: touch;
   min-width: 0;
+  position: relative;
 }
 
 .tabs-container::-webkit-scrollbar {
@@ -778,8 +899,29 @@ defineExpose({
 }
 
 .tab.is-drag-over {
-  border-left: 2px solid #667eea;
-  margin-left: -2px;
+  /* Remove the old left border indicator - we use drop indicator instead */
+}
+
+.tab-drop-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #667eea;
+  z-index: 1001;
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(102, 126, 234, 0.6);
+  transform: translateX(-50%);
+  animation: dropIndicatorPulse 1s ease-in-out infinite;
+}
+
+@keyframes dropIndicatorPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .tab-title {

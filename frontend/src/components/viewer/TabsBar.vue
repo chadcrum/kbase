@@ -13,13 +13,11 @@
         :data-tab-id="tab.id"
         :class="{
           'is-active': tab.id === activeTabId,
-          'is-pinned': tab.isPinned,
           'is-dragging': draggingTabId === tab.id,
           'is-drag-over': dragOverTabId === tab.id
         }"
         draggable="true"
         @click="handleTabClick(tab.id)"
-        @dblclick="handleTabDoubleClick(tab.id)"
         @dragstart="handleDragStart($event, tab.id)"
         @dragend="handleDragEnd"
         @dragover="handleDragOver($event, tab.id)"
@@ -30,7 +28,7 @@
         @touchend="handleTouchEnd"
         @contextmenu.prevent="handleTabContextMenu($event, tab.id)"
       >
-        <span class="tab-title" :class="{ 'is-italic': !tab.isPinned }">
+        <span class="tab-title">
           {{ tab.title }}
         </span>
         <button
@@ -72,14 +70,14 @@
             v-for="tab in tabs"
             :key="tab.id"
             class="tabs-dropdown-item-wrapper"
-            :class="{ 'is-active': tab.id === activeTabId, 'is-pinned': tab.isPinned }"
+            :class="{ 'is-active': tab.id === activeTabId }"
           >
             <button
               class="tabs-dropdown-item"
               role="menuitem"
               @click="handleTabSelect(tab.id)"
             >
-              <span class="tabs-dropdown-item-icon">{{ tab.isPinned ? '📌' : '📄' }}</span>
+              <span class="tabs-dropdown-item-icon">📄</span>
               <span class="tabs-dropdown-item-label">{{ tab.title }}</span>
               <span v-if="tab.id === activeTabId" class="tabs-dropdown-item-check">✓</span>
             </button>
@@ -293,10 +291,6 @@ const handleTabClick = (id: string) => {
   }
 }
 
-const handleTabDoubleClick = (id: string) => {
-  tabsStore.togglePinTab(id)
-}
-
 const handleCloseTab = (id: string) => {
   const tab = tabsStore.tabs.find(t => t.id === id)
   if (!tab) return
@@ -457,13 +451,6 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
   
   const items: ContextMenuItem[] = []
   
-  // Pin/Unpin option
-  items.push({
-    label: tab.isPinned ? 'Unpin' : 'Pin',
-    icon: tab.isPinned ? '📌' : '📌',
-    action: 'toggle-pin'
-  })
-  
   // Open in New Window option (for file tabs)
   if (tab.path) {
     items.push({
@@ -516,9 +503,6 @@ const handleContextMenuAction = (action: string) => {
   if (!tab) return
   
   switch (action) {
-    case 'toggle-pin':
-      tabsStore.togglePinTab(contextMenuTabId.value)
-      break
     case 'open-in-popup':
       openTabInPopup(tab.path)
       break
@@ -674,6 +658,12 @@ onUnmounted(() => {
     window.removeEventListener('resize', handleResize)
   }
 })
+
+// Expose handlers for testing
+defineExpose({
+  handleTabSelect,
+  handleCloseTabFromDropdown
+})
 </script>
 
 <style scoped>
@@ -802,9 +792,6 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-.tab-title.is-italic {
-  font-style: italic;
-}
 
 .tab-close {
   display: flex;
@@ -1025,9 +1012,6 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
-.tabs-dropdown-item-wrapper.is-pinned .tabs-dropdown-item-label {
-  font-style: italic;
-}
 
 .tabs-dropdown-item-check {
   color: #667eea;

@@ -37,8 +37,8 @@ describe('TabsStore', () => {
 
     it('should initialize with persisted tabs data', () => {
       const mockTabs = [
-        { id: 'tab1', path: '/test1.md', title: 'Test 1', isPinned: false },
-        { id: 'tab2', path: '/test2.md', title: 'Test 2', isPinned: true },
+        { id: 'tab1', path: '/test1.md', title: 'Test 1' },
+        { id: 'tab2', path: '/test2.md', title: 'Test 2' },
       ]
 
       localStorageMock.getItem.mockImplementation((key: string) => {
@@ -98,32 +98,13 @@ describe('TabsStore', () => {
       expect(localStorageMock.setItem).toHaveBeenCalledWith('kbase_tabs', '[]')
     })
 
-    it('should persist tabs when pinning/unpinning', () => {
-      tabsStore.openTab('/test.md')
-      const tabId = tabsStore.tabs[0].id
-
-      // Reset mock
-      vi.clearAllMocks()
-
-      // Pin tab
-      tabsStore.pinTab(tabId)
-
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'kbase_tabs',
-        expect.stringContaining('"isPinned":true')
-      )
-    })
-
     it('should persist tabs when reordering', () => {
       // Open first tab
       tabsStore.openTab('/test1.md')
-      // Pin the first tab so second tab creates a new one instead of replacing
-      const firstTabId = tabsStore.tabs[0].id
-      tabsStore.pinTab(firstTabId)
       // Reset mock
       vi.clearAllMocks()
 
-      // Open second tab (should create new tab since first is pinned)
+      // Open second tab (should create new tab)
       tabsStore.openTab('/test2.md')
 
       // Reset mock again
@@ -151,8 +132,8 @@ describe('TabsStore', () => {
     it('should remove tabs referencing non-existent files', async () => {
       // Set up initial tabs
       const mockTabs = [
-        { id: 'tab1', path: '/existing.md', title: 'Existing', isPinned: false },
-        { id: 'tab2', path: '/deleted.md', title: 'Deleted', isPinned: false },
+        { id: 'tab1', path: '/existing.md', title: 'Existing' },
+        { id: 'tab2', path: '/deleted.md', title: 'Deleted' },
       ]
 
       localStorageMock.getItem.mockImplementation((key: string) => {

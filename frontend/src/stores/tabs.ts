@@ -4,7 +4,6 @@ import { ref, computed } from 'vue'
 export interface Tab {
   id: string
   path: string
-  isPinned: boolean
   title: string
 }
 
@@ -59,7 +58,6 @@ const readTabsFromStorage = (): Tab[] => {
         tab &&
         typeof tab.id === 'string' &&
         typeof tab.path === 'string' &&
-        typeof tab.isPinned === 'boolean' &&
         typeof tab.title === 'string'
       )
     }
@@ -105,10 +103,6 @@ export const useTabsStore = defineStore('tabs', () => {
     return activeTab.value?.path || null
   })
 
-  const hasUnpinnedTab = computed(() => {
-    return tabs.value.some(tab => !tab.isPinned)
-  })
-
   // Helper to extract title from path
   const getTitleFromPath = (path: string): string => {
     const parts = path.split('/')
@@ -140,25 +134,10 @@ export const useTabsStore = defineStore('tabs', () => {
       return existingTab
     }
 
-    // Find an unpinned tab to replace
-    const unpinnedTabIndex = tabs.value.findIndex(tab => !tab.isPinned)
-
-    if (unpinnedTabIndex !== -1) {
-      // Replace the first unpinned tab
-      const tabToReplace = tabs.value[unpinnedTabIndex]
-      tabToReplace.path = path
-      tabToReplace.title = getTitleFromPath(path)
-      tabToReplace.isPinned = false
-      setActiveTab(tabToReplace.id)
-      saveTabsToStorage(tabs.value)
-      return tabToReplace
-    }
-
-    // No unpinned tabs, create new tab
+    // Always create a new tab
     const newTab: Tab = {
       id: generateTabId(path),
       path,
-      isPinned: false,
       title: getTitleFromPath(path)
     }
     tabs.value.push(newTab)
@@ -188,29 +167,6 @@ export const useTabsStore = defineStore('tabs', () => {
     saveTabsToStorage(tabs.value)
   }
 
-  const pinTab = (id: string): void => {
-    const tab = tabs.value.find(t => t.id === id)
-    if (tab) {
-      tab.isPinned = true
-      saveTabsToStorage(tabs.value)
-    }
-  }
-
-  const unpinTab = (id: string): void => {
-    const tab = tabs.value.find(t => t.id === id)
-    if (tab) {
-      tab.isPinned = false
-      saveTabsToStorage(tabs.value)
-    }
-  }
-
-  const togglePinTab = (id: string): void => {
-    const tab = tabs.value.find(t => t.id === id)
-    if (tab) {
-      tab.isPinned = !tab.isPinned
-      saveTabsToStorage(tabs.value)
-    }
-  }
 
   const setActiveTab = (id: string | null): void => {
     activeTabId.value = id
@@ -259,13 +215,9 @@ export const useTabsStore = defineStore('tabs', () => {
     // Getters
     activeTab,
     activeTabPath,
-    hasUnpinnedTab,
     // Actions
     openTab,
     closeTab,
-    pinTab,
-    unpinTab,
-    togglePinTab,
     setActiveTab,
     getTabByPath,
     clearAllTabs,

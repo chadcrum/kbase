@@ -149,10 +149,18 @@ export const useVaultStore = defineStore('vault', () => {
         const aCreated = a.created || 0
         const bCreated = b.created || 0
         result = aCreated - bCreated
+        // If timestamps are equal, fall back to name sorting for stability
+        if (result === 0) {
+          result = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        }
       } else if (sortBy.value === 'modified') {
         const aModified = a.modified || 0
         const bModified = b.modified || 0
         result = aModified - bModified
+        // If timestamps are equal, fall back to name sorting for stability
+        if (result === 0) {
+          result = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        }
       }
       
       // Apply sort order

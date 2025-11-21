@@ -454,6 +454,13 @@ const transformImageUrls = (markdown: string): string => {
   )
 }
 
+// Pre-process markdown to convert [/] to [x] so GFM parser recognizes it as a task list item
+// We'll convert it back to [/] after parsing and setting the in-progress state
+const preprocessMarkdownForParsing = (markdown: string): string => {
+  // Convert [/] to [x] temporarily so GFM parser recognizes it as a task list item
+  return markdown.replace(/\[\/\]/g, '[x]')
+}
+
 // Update task list items in the editor to set in-progress state for [/] checkboxes
 const updateInProgressCheckboxes = async (originalMarkdown: string) => {
   if (!editor || !editorView) return
@@ -514,7 +521,9 @@ onMounted(async () => {
 
   try {
     // Transform image URLs before initializing editor
-    const transformedContent = transformImageUrls(props.modelValue)
+    let transformedContent = transformImageUrls(props.modelValue)
+    // Pre-process markdown to convert [/] to [x] so GFM parser recognizes it as a task list item
+    transformedContent = preprocessMarkdownForParsing(transformedContent)
     // Create editor instance
     editor = await Editor.make()
       .config((ctx) => {
@@ -562,7 +571,9 @@ watch(() => props.modelValue, async (newValue) => {
     try {
       cleanupMilkdownListeners()
       // Transform image URLs before loading into editor
-      const transformedContent = transformImageUrls(newValue)
+      let transformedContent = transformImageUrls(newValue)
+      // Pre-process markdown to convert [/] to [x] so GFM parser recognizes it as a task list item
+      transformedContent = preprocessMarkdownForParsing(transformedContent)
       // Destroy and recreate editor with new content
       editor.destroy()
       editor = await Editor.make()

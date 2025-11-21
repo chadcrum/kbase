@@ -728,6 +728,7 @@ describe('VaultStore', () => {
     it('should have default sort settings', () => {
       expect(vaultStore.sortBy).toBe('name')
       expect(vaultStore.sortOrder).toBe('asc')
+      expect(vaultStore.sortDirectoriesWithFiles).toBe(false)
     })
 
     it('should load sort settings from localStorage', () => {
@@ -775,6 +776,85 @@ describe('VaultStore', () => {
       
       vaultStore.toggleSortOrder()
       expect(vaultStore.sortOrder).toBe('asc')
+    })
+
+    it('should have default sortDirectoriesWithFiles as false', () => {
+      expect(vaultStore.sortDirectoriesWithFiles).toBe(false)
+    })
+
+    it('should load sortDirectoriesWithFiles from localStorage', () => {
+      localStorage.setItem('kbase_sort_directories_with_files', 'true')
+      
+      setActivePinia(createPinia())
+      const newStore = useVaultStore()
+      
+      expect(newStore.sortDirectoriesWithFiles).toBe(true)
+    })
+
+    it('should toggle sortDirectoriesWithFiles and save to localStorage', () => {
+      expect(vaultStore.sortDirectoriesWithFiles).toBe(false)
+      
+      vaultStore.toggleSortDirectoriesWithFiles()
+      expect(vaultStore.sortDirectoriesWithFiles).toBe(true)
+      expect(localStorage.getItem('kbase_sort_directories_with_files')).toBe('true')
+      
+      vaultStore.toggleSortDirectoriesWithFiles()
+      expect(vaultStore.sortDirectoriesWithFiles).toBe(false)
+      expect(localStorage.getItem('kbase_sort_directories_with_files')).toBe('false')
+    })
+
+    it('should sort directories alphabetically when sortDirectoriesWithFiles is false', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          { name: 'zebra-dir', path: '/zebra-dir', type: 'directory', created: 1000, modified: 2000, children: [] },
+          { name: 'alpha-dir', path: '/alpha-dir', type: 'directory', created: 3000, modified: 4000, children: [] },
+          { name: 'beta-dir', path: '/beta-dir', type: 'directory', created: 2000, modified: 3000, children: [] },
+          { name: 'file.md', path: '/file.md', type: 'file', created: 1500, modified: 2500 }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      vaultStore.setSortBy('created')
+      vaultStore.setSortOrder('asc')
+      vaultStore.toggleSortDirectoriesWithFiles() // Ensure it's false (default)
+      if (vaultStore.sortDirectoriesWithFiles) {
+        vaultStore.toggleSortDirectoriesWithFiles()
+      }
+
+      const sorted = vaultStore.sortedFileTree
+      // Directories should be alphabetically sorted regardless of sortBy/sortOrder
+      // Files should be sorted by created date ascending
+      expect(sorted?.children?.map(c => c.name)).toEqual(['alpha-dir', 'beta-dir', 'zebra-dir', 'file.md'])
+    })
+
+    it('should sort directories with files when sortDirectoriesWithFiles is true', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          { name: 'zebra-dir', path: '/zebra-dir', type: 'directory', created: 1000, modified: 2000, children: [] },
+          { name: 'alpha-dir', path: '/alpha-dir', type: 'directory', created: 3000, modified: 4000, children: [] },
+          { name: 'beta-dir', path: '/beta-dir', type: 'directory', created: 2000, modified: 3000, children: [] },
+          { name: 'file.md', path: '/file.md', type: 'file', created: 1500, modified: 2500 }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      vaultStore.setSortBy('created')
+      vaultStore.setSortOrder('asc')
+      vaultStore.toggleSortDirectoriesWithFiles() // Set to true
+
+      const sorted = vaultStore.sortedFileTree
+      // Directories should be sorted by created date ascending, but still appear before files
+      expect(sorted?.children?.map(c => c.name)).toEqual(['zebra-dir', 'beta-dir', 'alpha-dir', 'file.md'])
     })
 
     it('should sort files by name ascending', async () => {

@@ -10,6 +10,7 @@ export type SortOrder = 'asc' | 'desc'
 
 const SORT_BY_KEY = 'kbase_sort_by'
 const SORT_ORDER_KEY = 'kbase_sort_order'
+const SORT_DIRECTORIES_WITH_FILES_KEY = 'kbase_sort_directories_with_files'
 const SIDEBAR_WIDTH_KEY = 'kbase_sidebar_width'
 export const LAST_SELECTED_NOTE_KEY = 'kbase_last_note_path'
 
@@ -36,6 +37,11 @@ const readSortByPreference = (): SortBy => {
 const readSortOrderPreference = (): SortOrder => {
   const stored = getLocalStorage()?.getItem(SORT_ORDER_KEY)
   return SORT_ORDER_VALUES.includes(stored as SortOrder) ? (stored as SortOrder) : 'asc'
+}
+
+const readSortDirectoriesWithFilesPreference = (): boolean => {
+  const stored = getLocalStorage()?.getItem(SORT_DIRECTORIES_WITH_FILES_KEY)
+  return stored === 'true'
 }
 
 const readSidebarWidthPreference = (): number => {
@@ -94,6 +100,7 @@ export const useVaultStore = defineStore('vault', () => {
   // Sort state - load from localStorage
   const sortBy = ref<SortBy>(readSortByPreference())
   const sortOrder = ref<SortOrder>(readSortOrderPreference())
+  const sortDirectoriesWithFiles = ref<boolean>(readSortDirectoriesWithFilesPreference())
 
   // Sidebar state
   // Desktop: pinned by default, Mobile: unpinned by default
@@ -152,8 +159,12 @@ export const useVaultStore = defineStore('vault', () => {
       return sortOrder.value === 'asc' ? result : -result
     }
     
-    // Sort each group
-    const sortedFolders = [...folders].sort(compare)
+    // Sort folders: if sortDirectoriesWithFiles is true, use compare function; otherwise, always sort alphabetically by name
+    const sortedFolders = sortDirectoriesWithFiles.value
+      ? [...folders].sort(compare)
+      : [...folders].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+    
+    // Sort files using the compare function
     const sortedFiles = [...files].sort(compare)
     
     // Recursively sort children in folders
@@ -590,6 +601,11 @@ export const useVaultStore = defineStore('vault', () => {
     setSortOrder(newOrder)
   }
 
+  const toggleSortDirectoriesWithFiles = () => {
+    sortDirectoriesWithFiles.value = !sortDirectoriesWithFiles.value
+    setLocalStorageItem(SORT_DIRECTORIES_WITH_FILES_KEY, sortDirectoriesWithFiles.value.toString())
+  }
+
   // Sidebar width actions
   const setSidebarWidth = (newWidth: number) => {
     // Constrain width between 200px and 600px
@@ -633,6 +649,7 @@ export const useVaultStore = defineStore('vault', () => {
     saveError,
     sortBy,
     sortOrder,
+    sortDirectoriesWithFiles,
     isSidebarCollapsed,
     isSidebarPinned,
     sidebarWidth,
@@ -668,6 +685,7 @@ export const useVaultStore = defineStore('vault', () => {
     setSortBy,
     setSortOrder,
     toggleSortOrder,
+    toggleSortDirectoriesWithFiles,
     // Collapse all action
     collapseAll,
     // Sidebar actions

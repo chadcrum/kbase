@@ -82,6 +82,18 @@
 
         <div class="toolbar-dropdown-divider" role="separator"></div>
 
+        <button
+          class="toolbar-dropdown-item toolbar-dropdown-checkbox"
+          role="menuitemcheckbox"
+          :aria-checked="sortDirectoriesWithFiles"
+          @click="handleToggleSortDirectoriesWithFiles"
+        >
+          <span class="icon">{{ sortDirectoriesWithFiles ? '☑' : '☐' }}</span>
+          <span class="label">Sort directories with files</span>
+        </button>
+
+        <div class="toolbar-dropdown-divider" role="separator"></div>
+
         <div class="toolbar-dropdown-subheader">Application</div>
         <button
           class="toolbar-dropdown-item theme-toggle-btn"
@@ -174,6 +186,7 @@ const closeMenu = () => {
 // Sort state from store
 const sortBy = computed(() => vaultStore.sortBy)
 const sortOrder = computed(() => vaultStore.sortOrder)
+const sortDirectoriesWithFiles = computed(() => vaultStore.sortDirectoriesWithFiles)
 
 // Collapse/Expand all state
 const hasExpandedPaths = computed(() => vaultStore.hasExpandedPaths)
@@ -340,6 +353,14 @@ const handleSortByChange = (newSortBy: SortBy) => {
 }
 
 /**
+ * Toggles whether directories should be sorted with files
+ */
+const handleToggleSortDirectoriesWithFiles = () => {
+  vaultStore.toggleSortDirectoriesWithFiles()
+  // Don't close menu to allow toggling
+}
+
+/**
  * Collapses all expanded directories
  */
 const handleCollapseAll = () => {
@@ -501,6 +522,10 @@ onUnmounted(() => {
 .toolbar-dropdown-item:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.toolbar-dropdown-checkbox {
+  cursor: pointer;
 }
 
 .toolbar-dropdown-subheader {

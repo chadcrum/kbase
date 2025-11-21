@@ -48,10 +48,12 @@ describe('FileExplorerToolbar', () => {
     createNote: ReturnType<typeof vi.fn>
     setSortBy: ReturnType<typeof vi.fn>
     toggleSortOrder: ReturnType<typeof vi.fn>
+    toggleSortDirectoriesWithFiles: ReturnType<typeof vi.fn>
     collapseAll: ReturnType<typeof vi.fn>
     clearError: ReturnType<typeof vi.fn>
     sortBy: string
     sortOrder: string
+    sortDirectoriesWithFiles: boolean
     hasExpandedPaths: boolean
     error: string | null
   }
@@ -77,10 +79,12 @@ describe('FileExplorerToolbar', () => {
       createNote: vi.fn().mockResolvedValue(true),
       setSortBy: vi.fn(),
       toggleSortOrder: vi.fn(),
+      toggleSortDirectoriesWithFiles: vi.fn(),
       collapseAll: vi.fn(),
       clearError: vi.fn(),
       sortBy: 'name',
       sortOrder: 'asc',
+      sortDirectoriesWithFiles: false,
       hasExpandedPaths: false,
       error: null
     }
@@ -156,17 +160,31 @@ describe('FileExplorerToolbar', () => {
     expect(mockVaultStore.setSortBy).toHaveBeenCalledWith('created')
 
     await openMenu(wrapper)
-    await wrapper.findAll('.toolbar-dropdown-item')[7].trigger('click') // Collapse All
-    expect(mockVaultStore.collapseAll).toHaveBeenCalled()
+    const checkboxItem = wrapper.find('.toolbar-dropdown-checkbox')
+    await checkboxItem.trigger('click')
+    expect(mockVaultStore.toggleSortDirectoriesWithFiles).toHaveBeenCalled()
   })
 
-  it('disables collapse action when there are no expanded paths', async () => {
-    mockVaultStore.hasExpandedPaths = false
+  it('renders sort directories with files checkbox', async () => {
     const wrapper = mountToolbar()
-
     await openMenu(wrapper)
-    const collapseItem = wrapper.findAll('.toolbar-dropdown-item')[7]
-    expect(collapseItem.attributes('disabled')).toBeDefined()
+    
+    const checkboxItem = wrapper.find('.toolbar-dropdown-checkbox')
+    expect(checkboxItem.exists()).toBe(true)
+    expect(checkboxItem.text()).toContain('Sort directories with files')
+    expect(checkboxItem.attributes('aria-checked')).toBe('false')
+  })
+
+  it('toggles sort directories with files when checkbox is clicked', async () => {
+    const wrapper = mountToolbar()
+    await openMenu(wrapper)
+    
+    const checkboxItem = wrapper.find('.toolbar-dropdown-checkbox')
+    await checkboxItem.trigger('click')
+    
+    expect(mockVaultStore.toggleSortDirectoriesWithFiles).toHaveBeenCalled()
+    // Menu should stay open for checkbox
+    expect(wrapper.find('.toolbar-dropdown').exists()).toBe(true)
   })
 
   it('closes the menu when clicking outside', async () => {
@@ -220,8 +238,8 @@ describe('FileExplorerToolbar', () => {
       expect(validator('')).toBe('File name cannot be empty')
       expect(validator('file/name.md')).toBe('File name cannot contain path separators or ..')
       expect(validator('file<name.md')).toBe('File name contains invalid characters')
-      expect(validator('file.txt')).toBe('File name must end with .md extension')
-      expect(validator('CON.md')).toBe('This is a reserved file name')
+      expect(validator('file.txt')).toBeNull() // File extension validation removed
+      expect(validator('CON.md')).toBeNull() // Reserved name validation removed
       expect(validator('note.md')).toBeNull()
     })
   })

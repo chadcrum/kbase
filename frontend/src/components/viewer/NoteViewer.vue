@@ -25,12 +25,14 @@
         <div class="editor-view">
           <MilkdownEditor
             v-if="shouldUseMilkdown"
+            :key="`milkdown-${selectedNote.path}-${editorKey}`"
             v-model="editableContent"
             :path="selectedNote.path"
             @save="handleSave"
           />
           <MonacoEditor
             v-else
+            :key="`monaco-${selectedNote.path}-${editorKey}`"
             v-model="editableContent"
             :path="selectedNote.path"
             @save="handleSave"
@@ -96,6 +98,7 @@ const editorStore = useEditorStore()
 // State
 const editableContent = ref('')
 const saveStatus = ref<'saving' | 'saved' | 'error' | null>(null)
+const editorKey = ref(0) // Key to force editor re-render when needed
 let saveStatusTimeout: ReturnType<typeof setTimeout> | null = null
 
 // Computed properties
@@ -124,13 +127,33 @@ const shouldUseMilkdown = computed(() => {
 })
 
 // Watch for note changes to update editable content
-watch(selectedNote, (newNote) => {
+watch(selectedNote, (newNote, oldNote) => {
   if (newNote) {
+    // Check if this is a content update for the same path (e.g., after restore)
+    const isContentUpdate = oldNote && oldNote.path === newNote.path && oldNote.content !== newNote.content
+    
+    console.log('NoteViewer: selectedNote changed', {
+      path: newNote.path,
+      contentLength: newNote.content.length,
+      isContentUpdate,
+      oldContentLength: oldNote?.content?.length
+    })
+    
+    // Always update content when note changes - force update even if appears same
+    // This ensures restored content is displayed
+    const previousContent = editableContent.value
     editableContent.value = newNote.content
+    
+    // Force editor re-render if content changed for same path (restore scenario)
+    // OR if content appears same but we're forcing a refresh (bypassCache scenario)
+    if (isContentUpdate || (oldNote?.path === newNote.path && previousContent === newNote.content)) {
+      editorKey.value++
+      console.log('Forcing editor refresh - content update for same path or forced refresh')
+    }
   } else {
     editableContent.value = ''
   }
-}, { immediate: true })
+}, { immediate: true, deep: true })
 
 // Methods
 const handleSave = async (content: string) => {

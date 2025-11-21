@@ -137,7 +137,7 @@
       :is-open="showHistoryModal"
       :note-path="historyModalPath"
       @close="showHistoryModal = false; historyModalPath = null"
-      @restored="handleHistoryRestored"
+      @restored="(path) => handleHistoryRestored(path)"
     />
   </div>
 </template>
@@ -687,12 +687,43 @@ const handleContextMenuAction = (action: string) => {
   contextMenuTabId.value = null
 }
 
-const handleHistoryRestored = async () => {
-  // Reload the note if it's currently selected
-  if (historyModalPath.value && vaultStore.selectedNotePath === historyModalPath.value) {
-    await vaultStore.loadNote(historyModalPath.value)
+const handleHistoryRestored = async (restoredPath: string) => {
+  if (!restoredPath) {
+    console.warn('handleHistoryRestored called without path')
+    return
   }
-  historyModalPath.value = null
+  
+  console.log('Handling history restore for:', restoredPath)
+  
+  // Clear the modal path if it matches
+  if (historyModalPath.value === restoredPath) {
+    historyModalPath.value = null
+  }
+  
+  // Wait a moment to ensure restore operation is complete
+  await new Promise(resolve => setTimeout(resolve, 300))
+  
+  // Reload the note if it's currently selected or open in a tab
+  const tabsStore = useTabsStore()
+  const tab = tabsStore.getTabByPath(restoredPath)
+  
+  if (tab || vaultStore.selectedNotePath === restoredPath) {
+    console.log('Reloading note after restore with cache bypass:', restoredPath)
+    // Force reload the note with cache bypass to get the restored content
+    // This will update selectedNote which triggers editor content update
+    const success = await vaultStore.loadNote(restoredPath, true) // bypassCache = true
+    if (success) {
+      console.log('Note reloaded successfully after restore')
+      // Verify the content was actually updated
+      if (vaultStore.selectedNote?.path === restoredPath) {
+        console.log('Verified note content updated:', vaultStore.selectedNote.content.substring(0, 50))
+      }
+    } else {
+      console.error('Failed to reload note after restore')
+    }
+  } else {
+    console.log('Note not currently open, skipping reload')
+  }
 }
 
 const openTabInPopup = (path: string) => {

@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="isOpen" class="history-overlay" @click="handleClose">
+      <div v-if="isOpen && !showRestoreConfirm" class="history-overlay" @click="handleClose">
         <div class="history-container" @click.stop>
           <div class="history-header">
             <button class="history-btn history-btn-close" @click="handleClose" title="Close">
@@ -76,6 +76,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { apiClient } from '@/api/client'
+import { useVaultStore } from '@/stores/vault'
 import type { CommitInfo, FileHistoryResponse, FileContentAtCommitResponse } from '@/types'
 import ConfirmDialog from './ConfirmDialog.vue'
 
@@ -88,7 +89,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  restored: []
+  restored: [path: string]
 }>()
 
 const commits = ref<CommitInfo[]>([])
@@ -239,18 +240,64 @@ const handleRestoreConfirm = async () => {
   isLoading.value = true
   
   try {
-    // Commit current state first
+    console.log('Starting restore process for:', props.notePath, 'commit:', selectedCommit.value.hash)
+    
+    // Wait for any in-flight saves to complete before restoring
+    // This prevents race conditions where a pending save might overwrite the restored content
+    const vaultStore = useVaultStore()
+    let waitCount = 0
+    const maxWait = 50 // Wait up to 5 seconds (50 * 100ms)
+    while (vaultStore.isSaving && waitCount < maxWait) {
+      console.log('Waiting for in-flight save to complete...')
+      await new Promise(resolve => setTimeout(resolve, 100))
+      waitCount++
+    }
+    
+    if (vaultStore.isSaving) {
+      console.warn('Save operation still in progress after timeout, proceeding anyway')
+    } else {
+      console.log('All in-flight saves completed')
+    }
+    
+    // Commit current state first (this ensures current state is saved)
+    console.log('Committing current state...')
     await apiClient.commitFile(props.notePath)
+    console.log('Current state committed')
+    
+    // Small delay to ensure commit is fully processed
+    await new Promise(resolve => setTimeout(resolve, 200))
     
     // Restore from commit
+    console.log('Restoring from commit...')
     await apiClient.restoreFileFromCommit(props.notePath, selectedCommit.value.hash)
+    console.log('File restored successfully')
     
-    // Close modal and notify parent
-    emit('restored')
+    // Wait a bit to ensure file is fully written to disk
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
+    // Save path before closing (since close handler clears it)
+    const restoredPath = props.notePath
+    
+    // Close modal first
     handleClose()
-  } catch (error) {
+    
+    // Small delay to ensure modal closes before emitting restored event
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Emit restored event with path to trigger note reload
+    if (restoredPath) {
+      console.log('Emitting restored event for:', restoredPath)
+      emit('restored', restoredPath)
+    }
+  } catch (error: any) {
     console.error('Failed to restore file:', error)
-    alert('Failed to restore file. Please try again.')
+    if (error.response) {
+      console.error('Response status:', error.response.status)
+      console.error('Response data:', error.response.data)
+      alert(`Failed to restore file: ${error.response.data?.detail || error.message || 'Unknown error'}`)
+    } else {
+      alert(`Failed to restore file: ${error.message || 'Unknown error'}`)
+    }
   } finally {
     isLoading.value = false
   }

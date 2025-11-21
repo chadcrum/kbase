@@ -130,7 +130,7 @@
       :is-open="showHistoryModal"
       :note-path="props.node.path"
       @close="showHistoryModal = false"
-      @restored="handleHistoryRestored"
+      @restored="(path) => handleHistoryRestored(path)"
     />
   </div>
 </template>
@@ -458,12 +458,31 @@ const handleContextMenuAction = async (action: string) => {
   }
 }
 
-const handleHistoryRestored = async () => {
+const handleHistoryRestored = async (restoredPath?: string) => {
+  const path = restoredPath || props.node.path
+  console.log('Handling history restore for:', path)
+  
+  // Wait a moment to ensure restore operation is complete
+  await new Promise(resolve => setTimeout(resolve, 300))
+  
   // Reload the file tree to reflect changes
   await vaultStore.refresh()
-  // If this file is currently selected, reload it
-  if (vaultStore.selectedNotePath === props.node.path) {
-    await vaultStore.loadNote(props.node.path)
+  
+  // If this file is currently selected or open in a tab, reload it
+  if (vaultStore.selectedNotePath === path) {
+    console.log('Reloading note after restore with cache bypass:', path)
+    const success = await vaultStore.loadNote(path, true) // bypassCache = true
+    if (success) {
+      console.log('Note reloaded successfully after restore')
+      // Verify the content was actually updated
+      if (vaultStore.selectedNote?.path === props.node.path) {
+        console.log('Verified note content updated:', vaultStore.selectedNote.content.substring(0, 50))
+      }
+    } else {
+      console.error('Failed to reload note after restore')
+    }
+  } else {
+    console.log('Note not currently selected, skipping reload')
   }
 }
 

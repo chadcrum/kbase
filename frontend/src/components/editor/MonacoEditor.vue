@@ -290,14 +290,22 @@ onMounted(async () => {
 })
 
 // Watch for external content changes (from TipTap or parent component)
-watch(() => props.modelValue, (newValue) => {
+watch(() => props.modelValue, (newValue, oldValue) => {
   // Skip if no editor
   if (!editor) return
 
   const currentValue = editor.getValue()
-  // Only update if content actually changed
-  if (newValue !== currentValue) {
-    editor.setValue(newValue)
+  // Update if content changed OR if this is a forced update (oldValue was null/undefined)
+  // The oldValue check handles the case where we clear and reload after restore
+  const shouldUpdate = newValue !== currentValue || (oldValue === undefined || oldValue === null)
+  
+  if (shouldUpdate) {
+    console.log('MonacoEditor: Updating content', {
+      newLength: newValue?.length,
+      currentLength: currentValue?.length,
+      forced: oldValue === undefined || oldValue === null
+    })
+    editor.setValue(newValue || '')
     nextTick(() => {
       restoreEditorState()
     })

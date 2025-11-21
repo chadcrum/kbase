@@ -246,7 +246,7 @@ export const useVaultStore = defineStore('vault', () => {
     }
   }
 
-  const loadNote = async (path: string): Promise<boolean> => {
+  const loadNote = async (path: string, bypassCache: boolean = false): Promise<boolean> => {
     if (!path) return false
 
     // Expand directories to the note's path before loading
@@ -256,8 +256,50 @@ export const useVaultStore = defineStore('vault', () => {
     error.value = null
 
     try {
-      const note = await apiClient.getNote(path)
-      selectedNote.value = note
+      // Clear selected note first to force fresh load and trigger editor update
+      if (bypassCache && selectedNote.value?.path === path) {
+        console.log('Clearing selectedNote to force fresh reload for:', path)
+        const oldContent = selectedNote.value.content
+        const oldNote = { ...selectedNote.value } // Keep a copy for comparison
+        
+        // Force clear by setting to null
+        selectedNote.value = null
+        // Small delay to ensure UI updates and editor clears
+        await new Promise(resolve => setTimeout(resolve, 150))
+        
+        // Fetch fresh note with cache bypass
+        const note = await apiClient.getNote(path, bypassCache)
+        console.log('Fetched note after clear:', {
+          path: note.path,
+          contentLength: note.content.length,
+          oldContentLength: oldContent?.length,
+          contentChanged: note.content !== oldContent,
+          contentPreview: note.content.substring(0, 100),
+          oldContentPreview: oldContent?.substring(0, 100)
+        })
+        
+        // Create a new object to ensure Vue detects the change
+        const newNote = {
+          path: note.path,
+          content: note.content,
+          size: note.size,
+          modified: note.modified
+        }
+        
+        // Set new note - this should trigger editor update
+        selectedNote.value = newNote
+        
+        // Double-check the content was actually updated
+        if (selectedNote.value.content !== note.content) {
+          console.error('WARNING: selectedNote content mismatch after setting!')
+          selectedNote.value.content = note.content
+        }
+      } else {
+        // Normal load without cache bypass
+        const note = await apiClient.getNote(path, bypassCache)
+        selectedNote.value = note
+      }
+      
       setLocalStorageItem(LAST_SELECTED_NOTE_KEY, path)
       
       // Sync with tabs store - ensure tab exists and is active

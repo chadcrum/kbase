@@ -130,8 +130,31 @@ export class ApiClient {
     return response.data
   }
 
-  async getNote(path: string): Promise<NoteData> {
-    const response: AxiosResponse<NoteData> = await this.client.get(`/notes/${encodeURIComponent(path)}`)
+  async getNote(path: string, bypassCache: boolean = false): Promise<NoteData> {
+    const url = `/notes/${encodeURIComponent(path)}`
+    const config = bypassCache ? {
+      params: { _t: Date.now() }, // Cache-busting timestamp
+      headers: { 
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    } : {}
+    
+    if (bypassCache) {
+      console.log('getNote with cache bypass:', path, 'timestamp:', config.params?._t)
+    }
+    
+    const response: AxiosResponse<NoteData> = await this.client.get(url, config)
+    
+    if (bypassCache) {
+      console.log('getNote response:', {
+        path: response.data.path,
+        contentLength: response.data.content.length,
+        contentPreview: response.data.content.substring(0, 100)
+      })
+    }
+    
     return response.data
   }
 

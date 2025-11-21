@@ -103,23 +103,25 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10001;
+  backdrop-filter: blur(4px);
 }
 
 .modal-container {
   background: var(--bg-secondary);
   border-radius: 8px;
-  box-shadow: 0 10px 25px var(--shadow);
+  box-shadow: 0 25px 80px var(--shadow);
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border-color);
 }
 
 .modal-header {

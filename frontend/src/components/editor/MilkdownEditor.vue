@@ -174,6 +174,18 @@ const historyKeymapPlugin: MilkdownPlugin = (ctx) => {
       'Mod-y': () => {
         return commandManager.call(redoCommand.key)
       },
+      'Mod-s': () => {
+        // Manual save with Ctrl+S
+        if (props.readonly || props.disabled) return false
+        // Clear any pending auto-save
+        if (saveTimeout) {
+          clearTimeout(saveTimeout)
+          saveTimeout = null
+        }
+        // Immediately save
+        emit('save', currentMarkdown.value)
+        return true
+      },
     })
 
     return () => {

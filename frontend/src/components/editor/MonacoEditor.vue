@@ -229,6 +229,24 @@ onMounted(async () => {
       )
     }
 
+    // Add Ctrl+S keybinding for manual save
+    if (monaco && editor) {
+      editor.addCommand(
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+        () => {
+          if (!editor || props.readonly || props.disabled) return
+          // Clear any pending auto-save
+          if (saveTimeout) {
+            clearTimeout(saveTimeout)
+            saveTimeout = null
+          }
+          // Immediately save
+          const value = editor.getValue()
+          emit('save', value)
+        }
+      )
+    }
+
     // Restore editor view state if available
     nextTick(() => {
       restoreEditorState()

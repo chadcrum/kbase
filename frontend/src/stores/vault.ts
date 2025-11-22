@@ -189,26 +189,48 @@ export const useVaultStore = defineStore('vault', () => {
   }
   
   // Helper function to update a node's modified timestamp in the file tree
-  const updateNodeModifiedTime = (tree: FileTreeNode | null, targetPath: string, newModified: number): void => {
-    if (!tree || !tree.children) return
+  // Returns true if the node was found and updated
+  const updateNodeModifiedTime = (tree: FileTreeNode | null, targetPath: string, newModified: number): boolean => {
+    if (!tree || !tree.children) return false
     
     for (const child of tree.children) {
       if (child.path === targetPath) {
         // Found the node, update its modified timestamp
         child.modified = newModified
-        return
+        return true
       }
       // Recursively search in child directories
       if (child.type === 'directory' && child.children) {
-        updateNodeModifiedTime(child, targetPath, newModified)
+        if (updateNodeModifiedTime(child, targetPath, newModified)) {
+          return true
+        }
       }
+    }
+    return false
+  }
+  
+  // Helper function to create a new file tree reference to force reactivity
+  // We create a shallow copy of the root and a new children array
+  const createNewFileTreeReference = (tree: FileTreeNode): FileTreeNode => {
+    return {
+      ...tree,
+      children: tree.children ? [...tree.children] : []
     }
   }
   
   // Sorted file tree
+  // Explicitly access all reactive dependencies at the top level to ensure proper tracking
   const sortedFileTree = computed((): FileTreeNode | null => {
+    // Explicitly access all reactive dependencies to ensure computed tracks them
+    // Even though sortNodes accesses these internally, accessing them here ensures
+    // Vue's reactivity system properly tracks them as dependencies
+    const _sortBy = sortBy.value
+    const _sortOrder = sortOrder.value
+    const _sortDirsWithFiles = sortDirectoriesWithFiles.value
+    
     if (!fileTree.value) return null
     
+    // Return sorted tree - sortNodes will use the reactive refs internally
     return {
       ...fileTree.value,
       children: fileTree.value.children ? sortNodes(fileTree.value.children) : []
@@ -450,9 +472,12 @@ export const useVaultStore = defineStore('vault', () => {
       // Update the modified timestamp in the file tree to trigger re-sorting
       if (fileTree.value) {
         const currentTime = Math.floor(Date.now() / 1000)
-        updateNodeModifiedTime(fileTree.value, path, currentTime)
-        // Force reactivity by creating a new object reference
-        fileTree.value = { ...fileTree.value }
+        const updated = updateNodeModifiedTime(fileTree.value, path, currentTime)
+        if (updated) {
+          // Force reactivity by creating a new reference with new children array
+          // This ensures Vue detects the change and recalculates sortedFileTree
+          fileTree.value = createNewFileTreeReference(fileTree.value)
+        }
       }
       
       // Broadcast note update to other windows

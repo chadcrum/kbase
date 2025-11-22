@@ -891,9 +891,38 @@ describe('VaultStore', () => {
       }
 
       const sorted = vaultStore.sortedFileTree
-      // Directories should be alphabetically sorted regardless of sortBy/sortOrder
+      // Directories should be alphabetically sorted (not by created/modified), but respect sort order
       // Files should be sorted by created date ascending
       expect(sorted?.children?.map(c => c.name)).toEqual(['alpha-dir', 'beta-dir', 'zebra-dir', 'file.md'])
+    })
+
+    it('should sort directories alphabetically in descending order when sortDirectoriesWithFiles is false', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          { name: 'zebra-dir', path: '/zebra-dir', type: 'directory', created: 1000, modified: 2000, children: [] },
+          { name: 'alpha-dir', path: '/alpha-dir', type: 'directory', created: 3000, modified: 4000, children: [] },
+          { name: 'beta-dir', path: '/beta-dir', type: 'directory', created: 2000, modified: 3000, children: [] },
+          { name: 'file.md', path: '/file.md', type: 'file', created: 1500, modified: 2500 }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      vaultStore.setSortBy('created')
+      vaultStore.setSortOrder('desc')
+      vaultStore.toggleSortDirectoriesWithFiles() // Ensure it's false (default)
+      if (vaultStore.sortDirectoriesWithFiles) {
+        vaultStore.toggleSortDirectoriesWithFiles()
+      }
+
+      const sorted = vaultStore.sortedFileTree
+      // Directories should be alphabetically sorted in descending order (zebra, beta, alpha)
+      // Files should be sorted by created date descending
+      expect(sorted?.children?.map(c => c.name)).toEqual(['zebra-dir', 'beta-dir', 'alpha-dir', 'file.md'])
     })
 
     it('should sort directories with files when sortDirectoriesWithFiles is true', async () => {

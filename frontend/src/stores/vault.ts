@@ -167,10 +167,13 @@ export const useVaultStore = defineStore('vault', () => {
       return sortOrder.value === 'asc' ? result : -result
     }
     
-    // Sort folders: if sortDirectoriesWithFiles is true, use compare function; otherwise, always sort alphabetically by name
+    // Sort folders: if sortDirectoriesWithFiles is true, use compare function; otherwise, always sort alphabetically by name (but respect sort order)
     const sortedFolders = sortDirectoriesWithFiles.value
       ? [...folders].sort(compare)
-      : [...folders].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+      : [...folders].sort((a, b) => {
+          const result = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+          return sortOrder.value === 'asc' ? result : -result
+        })
     
     // Sort files using the compare function
     const sortedFiles = [...files].sort(compare)

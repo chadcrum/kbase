@@ -188,6 +188,23 @@ export const useVaultStore = defineStore('vault', () => {
     return [...foldersWithSortedChildren, ...sortedFiles]
   }
   
+  // Helper function to update a node's modified timestamp in the file tree
+  const updateNodeModifiedTime = (tree: FileTreeNode | null, targetPath: string, newModified: number): void => {
+    if (!tree || !tree.children) return
+    
+    for (const child of tree.children) {
+      if (child.path === targetPath) {
+        // Found the node, update its modified timestamp
+        child.modified = newModified
+        return
+      }
+      // Recursively search in child directories
+      if (child.type === 'directory' && child.children) {
+        updateNodeModifiedTime(child, targetPath, newModified)
+      }
+    }
+  }
+  
   // Sorted file tree
   const sortedFileTree = computed((): FileTreeNode | null => {
     if (!fileTree.value) return null
@@ -425,7 +442,17 @@ export const useVaultStore = defineStore('vault', () => {
       
       // Update the local note content if it's the currently selected note
       if (selectedNote.value && selectedNote.value.path === path) {
+        const currentTime = Math.floor(Date.now() / 1000)
         selectedNote.value.content = content
+        selectedNote.value.modified = currentTime
+      }
+      
+      // Update the modified timestamp in the file tree to trigger re-sorting
+      if (fileTree.value) {
+        const currentTime = Math.floor(Date.now() / 1000)
+        updateNodeModifiedTime(fileTree.value, path, currentTime)
+        // Force reactivity by creating a new object reference
+        fileTree.value = { ...fileTree.value }
       }
       
       // Broadcast note update to other windows

@@ -586,8 +586,38 @@ describe('VaultStore', () => {
       expect(result).toBe(true)
       expect(mockedApiClient.updateNote).toHaveBeenCalledWith('/test.md', 'Updated content')
       expect(vaultStore.selectedNote.content).toBe('Updated content')
+      expect(vaultStore.selectedNote.modified).toBeGreaterThan(1234567890)
       expect(vaultStore.saveError).toBeNull()
       expect(vaultStore.isSaving).toBe(false)
+    })
+
+    it('should update file tree modified timestamp when note is updated', async () => {
+      const mockTree: FileTreeNode = {
+        name: 'root',
+        path: '/',
+        type: 'directory',
+        children: [
+          {
+            name: 'test.md',
+            path: '/test.md',
+            type: 'file',
+            modified: 1234567890
+          }
+        ]
+      }
+
+      mockedApiClient.getNotes.mockResolvedValue(mockTree)
+      await vaultStore.loadFileTree()
+
+      const originalModified = vaultStore.fileTree?.children?.[0]?.modified
+      expect(originalModified).toBe(1234567890)
+
+      mockedApiClient.updateNote.mockResolvedValue(undefined)
+
+      await vaultStore.updateNote('/test.md', 'Updated content')
+
+      const updatedModified = vaultStore.fileTree?.children?.[0]?.modified
+      expect(updatedModified).toBeGreaterThan(originalModified!)
     })
 
     it('should handle update note failure', async () => {

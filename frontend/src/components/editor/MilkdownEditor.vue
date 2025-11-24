@@ -70,9 +70,10 @@ const editorStore = useEditorStore()
 const editorContainer = ref<HTMLElement | null>(null)
 let editor: Editor | null = null
 let editorView: EditorView | null = null
-let saveTimeout: ReturnType<typeof setTimeout> | null = null
+let saveInterval: ReturnType<typeof setInterval> | null = null
 let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
 let currentMarkdown = ref<string>(props.modelValue)
+let lastSavedMarkdown = ref<string>(props.modelValue)
 const cleanupFns: Array<() => void> = []
 
 // Custom remark stringify options to use hyphens for unordered list bullets
@@ -101,8 +102,8 @@ const focusEditor = async () => {
   }
 }
 
-// Debounce delay for auto-save (1 second)
-const AUTO_SAVE_DELAY = 1000
+// Auto-save interval (5 minutes)
+const AUTO_SAVE_INTERVAL = 5 * 60 * 1000 // 5 minutes in milliseconds
 
 // Command to insert spaces/tab at cursor
 const insertSpacesCommand: Command = (state, dispatch) => {
@@ -305,12 +306,8 @@ const historyKeymapPlugin: MilkdownPlugin = (ctx) => {
       'Mod-s': () => {
         // Manual save with Ctrl+S
         if (props.readonly || props.disabled) return false
-        // Clear any pending auto-save
-        if (saveTimeout) {
-          clearTimeout(saveTimeout)
-          saveTimeout = null
-        }
-        // Immediately save
+        // Immediately save and update last saved markdown
+        lastSavedMarkdown.value = currentMarkdown.value
         emit('save', currentMarkdown.value)
         return true
       },
@@ -396,6 +393,29 @@ const transformMarkdownForInProgress = (markdown: string): string => {
   return lines.join('\n')
 }
 
+// Start periodic auto-save
+const startAutoSave = () => {
+  if (!editorStore.isAutoSaveEnabled || saveInterval) return
+  
+  saveInterval = setInterval(() => {
+    if (props.disabled || !editorStore.isAutoSaveEnabled) return
+    
+    // Only save if content has changed since last save
+    if (currentMarkdown.value !== lastSavedMarkdown.value) {
+      lastSavedMarkdown.value = currentMarkdown.value
+      emit('save', currentMarkdown.value)
+    }
+  }, AUTO_SAVE_INTERVAL)
+}
+
+// Stop periodic auto-save
+const stopAutoSave = () => {
+  if (saveInterval) {
+    clearInterval(saveInterval)
+    saveInterval = null
+  }
+}
+
 // Handle content change
 const handleContentChange = (markdown: string) => {
   if (props.disabled) return
@@ -412,17 +432,6 @@ const handleContentChange = (markdown: string) => {
     currentMarkdown.value = finalMarkdown
     // Emit update for v-model
     emit('update:modelValue', finalMarkdown)
-    
-    // Debounced auto-save (only if enabled)
-    if (editorStore.isAutoSaveEnabled) {
-      if (saveTimeout) {
-        clearTimeout(saveTimeout)
-      }
-      
-      saveTimeout = setTimeout(() => {
-        emit('save', finalMarkdown)
-      }, AUTO_SAVE_DELAY)
-    }
   } else {
     // Markdown matches the prop value, just update currentMarkdown to prevent watch from triggering
     currentMarkdown.value = finalMarkdown
@@ -744,6 +753,9 @@ onMounted(async () => {
     // Use a small delay to ensure editor is fully initialized
     await new Promise(resolve => setTimeout(resolve, 100))
     await updateInProgressCheckboxes(props.modelValue)
+    
+    // Start periodic auto-save
+    startAutoSave()
   } catch (error) {
     console.error('Failed to initialize Milkdown editor:', error)
   }
@@ -760,6 +772,8 @@ watch(() => props.modelValue, async (newValue) => {
       // Set currentMarkdown before creating editor to prevent race conditions
       // This ensures handleContentChange can compare correctly
       currentMarkdown.value = newValue
+      // Update last saved markdown when note content changes externally
+      lastSavedMarkdown.value = newValue
       
       // Transform image URLs before loading into editor
       let transformedContent = transformImageUrls(newValue)
@@ -801,6 +815,10 @@ watch(() => props.modelValue, async (newValue) => {
       // Use a small delay to ensure editor is fully initialized
       await new Promise(resolve => setTimeout(resolve, 100))
       await updateInProgressCheckboxes(newValue)
+      
+      // Restart auto-save after editor recreation
+      stopAutoSave()
+      startAutoSave()
     } catch (error) {
       console.error('Failed to update editor content:', error)
     }
@@ -937,9 +955,7 @@ const insertImageAtCursor = async (imagePath: string, filename: string) => {
 
 // Cleanup on unmount
 onBeforeUnmount(() => {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout)
-  }
+  stopAutoSave()
   if (stateSaveTimeout) {
     clearTimeout(stateSaveTimeout)
   }

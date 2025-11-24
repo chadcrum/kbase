@@ -47,12 +47,13 @@ const editorStore = useEditorStore()
 const editorContainer = ref<HTMLElement | null>(null)
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
 let monaco: typeof Monaco | null = null
-let saveTimeout: ReturnType<typeof setTimeout> | null = null
+let saveInterval: ReturnType<typeof setInterval> | null = null
 let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
 let eventDisposables: Monaco.IDisposable[] = []
+let lastSavedValue = ref<string>(props.modelValue)
 
-// Debounce delay for auto-save (1 second)
-const AUTO_SAVE_DELAY = 1000
+// Auto-save interval (5 minutes)
+const AUTO_SAVE_INTERVAL = 5 * 60 * 1000 // 5 minutes in milliseconds
 const STATE_SAVE_DELAY = 150
 
 const scheduleStateSave = () => {
@@ -248,13 +249,9 @@ onMounted(async () => {
         monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
         () => {
           if (!editor || props.readonly || props.disabled) return
-          // Clear any pending auto-save
-          if (saveTimeout) {
-            clearTimeout(saveTimeout)
-            saveTimeout = null
-          }
-          // Immediately save
+          // Immediately save and update last saved value
           const value = editor.getValue()
+          lastSavedValue.value = value
           emit('save', value)
         }
       )
@@ -273,18 +270,21 @@ onMounted(async () => {
       
       // Emit update for v-model
       emit('update:modelValue', value)
-      
-      // Debounced auto-save (only if enabled)
-      if (editorStore.isAutoSaveEnabled) {
-        if (saveTimeout) {
-          clearTimeout(saveTimeout)
-        }
-        
-        saveTimeout = setTimeout(() => {
-          emit('save', value)
-        }, AUTO_SAVE_DELAY)
-      }
     })
+    
+    // Start periodic auto-save
+    if (editorStore.isAutoSaveEnabled) {
+      saveInterval = setInterval(() => {
+        if (!editor || props.disabled || !editorStore.isAutoSaveEnabled) return
+        
+        const value = editor.getValue()
+        // Only save if content has changed since last save
+        if (value !== lastSavedValue.value) {
+          lastSavedValue.value = value
+          emit('save', value)
+        }
+      }, AUTO_SAVE_INTERVAL)
+    }
 
     // Handle window resize
     const resizeObserver = new ResizeObserver(() => {
@@ -321,6 +321,8 @@ watch(() => props.modelValue, (newValue, oldValue) => {
       forced: oldValue === undefined || oldValue === null
     })
     editor.setValue(newValue || '')
+    // Update last saved value when note content changes externally
+    lastSavedValue.value = newValue || ''
     nextTick(() => {
       restoreEditorState()
     })
@@ -360,8 +362,9 @@ watch(() => themeStore.isDarkMode, () => {
 
 // Cleanup on unmount
 onBeforeUnmount(() => {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout)
+  if (saveInterval) {
+    clearInterval(saveInterval)
+    saveInterval = null
   }
   if (stateSaveTimeout) {
     clearTimeout(stateSaveTimeout)

@@ -149,9 +149,10 @@ watch(selectedNote, async (newNote, oldNote) => {
     
     // Force editor re-render if content changed for same path (restore scenario)
     // OR if content appears same but we're forcing a refresh (bypassCache scenario)
-    if (isContentUpdate || (oldNote?.path === newNote.path && previousContent === newNote.content)) {
+    // Force editor re-render if content changed for same path (restore scenario)
+    if (isContentUpdate) {
       editorKey.value++
-      console.log('Forcing editor refresh - content update for same path or forced refresh')
+      console.log('Forcing editor refresh - content update for same path')
     }
     
     // Focus the editor when a new note is selected (only if path changed)

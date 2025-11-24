@@ -379,8 +379,13 @@ const transformMarkdownForInProgress = (markdown: string): string => {
   // Replace regular bullets or [x] with [>] for in-progress items
   inProgressItems.forEach(({ lineIndex }) => {
     if (lines[lineIndex]) {
+      const line = lines[lineIndex]
+      // Skip if already has [>] (idempotent check)
+      if (line.includes('[>]')) {
+        return
+      }
       // Replace regular bullet format: - text -> - [>] text
-      lines[lineIndex] = lines[lineIndex].replace(/^(\s*[-*+])\s+(.+)$/, (match, indent, text) => {
+      lines[lineIndex] = line.replace(/^(\s*[-*+])\s+(.+)$/, (match, indent, text) => {
         return `${indent} [>] ${text}`
       })
       // Also handle if it's already [x]: - [x] text -> - [>] text
@@ -398,20 +403,29 @@ const handleContentChange = (markdown: string) => {
   // Transform markdown to handle in-progress checkboxes
   const transformedMarkdown = transformMarkdownForInProgress(markdown)
   
-  currentMarkdown.value = transformedMarkdown
+  // Use the transformed markdown as the canonical version
+  const finalMarkdown = transformedMarkdown
   
-  // Emit update for v-model
-  emit('update:modelValue', transformedMarkdown)
-  
-  // Debounced auto-save (only if enabled)
-  if (editorStore.isAutoSaveEnabled) {
-    if (saveTimeout) {
-      clearTimeout(saveTimeout)
-    }
+  // Only emit update if the markdown is different from the current prop value
+  // This prevents save loops when the markdown hasn't actually changed
+  if (finalMarkdown !== props.modelValue) {
+    currentMarkdown.value = finalMarkdown
+    // Emit update for v-model
+    emit('update:modelValue', finalMarkdown)
     
-    saveTimeout = setTimeout(() => {
-      emit('save', transformedMarkdown)
-    }, AUTO_SAVE_DELAY)
+    // Debounced auto-save (only if enabled)
+    if (editorStore.isAutoSaveEnabled) {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout)
+      }
+      
+      saveTimeout = setTimeout(() => {
+        emit('save', finalMarkdown)
+      }, AUTO_SAVE_DELAY)
+    }
+  } else {
+    // Markdown matches the prop value, just update currentMarkdown to prevent watch from triggering
+    currentMarkdown.value = finalMarkdown
   }
 }
 
@@ -743,6 +757,10 @@ watch(() => props.modelValue, async (newValue) => {
   if (newValue !== currentMarkdown.value) {
     try {
       cleanupMilkdownListeners()
+      // Set currentMarkdown before creating editor to prevent race conditions
+      // This ensures handleContentChange can compare correctly
+      currentMarkdown.value = newValue
+      
       // Transform image URLs before loading into editor
       let transformedContent = transformImageUrls(newValue)
       // Pre-process markdown to convert [/] to [x] so GFM parser recognizes it as a task list item
@@ -775,7 +793,6 @@ watch(() => props.modelValue, async (newValue) => {
         .use(listener)
         .create()
       
-      currentMarkdown.value = newValue
       updateTheme()
       await focusEditor()
       await setupMilkdownStateListeners()

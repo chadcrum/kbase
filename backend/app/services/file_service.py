@@ -498,6 +498,7 @@ class FileService:
                         'rg',
                         '-i',  # case insensitive
                         '-l',  # list files only
+                        '--glob', '!**/.git/**',  # ignore .git recursively
                         phrase,
                         '.'  # Explicitly search current directory
                     ],
@@ -527,6 +528,7 @@ class FileService:
                         'rg',
                         '--files',
                         '--iglob', f'*{phrase}*',  # case-insensitive glob for filename matching
+                        '--glob', '!**/.git/**',  # ignore .git recursively
                         '.'  # Explicitly search current directory
                     ],
                     cwd=str(self.vault_path),
@@ -580,6 +582,7 @@ class FileService:
                     '-i',  # case insensitive
                     '-n',  # show line numbers
                     '--max-count', '3',  # limit to first 3 matches per file
+                    '--glob', '!**/.git/**',  # ignore .git recursively
                     combined_pattern,
                     '.'  # Explicitly search current directory
                 ],
@@ -648,6 +651,10 @@ class FileService:
         for file_path in self.vault_path.rglob('*'):
             # Skip directories
             if not file_path.is_file():
+                continue
+            
+            # Skip .git directories
+            if '.git' in file_path.parts:
                 continue
             
             # Skip binary files

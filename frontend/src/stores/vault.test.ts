@@ -921,12 +921,12 @@ describe('VaultStore', () => {
       }
 
       const sorted = vaultStore.sortedFileTree
-      // Directories should be alphabetically sorted (not by created/modified), but respect sort order
+      // Directories should always be alphabetically sorted in ascending order when checkbox is unchecked (ignoring sort order)
       // Files should be sorted by created date ascending
       expect(sorted?.children?.map(c => c.name)).toEqual(['alpha-dir', 'beta-dir', 'zebra-dir', 'file.md'])
     })
 
-    it('should sort directories alphabetically in descending order when sortDirectoriesWithFiles is false', async () => {
+    it('should sort directories alphabetically in ascending order when sortDirectoriesWithFiles is false (ignoring sort order)', async () => {
       const mockTree: FileTreeNode = {
         name: 'root',
         path: '/',
@@ -950,9 +950,9 @@ describe('VaultStore', () => {
       }
 
       const sorted = vaultStore.sortedFileTree
-      // Directories should be alphabetically sorted in descending order (zebra, beta, alpha)
+      // Directories should always be alphabetically sorted in ascending order (alpha, beta, zebra) when checkbox is unchecked
       // Files should be sorted by created date descending
-      expect(sorted?.children?.map(c => c.name)).toEqual(['zebra-dir', 'beta-dir', 'alpha-dir', 'file.md'])
+      expect(sorted?.children?.map(c => c.name)).toEqual(['alpha-dir', 'beta-dir', 'zebra-dir', 'file.md'])
     })
 
     it('should sort directories with files when sortDirectoriesWithFiles is true', async () => {

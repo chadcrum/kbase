@@ -293,7 +293,7 @@ frontend/src/
 **Component Structure**:
 
 - **Editor Components**:
-  - `MonacoEditor.vue`: Monaco code editor wrapper with auto-save and syntax highlighting for all file types
+  - `MonacoEditor.vue`: Monaco code editor wrapper with optional auto-save (can be toggled) and syntax highlighting for all file types
 - `TabsBar.vue`: Tab management bar at the top of the viewer with drag-and-drop reordering, pinning (double-click or long-press), tabs dropdown menu showing all open tabs (pinned and unpinned), sidebar toggle, editor switcher for markdown files, and search button; uses fixed positioning to stay anchored to viewport
 - `ViewerToolbar.vue`: Toolbar with search button, sidebar toggle, editor switcher, and save status; uses fixed positioning to stay completely anchored to viewport on all devices, preventing any touch scrolling or movement
   - `NoteViewer.vue`: Orchestrates Monaco editor for all file types with toolbar positioned outside the scrollable content area (matching sidebar layout)
@@ -302,7 +302,7 @@ frontend/src/
   - `Sidebar.vue`: File tree sidebar container
   - `FileTree.vue`: Hierarchical file tree display
   - `FileTreeNode.vue`: Individual tree node rendering with drag-and-drop, context menus, and inline rename
-- `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with creation, refresh, sorting, collapse, theme toggle, and logout actions; uses sticky positioning with touch-action prevention to stay fixed while file tree scrolls on all devices
+- `FileExplorerToolbar.vue`: Toolbar positioned at top of sidebar with creation, refresh, sorting, collapse, auto-save toggle, theme toggle, and logout actions; uses sticky positioning with touch-action prevention to stay fixed while file tree scrolls on all devices
   - Accessibility: boolean-driven ARIA attributes ensure menu/toggle state bindings remain compatible with the build toolchain
 - **Common Components**:
   - `BackendWarning.vue`: Dismissible warning banner for backend connectivity issues
@@ -438,7 +438,7 @@ frontend/src/
     - Blocks reserved system names (CON, PRN, AUX, etc.)
     - Validates against invalid characters
 - **Monaco Editor**: Full-featured code editor with syntax highlighting for all file types
-    - Auto-save functionality (1 second debounce)
+    - Optional auto-save functionality (1 second debounce, can be enabled/disabled via file explorer dropdown)
     - Syntax highlighting for 30+ languages
     - Dark theme matching VS Code
     - Language detection from file extensions
@@ -446,11 +446,11 @@ frontend/src/
     - Used for all non-markdown files
 - **Milkdown Editor**: WYSIWYG markdown editor available for `.md` files only
     - Interactive task list checkboxes with markdown sync using a custom ProseMirror plugin. Checked items display with strikethrough text styling.
-    - Shares the same auto-save cadence and state restoration (cursor + scroll) as Monaco.
+    - Shares the same optional auto-save cadence (can be enabled/disabled via file explorer dropdown) and state restoration (cursor + scroll) as Monaco.
     - Nord theme integration keeps checkbox widgets aligned with light/dark theme variables.
     - Checkbox widgets honor Tab / Shift+Tab for indent and outdent, keeping keyboard ergonomics consistent with the text caret.
     - Undo/Redo keyboard shortcuts: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
-- **Auto-Save**: Automatic saving with visual feedback (saving/saved/error states)
+- **Auto-Save**: Optional automatic saving with visual feedback (saving/saved/error states). Can be enabled/disabled via checkbox in the file explorer dropdown menu. Defaults to enabled. Manual save (Ctrl+S) works regardless of auto-save setting.
 - **Sidebar Toggle**: Collapsible file explorer for maximizing editor space
   - Toggle button in toolbar (left side, before file name)
   - Smooth animation (0.3s ease) for collapse/expand
@@ -556,10 +556,14 @@ The Monaco editor provides a professional code editing experience with syntax hi
    - Handles editor initialization, content synchronization, and cleanup
    
 2. **Auto-Save Implementation**:
-   - Debounced save (1000ms delay after last keystroke)
+   - Optional debounced save (1000ms delay after last keystroke)
+   - Can be enabled/disabled via checkbox in file explorer dropdown menu
+   - Setting stored in editor store and persisted to localStorage
+   - Only triggers if auto-save is enabled (checked via `editorStore.isAutoSaveEnabled`)
    - Emits `save` event with content to parent component
    - Parent (NoteViewer) calls vault store's `updateNote` action
    - Visual feedback via ViewerToolbar (saving/saved/error states)
+   - Manual save (Ctrl+S) works regardless of auto-save setting
    
 3. **Language Detection**:
    - Utility function `detectLanguage(filename)` maps extensions to Monaco language IDs
@@ -607,10 +611,13 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
    - Toggle button in ViewerToolbar (toolbar-center) for markdown files
    
 3. **Auto-Save Implementation**:
-   - Same debounced save pattern as Monaco (1000ms delay)
+   - Optional auto-save (can be enabled/disabled via checkbox in file explorer dropdown menu)
+   - Same debounced save pattern as Monaco (1000ms delay) when enabled
+   - Only triggers if auto-save is enabled (checked via `editorStore.isAutoSaveEnabled`)
    - Emits `save` event with markdown content
    - Milkdown natively saves as markdown (no conversion needed)
    - Uses same save status UI as Monaco
+   - Manual save (Ctrl+S) works regardless of auto-save setting
    
 4. **Editor Configuration**:
    - Presets: CommonMark (standard markdown) + GFM (GitHub Flavored Markdown)

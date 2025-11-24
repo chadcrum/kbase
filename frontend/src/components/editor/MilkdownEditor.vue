@@ -36,6 +36,7 @@ import { splitListItem } from '@milkdown/prose/schema-list'
 import type { Options } from 'remark-stringify'
 import { useThemeStore } from '@/stores/theme'
 import { useVaultStore } from '@/stores/vault'
+import { useEditorStore } from '@/stores/editor'
 import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 import { milkdownTaskListPlugin } from './plugins/milkdownTaskListPlugin'
 import { milkdownImagePlugin } from './plugins/milkdownImagePlugin'
@@ -63,6 +64,7 @@ const emit = defineEmits<{
 // Store
 const themeStore = useThemeStore()
 const vaultStore = useVaultStore()
+const editorStore = useEditorStore()
 
 // Refs
 const editorContainer = ref<HTMLElement | null>(null)
@@ -401,14 +403,16 @@ const handleContentChange = (markdown: string) => {
   // Emit update for v-model
   emit('update:modelValue', transformedMarkdown)
   
-  // Debounced auto-save
-  if (saveTimeout) {
-    clearTimeout(saveTimeout)
+  // Debounced auto-save (only if enabled)
+  if (editorStore.isAutoSaveEnabled) {
+    if (saveTimeout) {
+      clearTimeout(saveTimeout)
+    }
+    
+    saveTimeout = setTimeout(() => {
+      emit('save', transformedMarkdown)
+    }, AUTO_SAVE_DELAY)
   }
-  
-  saveTimeout = setTimeout(() => {
-    emit('save', transformedMarkdown)
-  }, AUTO_SAVE_DELAY)
 }
 
 const cleanupMilkdownListeners = () => {

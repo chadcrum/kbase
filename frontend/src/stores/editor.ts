@@ -1,9 +1,23 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const EDITOR_STORAGE_KEY = 'kbase_editor_preference'
+const AUTO_SAVE_ENABLED_KEY = 'kbase_auto_save_enabled'
 
 export type EditorType = 'monaco' | 'milkdown'
+
+const readAutoSavePreference = (): boolean => {
+  if (typeof window === 'undefined') {
+    return true // Default to enabled for SSR
+  }
+  try {
+    const stored = localStorage.getItem(AUTO_SAVE_ENABLED_KEY)
+    // Default to true if not set (backward compatibility)
+    return stored === null ? true : stored === 'true'
+  } catch {
+    return true // Default to enabled on error
+  }
+}
 
 export const useEditorStore = defineStore('editor', () => {
   // State - editor preference for markdown files
@@ -11,6 +25,10 @@ export const useEditorStore = defineStore('editor', () => {
   const markdownEditor = ref<EditorType>(
     (localStorage.getItem(EDITOR_STORAGE_KEY) as EditorType) || 'monaco'
   )
+
+  // State - auto-save enabled/disabled
+  // Default to true (enabled) for backward compatibility
+  const autoSaveEnabled = ref<boolean>(readAutoSavePreference())
 
   // Get editor preference for a file based on its extension
   const getEditorForFile = (filePath: string): EditorType => {
@@ -43,14 +61,30 @@ export const useEditorStore = defineStore('editor', () => {
     return filePath.endsWith('.md')
   }
 
+  // Getter for auto-save enabled state
+  const isAutoSaveEnabled = computed(() => autoSaveEnabled.value)
+
+  // Toggle auto-save and persist to localStorage
+  const toggleAutoSave = () => {
+    autoSaveEnabled.value = !autoSaveEnabled.value
+    try {
+      localStorage.setItem(AUTO_SAVE_ENABLED_KEY, autoSaveEnabled.value ? 'true' : 'false')
+    } catch {
+      // Ignore storage errors (e.g., private mode, quota exceeded)
+    }
+  }
+
   return {
     // State
     markdownEditor,
+    autoSaveEnabled,
     // Actions
     getEditorForFile,
     setMarkdownEditor,
     toggleMarkdownEditor,
-    canUseMilkdown
+    canUseMilkdown,
+    isAutoSaveEnabled,
+    toggleAutoSave
   }
 })
 

@@ -41,7 +41,7 @@ A web-based note-taking application inspired by Obsidian and Joplin, designed to
   - Tab indentation: Tab key indents, Shift+Tab outdents
   - Undo/Redo: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
   - Toggle between Monaco and Milkdown via toolbar button (only visible for .md files)
-- **Auto-Save**: Automatic saving with 1-second debounce (both editors)
+- **Auto-Save**: Optional automatic saving with 1-second debounce (both editors). Can be enabled/disabled via checkbox in the file explorer dropdown menu. Defaults to enabled. Manual save (Ctrl+S) works regardless of auto-save setting.
 - **Save Status**: Visual feedback for saving/saved/error states
 - **Editor Preference**: Per-file-type preference stored in localStorage
 - **Image Support**: Paste images from clipboard or drag-and-drop to upload

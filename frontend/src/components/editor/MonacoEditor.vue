@@ -14,6 +14,7 @@ import loader from '@monaco-editor/loader'
 import { detectLanguage } from '@/utils/languageDetection'
 import { useThemeStore } from '@/stores/theme'
 import { useVaultStore } from '@/stores/vault'
+import { useEditorStore } from '@/stores/editor'
 import type * as Monaco from 'monaco-editor'
 import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 import { apiClient } from '@/api/client'
@@ -40,6 +41,7 @@ const emit = defineEmits<{
 // Store
 const themeStore = useThemeStore()
 const vaultStore = useVaultStore()
+const editorStore = useEditorStore()
 
 // Refs
 const editorContainer = ref<HTMLElement | null>(null)
@@ -272,14 +274,16 @@ onMounted(async () => {
       // Emit update for v-model
       emit('update:modelValue', value)
       
-      // Debounced auto-save
-      if (saveTimeout) {
-        clearTimeout(saveTimeout)
+      // Debounced auto-save (only if enabled)
+      if (editorStore.isAutoSaveEnabled) {
+        if (saveTimeout) {
+          clearTimeout(saveTimeout)
+        }
+        
+        saveTimeout = setTimeout(() => {
+          emit('save', value)
+        }, AUTO_SAVE_DELAY)
       }
-      
-      saveTimeout = setTimeout(() => {
-        emit('save', value)
-      }, AUTO_SAVE_DELAY)
     })
 
     // Handle window resize

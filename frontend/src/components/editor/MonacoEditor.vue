@@ -310,22 +310,39 @@ watch(() => props.modelValue, (newValue, oldValue) => {
   if (!editor) return
 
   const currentValue = editor.getValue()
-  // Update if content changed OR if this is a forced update (oldValue was null/undefined)
+  const newValueStr = newValue || ''
+  const currentValueStr = currentValue || ''
+  
+  // Only update if content actually changed
+  // This prevents clearing the undo stack when save updates the same content
+  const contentChanged = newValueStr !== currentValueStr
+  
+  // Force update only if this is initial load (oldValue was null/undefined)
   // The oldValue check handles the case where we clear and reload after restore
-  const shouldUpdate = newValue !== currentValue || (oldValue === undefined || oldValue === null)
+  const isInitialLoad = oldValue === undefined || oldValue === null
+  
+  const shouldUpdate = contentChanged || isInitialLoad
   
   if (shouldUpdate) {
-    console.log('MonacoEditor: Updating content', {
-      newLength: newValue?.length,
-      currentLength: currentValue?.length,
-      forced: oldValue === undefined || oldValue === null
-    })
-    editor.setValue(newValue || '')
+    // Only update if content actually changed or it's an initial load
+    // This prevents clearing the undo stack when save updates the same content
+    if (contentChanged || isInitialLoad) {
+      console.log('MonacoEditor: Updating content', {
+        newLength: newValueStr.length,
+        currentLength: currentValueStr.length,
+        forced: isInitialLoad
+      })
+      editor.setValue(newValueStr)
+    }
+    
     // Update last saved value when note content changes externally
-    lastSavedValue.value = newValue || ''
-    nextTick(() => {
-      restoreEditorState()
-    })
+    // Only update if content actually changed to avoid unnecessary updates
+    if (contentChanged || isInitialLoad) {
+      lastSavedValue.value = newValueStr
+      nextTick(() => {
+        restoreEditorState()
+      })
+    }
   }
 })
 

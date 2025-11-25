@@ -139,6 +139,13 @@
       @close="showHistoryModal = false; historyModalPath = null"
       @restored="(path) => handleHistoryRestored(path)"
     />
+
+    <!-- Share Dialog -->
+    <ShareDialog
+      :is-open="showShareDialog"
+      :url="shareUrl"
+      @close="showShareDialog = false"
+    />
   </div>
 </template>
 
@@ -149,6 +156,7 @@ import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
 import ContextMenu, { type ContextMenuItem } from '@/components/sidebar/ContextMenu.vue'
 import FileHistoryModal from '@/components/common/FileHistoryModal.vue'
+import ShareDialog from '@/components/common/ShareDialog.vue'
 
 // Props
 interface Props {
@@ -197,6 +205,8 @@ const contextMenuY = ref(0)
 const contextMenuTabId = ref<string | null>(null)
 const showHistoryModal = ref(false)
 const historyModalPath = ref<string | null>(null)
+const showShareDialog = ref(false)
+const shareUrl = ref('')
 
 // Computed
 const tabs = computed(() => tabsStore.tabs)
@@ -622,6 +632,13 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
       icon: '📜',
       action: 'history'
     })
+
+    // Copy Link option (for file tabs)
+    items.push({
+      label: 'Copy Link',
+      icon: '🔗',
+      action: 'share'
+    })
   }
   
   // Close option
@@ -670,6 +687,12 @@ const handleContextMenuAction = (action: string) => {
       if (tab.path) {
         historyModalPath.value = tab.path
         showHistoryModal.value = true
+      }
+      break
+    case 'share':
+      if (tab.path) {
+        shareUrl.value = `${window.location.origin}/?note=${encodeURIComponent(tab.path)}`
+        showShareDialog.value = true
       }
       break
     case 'close':

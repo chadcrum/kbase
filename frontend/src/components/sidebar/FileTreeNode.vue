@@ -132,6 +132,13 @@
       @close="showHistoryModal = false"
       @restored="(path) => handleHistoryRestored(path)"
     />
+
+    <!-- Share Dialog -->
+    <ShareDialog
+      :is-open="showShareDialog"
+      :url="shareUrl"
+      @close="showShareDialog = false"
+    />
   </div>
 </template>
 
@@ -143,6 +150,7 @@ import ConfirmDialog from '../common/ConfirmDialog.vue'
 import InputDialog from '../common/InputDialog.vue'
 import DirectoryPickerDialog from './DirectoryPickerDialog.vue'
 import FileHistoryModal from '../common/FileHistoryModal.vue'
+import ShareDialog from '../common/ShareDialog.vue'
 import type { FileTreeNode as FileTreeNodeType } from '@/types'
 
 // Props
@@ -178,6 +186,8 @@ const showCreateFolderDialog = ref(false)
 const showCreateFileDialog = ref(false)
 const showMoveDialog = ref(false)
 const showHistoryModal = ref(false)
+const showShareDialog = ref(false)
+const shareUrl = ref('')
 const nodeItem = ref<HTMLDivElement | null>(null)
 const longPressTimer = ref<number | null>(null)
 const longPressTriggered = ref(false)
@@ -234,6 +244,8 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
     items.push({ label: 'Open in New Window', icon: '🪟', action: 'open-in-popup' })
     // Add "History" option for files only
     items.push({ label: 'History', icon: '📜', action: 'history' })
+    // Add "Copy Link" option for files only
+    items.push({ label: 'Copy Link', icon: '🔗', action: 'share' })
   }
   
   items.push({ label: 'Rename', icon: '✏️', action: 'rename' })
@@ -454,6 +466,10 @@ const handleContextMenuAction = async (action: string) => {
       break
     case 'delete':
       showDeleteConfirm.value = true
+      break
+    case 'share':
+      shareUrl.value = `${window.location.origin}/?note=${encodeURIComponent(props.node.path)}`
+      showShareDialog.value = true
       break
   }
 }

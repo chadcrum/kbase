@@ -1,11 +1,12 @@
 name: E2E Tests
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-    types: [opened, synchronize, reopened, ready_for_review]
+  # Automated triggers disabled - uncomment to re-enable
+  # push:
+  #   branches: [ main, develop ]
+  # pull_request:
+  #   branches: [ main, develop ]
+  #   types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 jobs:

@@ -84,6 +84,24 @@ Reference: `.cursorrules` (lines 64-82)
 
 Reference: `.cursorrules` (lines 85-98)
 
+### Type-Checking Requirements
+
+**🚨 IMPORTANT**: TypeScript type-checking MUST be performed BEFORE every commit that includes frontend changes.
+
+- **CRITICAL**: Type errors cause build failures in CI/CD and Podman builds
+- Always run `cd frontend && npm run type-check` before committing frontend changes
+- Never commit code with TypeScript type errors
+- Fix all type errors before proceeding with the commit
+- Frontend test suite automatically runs type-check before tests (`npm run test:run`)
+
+**Common type errors to watch for**:
+- Invalid properties on types (e.g., `encode` on `Options`)
+- Null safety issues (`event.currentTarget` possibly null)
+- Type mismatches (`EventTarget` vs `Node`)
+- Incorrect function signatures
+
+Reference: `.cursorrules` (lines 152-159), `.cursor/rules/30-git-workflow.mdc`
+
 ### Code Quality
 
 **Python Backend**:
@@ -118,8 +136,9 @@ npm run test              # All tests (includes type-check for frontend)
 npm run test:backend      # Backend only
 npm run test:frontend     # Frontend only (runs type-check + tests)
 
-# Type-checking (run before committing frontend changes)
+# IMPORTANT: Type-checking (MUST run before committing frontend changes)
 cd frontend && npm run type-check  # Check TypeScript types without building
+# ⚠️ CRITICAL: Type errors cause build failures - always verify before committing
 ```
 
 ### Documentation Links
@@ -173,15 +192,20 @@ Use descriptive names: `feature/note-search`, `fix/auth-bug`, `docs/api-update`
 
 ### Pre-Commit Checklist
 
-Before every commit:
-- [ ] **Type-check passes** (`cd frontend && npm run type-check`)
-  - **CRITICAL**: Type errors cause build failures in CI/CD and Podman
-  - Frontend automatically runs type-check before tests (`npm run test:run`)
-- [ ] All tests pass (`npm run test`)
-- [ ] Code follows style guidelines
-- [ ] Documentation updated
-- [ ] Security considerations addressed
-- [ ] Commit message follows convention
+**🚨 IMPORTANT**: Before every commit, you MUST:
+
+1. **Type-check passes** (for frontend changes)
+   - Run: `cd frontend && npm run type-check`
+   - **CRITICAL**: Type errors cause build failures in CI/CD and Podman builds
+   - **DO NOT COMMIT** if type-check fails - fix all errors first
+   - Frontend automatically runs type-check before tests (`npm run test:run`)
+   - Common issues: invalid properties, null safety, type mismatches, incorrect signatures
+
+2. All tests pass (`npm run test`)
+3. Code follows style guidelines
+4. Documentation updated
+5. Security considerations addressed
+6. Commit message follows convention
 
 Reference: `.cursorrules` (lines 152-159), `.cursor/rules/30-git-workflow.mdc`
 
@@ -231,7 +255,7 @@ Reference: `.cursorrules` (lines 152-159), `.cursor/rules/30-git-workflow.mdc`
 
 ## Remember
 
-1. **Type-check is mandatory** - Always run `npm run type-check` before committing frontend changes
+1. **🚨 IMPORTANT: Type-check is mandatory** - ALWAYS run `cd frontend && npm run type-check` BEFORE committing frontend changes. Type errors cause build failures.
 2. **Documentation is mandatory** - Never commit without updating docs
 3. **Write tests** - Write tests for new functionality
 4. **Security first** - Always validate inputs and protect against path traversal

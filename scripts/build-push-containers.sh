@@ -11,28 +11,38 @@ fi
 
 # Ensure required environment variables are set
 : "${GITHUB_TOKEN:?GITHUB_TOKEN is required in .env or environment}"
-: "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required (owner/repo)}"
 
-# Optional tag, default to 'latest'
-TAG="${TAG:-latest}"
+# Hard-coded repository
+REPOSITORY="ghcr.io/chadcrum/kbase"
 
-# Docker image name
-IMAGE="ghcr.io/${GITHUB_REPOSITORY}:${TAG}"
+# Get short commit hash
+COMMIT_HASH=$(git rev-parse --short HEAD)
+
+# Image tags
+IMAGE_LATEST="${REPOSITORY}:latest"
+IMAGE_COMMIT="${REPOSITORY}:${COMMIT_HASH}"
 
 # Log in to GitHub Container Registry
 echo "Logging into GHCR..."
 # Use the token as password; username can be any non-empty string (github.actor works in CI)
 USERNAME="${GITHUB_ACTOR:-github}"  # fallback for local use
-echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$USERNAME" --password-stdin
+echo "$GITHUB_TOKEN" | podman login ghcr.io -u "$USERNAME" --password-stdin
 
-# Build the Docker image using the Containerfile
-echo "Building Docker image $IMAGE..."
-# Context is repository root, Dockerfile is Containerfile
-docker build -f Containerfile -t "$IMAGE" .
+# Build the podman image using the Containerfile
+echo "Building podman image $IMAGE_LATEST..."
+# Context is repository root, podmanfile is Containerfile
+podman build -f Containerfile -t "$IMAGE_LATEST" .
 
-# Push the image to GHCR
-echo "Pushing Docker image $IMAGE..."
-docker push "$IMAGE"
+# Tag with commit hash
+echo "Tagging image as $IMAGE_COMMIT..."
+podman tag "$IMAGE_LATEST" "$IMAGE_COMMIT"
+
+# Push both tags to GHCR
+echo "Pushing podman image $IMAGE_LATEST..."
+podman push "$IMAGE_LATEST"
+
+echo "Pushing podman image $IMAGE_COMMIT..."
+podman push "$IMAGE_COMMIT"
 
 echo "✅ Build and push completed successfully."
 

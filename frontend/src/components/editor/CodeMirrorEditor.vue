@@ -11,7 +11,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { EditorState, Extension } from '@codemirror/state'
-import { EditorView, keymap, ViewUpdate, lineNumbers } from '@codemirror/view'
+import { EditorView, keymap, ViewUpdate, lineNumbers, drawSelection } from '@codemirror/view'
 import { indentWithTab } from '@codemirror/commands'
 import { searchKeymap, search } from '@codemirror/search'
 import { oneDark } from '@codemirror/theme-one-dark'
@@ -124,17 +124,26 @@ defineExpose({
   focus
 })
 
+// Detect mobile device
+const isMobileDevice = (): boolean => {
+  if (typeof window === 'undefined') return false
+  return window.innerWidth <= 768 || 
+         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+}
+
 // Get editor extensions based on current settings
 const getExtensions = (): Extension[] => {
-  const isMobile = window.innerWidth <= 768
+  const isMobile = isMobileDevice()
   const extensions: Extension[] = [
     // Basic editor configuration
     EditorState.tabSize.of(2),
     EditorView.lineWrapping,
     EditorView.editable.of(!props.readonly && !props.disabled),
-    EditorView.contentAttributes.of({ 'data-readonly': String(props.readonly || props.disabled) }),
     // Line numbers (disabled on mobile)
     ...(isMobile ? [] : [lineNumbers()]),
+    
+    // Draw selection (improves selection visibility)
+    drawSelection(),
     
     // Search functionality
     search(),
@@ -480,7 +489,15 @@ onBeforeUnmount(() => {
   }
   
   .codemirror-editor-container :deep(.cm-editor) {
-    font-size: 14px;
+    font-size: 16px; /* Prevent zoom on iOS focus */
+  }
+  
+  .codemirror-editor-container :deep(.cm-scroller) {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .codemirror-editor-container :deep(.cm-content) {
+    padding: 0.75em;
   }
   
   .codemirror-editor-container :deep(.cm-gutters) {

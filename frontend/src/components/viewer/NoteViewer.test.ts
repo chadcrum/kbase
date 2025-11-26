@@ -17,26 +17,30 @@ vi.mock('@codemirror/state', () => ({
   }
 }))
 
+const EditorViewConstructor = vi.fn().mockImplementation(() => ({
+  state: {
+    doc: { toString: vi.fn(() => 'test content'), length: 12 },
+    selection: { main: { from: 0, to: 0 } }
+  },
+  scrollDOM: { scrollTop: 0 },
+  dispatch: vi.fn(),
+  focus: vi.fn(),
+  destroy: vi.fn(),
+  requestMeasure: vi.fn(),
+  setState: vi.fn()
+}))
+
+// Add static properties to the constructor
+Object.assign(EditorViewConstructor, {
+  lineWrapping: {},
+  editable: { of: vi.fn(() => ({})) },
+  contentAttributes: { of: vi.fn(() => ({})) },
+  updateListener: { of: vi.fn(() => ({})) }
+})
+
 vi.mock('@codemirror/view', () => ({
-  EditorView: vi.fn().mockImplementation(() => ({
-    state: {
-      doc: { toString: vi.fn(() => 'test content'), length: 12 },
-      selection: { main: { from: 0, to: 0 } }
-    },
-    scrollDOM: { scrollTop: 0 },
-    dispatch: vi.fn(),
-    focus: vi.fn(),
-    destroy: vi.fn(),
-    requestMeasure: vi.fn(),
-    setState: vi.fn()
-  })),
-  keymap: { of: vi.fn(() => ({})) },
-  EditorView: {
-    lineWrapping: {},
-    editable: { of: vi.fn(() => ({})) },
-    contentAttributes: { of: vi.fn(() => ({})) },
-    updateListener: { of: vi.fn(() => ({})) }
-  }
+  EditorView: EditorViewConstructor,
+  keymap: { of: vi.fn(() => ({})) }
 }))
 
 vi.mock('@codemirror/commands', () => ({

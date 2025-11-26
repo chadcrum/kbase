@@ -99,7 +99,7 @@ const restoreEditorState = () => {
     // Restore scroll position
     if (codemirrorState.scrollTop !== undefined) {
       nextTick(() => {
-        if (editorView) {
+        if (editorView && codemirrorState.scrollTop !== undefined) {
           editorView.scrollDOM.scrollTop = codemirrorState.scrollTop
         }
       })
@@ -132,7 +132,7 @@ const getExtensions = (): Extension[] => {
     EditorState.tabSize.of(2),
     EditorView.lineWrapping,
     EditorView.editable.of(!props.readonly && !props.disabled),
-    EditorView.contentAttributes.of({ 'data-readonly': props.readonly || props.disabled }),
+    EditorView.contentAttributes.of({ 'data-readonly': String(props.readonly || props.disabled) }),
     // Line numbers (disabled on mobile)
     ...(isMobile ? [] : [lineNumbers()]),
     

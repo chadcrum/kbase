@@ -4,15 +4,15 @@ import { ref, computed } from 'vue'
 const EDITOR_STORAGE_KEY = 'kbase_editor_preference'
 
 
-export type EditorType = 'monaco' | 'milkdown'
+export type EditorType = 'codemirror' | 'milkdown'
 
 
 
 export const useEditorStore = defineStore('editor', () => {
   // State - editor preference for markdown files
-  // Default to 'monaco' for backward compatibility
+  // Default to 'codemirror' for backward compatibility
   const markdownEditor = ref<EditorType>(
-    (localStorage.getItem(EDITOR_STORAGE_KEY) as EditorType) || 'monaco'
+    (localStorage.getItem(EDITOR_STORAGE_KEY) as EditorType) || 'codemirror'
   )
 
 
@@ -23,23 +23,23 @@ export const useEditorStore = defineStore('editor', () => {
     if (filePath.endsWith('.md')) {
       return markdownEditor.value
     }
-    // All other files use Monaco
-    return 'monaco'
+    // All other files use CodeMirror
+    return 'codemirror'
   }
 
   // Set editor preference for markdown files
   const setMarkdownEditor = (editor: EditorType) => {
-    if (editor !== 'monaco' && editor !== 'milkdown') {
-      console.warn(`Invalid editor type: ${editor}. Must be 'monaco' or 'milkdown'`)
+    if (editor !== 'codemirror' && editor !== 'milkdown') {
+      console.warn(`Invalid editor type: ${editor}. Must be 'codemirror' or 'milkdown'`)
       return
     }
     markdownEditor.value = editor
     localStorage.setItem(EDITOR_STORAGE_KEY, editor)
   }
 
-  // Toggle between Monaco and Milkdown for markdown files
+  // Toggle between CodeMirror and Milkdown for markdown files
   const toggleMarkdownEditor = () => {
-    const newEditor = markdownEditor.value === 'monaco' ? 'milkdown' : 'monaco'
+    const newEditor = markdownEditor.value === 'codemirror' ? 'milkdown' : 'codemirror'
     setMarkdownEditor(newEditor)
   }
 

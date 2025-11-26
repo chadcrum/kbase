@@ -4,13 +4,13 @@ import { startBackend, stopBackend } from '../helpers/backend'
 import { createVault, destroyVault } from '../helpers/vault'
 
 /**
- * Monaco Editor E2E Tests
+ * CodeMirror Editor E2E Tests
  * 
- * Tests for the Monaco editor used for all file types.
+ * Tests for the CodeMirror editor used for all file types.
  * These tests verify the editor functionality and auto-save.
  */
 
-test.describe('Monaco Editor', () => {
+test.describe('CodeMirror Editor', () => {
   test.beforeAll(async () => {
     await startBackend()
   })
@@ -42,20 +42,20 @@ test.describe('Monaco Editor', () => {
   })
 
   test.describe('Basic Editor Functionality', () => {
-    test('should render Monaco editor for all files', async ({ page }) => {
-      // Should show Monaco editor for all file types
-      await page.waitForSelector('.monaco-editor-container')
+    test('should render CodeMirror editor for all files', async ({ page }) => {
+      // Should show CodeMirror editor for all file types
+      await page.waitForSelector('.codemirror-editor-container')
       
-      // Check that Monaco editor is visible
-      const monacoContainer = page.locator('.monaco-editor-container')
-      await expect(monacoContainer).toBeVisible()
+      // Check that CodeMirror editor is visible
+      const codemirrorContainer = page.locator('.codemirror-editor-container')
+      await expect(codemirrorContainer).toBeVisible()
     })
 
     test('should allow editing content', async ({ page }) => {
-      await page.waitForSelector('.monaco-editor-container')
+      await page.waitForSelector('.codemirror-editor-container')
       
       // Click in the editor and type content
-      const editor = page.locator('.monaco-editor-container')
+      const editor = page.locator('.codemirror-editor-container')
       await editor.click()
       
       await page.keyboard.press('End')
@@ -67,11 +67,11 @@ test.describe('Monaco Editor', () => {
       await expect(page.locator('.floating-save-status.saved')).toBeVisible({ timeout: 3000 })
     })
 
-    test('should provide syntax highlighting', async ({ page }) => {
-      await page.waitForSelector('.monaco-editor-container')
+    test('should allow text editing', async ({ page }) => {
+      await page.waitForSelector('.codemirror-editor-container')
       
       // Type markdown content
-      const editor = page.locator('.monaco-editor-container')
+      const editor = page.locator('.codemirror-editor-container')
       await editor.click()
       
       await page.keyboard.press('Control+A')
@@ -84,15 +84,15 @@ test.describe('Monaco Editor', () => {
   })
 
   test.describe('File Type Support', () => {
-    test('should use Monaco for markdown files', async ({ page }) => {
-      // Should show Monaco editor for .md files
-      await page.waitForSelector('.monaco-editor-container')
+    test('should use CodeMirror for markdown files', async ({ page }) => {
+      // Should show CodeMirror editor for .md files
+      await page.waitForSelector('.codemirror-editor-container')
       
-      const monacoContainer = page.locator('.monaco-editor-container')
-      await expect(monacoContainer).toBeVisible()
+      const codemirrorContainer = page.locator('.codemirror-editor-container')
+      await expect(codemirrorContainer).toBeVisible()
     })
 
-    test('should use Monaco for non-markdown files', async ({ page }) => {
+    test('should use CodeMirror for non-markdown files', async ({ page }) => {
       // Create a non-markdown file
       await createVault([
         { path: 'test.txt', content: 'This is a text file.' }
@@ -101,11 +101,11 @@ test.describe('Monaco Editor', () => {
       // Open the text file
       const textFile = page.locator('.node-item:has-text("test.txt")').first()
       await textFile.click()
-      await page.waitForSelector('.monaco-editor-container')
+      await page.waitForSelector('.codemirror-editor-container')
       
-      // Should show Monaco editor for all file types
-      const monacoContainer = page.locator('.monaco-editor-container')
-      await expect(monacoContainer).toBeVisible()
+      // Should show CodeMirror editor for all file types
+      const codemirrorContainer = page.locator('.codemirror-editor-container')
+      await expect(codemirrorContainer).toBeVisible()
     })
   })
 

@@ -12,7 +12,7 @@ A Vue 3 frontend for the KBase note-taking application, providing a clean interf
   - Right-click context menus (Delete, Rename, Move…)
   - Inline rename (double-click)
   - Delete confirmation dialogs
-- **Monaco Editor**: Full-featured code editor with auto-save and syntax highlighting
+- **CodeMirror Editor**: Text editor with auto-save, Tab/Shift-Tab indentation, and built-in search
 - **Responsive Design**: Works on desktop and mobile devices
 - **Comprehensive Testing**: 170+ tests with high coverage
 
@@ -71,7 +71,7 @@ src/
 ├── api/                    # API client and HTTP utilities
 ├── components/             # Vue components
 │   ├── common/            # Reusable common components (dialogs, etc.)
-│   ├── editor/            # Monaco editor components
+│   ├── editor/            # CodeMirror editor components
 │   ├── layout/            # Layout components
 │   ├── sidebar/           # File tree navigation and toolbar
 │   └── viewer/            # Note display components
@@ -100,7 +100,7 @@ src/
 - `OmniSearch.vue`: Full-text search modal with dark mode support
 
 ### Note Display
-- `NoteViewer.vue`: Monaco editor for all file types
+- `NoteViewer.vue`: CodeMirror editor for all file types
 - `vault.ts` store: File tree state and note selection
 
 ## Testing

@@ -22,7 +22,7 @@
 - **Build Tool**: Vite
 - **HTTP Client**: Axios
 - **UI**: Custom CSS (no component library initially)
-- **Code Editor**: Monaco Editor (VS Code editor) for all file types
+- **Code Editor**: CodeMirror 6 for all file types
 - **Future**: WebSocket Client, PWA features
 
 ### Infrastructure
@@ -259,7 +259,7 @@ frontend/src/
 │   │   ├── OmniSearch.vue          # Modal search interface
 │   │   └── UpdatePrompt.vue        # PWA update prompt
 │   ├── editor/
-│   │   └── MonacoEditor.vue        # Monaco code editor wrapper
+│   │   └── CodeMirrorEditor.vue        # CodeMirror code editor wrapper
 │   ├── layout/
 │   │   └── AppLayout.vue           # Main layout wrapper
 │   ├── sidebar/
@@ -270,7 +270,7 @@ frontend/src/
 │   │   ├── FileTreeNode.vue        # Individual tree node
 │   │   └── Sidebar.vue             # Sidebar container
 │   └── viewer/
-│       ├── NoteViewer.vue          # Note viewer with Monaco editor
+│       ├── NoteViewer.vue          # Note viewer with CodeMirror editor
 │       ├── TabsBar.vue             # Tab management bar with drag-and-drop, pinning, and tabs dropdown
 │       └── ViewerToolbar.vue       # Toolbar with search, sidebar toggle, and editor controls
 ├── stores/
@@ -293,10 +293,10 @@ frontend/src/
 **Component Structure**:
 
 - **Editor Components**:
-  - `MonacoEditor.vue`: Monaco code editor wrapper with optional auto-save (can be toggled) and syntax highlighting for all file types
+  - `CodeMirrorEditor.vue`: CodeMirror code editor wrapper with auto-save, Tab/Shift-Tab indentation, and built-in search for all file types
 - `TabsBar.vue`: Tab management bar at the top of the viewer with drag-and-drop reordering, pinning (double-click or long-press), tabs dropdown menu showing all open tabs (pinned and unpinned), sidebar toggle, editor switcher for markdown files, and search button; uses fixed positioning to stay anchored to viewport
 - `ViewerToolbar.vue`: Toolbar with search button, sidebar toggle, editor switcher, and save status; uses fixed positioning to stay completely anchored to viewport on all devices, preventing any touch scrolling or movement
-  - `NoteViewer.vue`: Orchestrates Monaco editor for all file types with toolbar positioned outside the scrollable content area (matching sidebar layout)
+  - `NoteViewer.vue`: Orchestrates CodeMirror editor for all file types with toolbar positioned outside the scrollable content area (matching sidebar layout)
 - **Layout Components**:
   - `AppLayout.vue`: Main application layout
   - `Sidebar.vue`: File tree sidebar container
@@ -343,7 +343,7 @@ frontend/src/
   - All CRUD operations automatically refresh the file tree and handle selection updates
   - `createNote()` automatically opens newly created files in the editor
   - **Persistent Selection**: Stores the last opened note path in localStorage (`kbase_last_note_path`) and automatically reloads it after the file tree syncs, keeping the same editor instance active and highlighted in the sidebar across full page refreshes
-  - **Editor State Restore**: Persists per-note cursor selection and scroll offsets for both Monaco and Milkdown editors so that refreshing the browser restores the caret position and viewport exactly where the user left off
+  - **Editor State Restore**: Persists per-note cursor selection and scroll offsets for both CodeMirror and Milkdown editors so that refreshing the browser restores the caret position and viewport exactly where the user left off
 - `themeStore`: Dark mode state management, system preference detection, theme persistence
   - **Theme State**: `isDarkMode` reactive boolean tracking current theme
   - **System Preference**: Automatic detection using `matchMedia('prefers-color-scheme: dark')`
@@ -351,7 +351,7 @@ frontend/src/
   - **Actions**: `toggleTheme()`, `setTheme()`, `initializeTheme()`
   - **System Watcher**: Monitors system preference changes when no user preference exists
   - **Theme Application**: Applies `data-theme` attribute to document root
-  - **Monaco Integration**: Monaco editor theme matches app theme (vs-dark in dark mode, vs-light in light mode)
+  - **CodeMirror Integration**: CodeMirror editor theme matches app theme (oneDark in dark mode, default light theme in light mode)
   - **CSS Variables**: Uses CSS custom properties for consistent theming across all components
     - **Variable System**: Light and dark theme variables defined in `App.vue`
     - **Modal Components**: All modals (ConfirmDialog, InputDialog, OmniSearch, NotePreviewModal) use CSS variables
@@ -368,7 +368,7 @@ frontend/src/
   - **Consistent Theming**: All components use CSS variables for theme switching
     - **Modal Dark Mode**: ConfirmDialog, InputDialog, OmniSearch, and NotePreviewModal fully support dark mode
     - **CSS Variables**: `--bg-primary`, `--bg-secondary`, `--text-primary`, `--text-secondary`, `--border-color`
-  - **Monaco Editor**: Theme matches app (vs-dark in dark mode, vs-light in light mode)
+  - **CodeMirror Editor**: Theme matches app (oneDark in dark mode, default light theme in light mode)
   - **Smooth Transitions**: 0.3s ease transitions between theme changes
   - **Toggle Icons**: Moon icon (🌙) in dark mode, sun icon (☀️) in light mode
 - **Omni Search**: Fast, comprehensive search across all notes
@@ -437,16 +437,17 @@ frontend/src/
     - Prevents path traversal (no `../` or absolute paths)
     - Blocks reserved system names (CON, PRN, AUX, etc.)
     - Validates against invalid characters
-- **Monaco Editor**: Full-featured code editor with syntax highlighting for all file types
-    - Optional auto-save functionality (1 second debounce, can be enabled/disabled via file explorer dropdown)
-    - Syntax highlighting for 30+ languages
+- **CodeMirror Editor**: Barebones text editor for all file types
+    - Auto-save functionality (1 second debounce)
+    - Tab/Shift-Tab for indentation
+    - Built-in search panel (Ctrl+F)
     - Dark theme matching VS Code
     - Language detection from file extensions
     - Undo/Redo keyboard shortcuts: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
     - Used for all non-markdown files
 - **Milkdown Editor**: WYSIWYG markdown editor available for `.md` files only
     - Interactive task list checkboxes with markdown sync using a custom ProseMirror plugin. Checked items display with strikethrough text styling.
-    - Shares the same optional auto-save cadence (can be enabled/disabled via file explorer dropdown) and state restoration (cursor + scroll) as Monaco.
+    - Shares the same auto-save cadence (1 second debounce) and state restoration (cursor + scroll) as CodeMirror.
     - Nord theme integration keeps checkbox widgets aligned with light/dark theme variables.
     - Checkbox widgets honor Tab / Shift+Tab for indent and outdent, keeping keyboard ergonomics consistent with the text caret.
     - Undo/Redo keyboard shortcuts: Ctrl+Z (undo), Ctrl+R or Ctrl+Y (redo)
@@ -601,18 +602,18 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
    - `MilkdownEditor.vue`: Wraps Milkdown editor with Vue lifecycle
    - Uses Milkdown core with CommonMark and GFM presets
    - Nord theme for consistent styling
-   - Matches MonacoEditor interface for seamless integration
+   - Matches CodeMirrorEditor interface for seamless integration
    
 2. **Editor Selection**:
    - Editor preference stored per file type in `editorStore` (localStorage)
-   - Default: Monaco (for backward compatibility)
+   - Default: CodeMirror (for backward compatibility)
    - Milkdown only available for markdown (.md) files
-   - Non-markdown files always use Monaco
+   - Non-markdown files always use CodeMirror
    - Toggle button in ViewerToolbar (toolbar-center) for markdown files
    
 3. **Auto-Save Implementation**:
    - Optional auto-save (can be enabled/disabled via checkbox in file explorer dropdown menu)
-   - Same debounced save pattern as Monaco (1000ms delay) when enabled
+   - Same debounced save pattern as CodeMirror (1000ms delay)
    - Only triggers if auto-save is enabled (checked via `editorStore.isAutoSaveEnabled`)
    - Emits `save` event with markdown content
    - Milkdown natively saves as markdown (no conversion needed)
@@ -643,10 +644,10 @@ Milkdown provides a WYSIWYG markdown editor as an optional alternative to Monaco
    - Prevents infinite update loops
    
 6. **Editor Store** (`stores/editor.ts`):
-   - Manages editor preference: `'monaco' | 'milkdown'`
+   - Manages editor preference: `'codemirror' | 'milkdown'`
    - Persists to localStorage: `kbase_editor_preference`
    - `getEditorForFile(path)`: Returns appropriate editor for file type
-   - `toggleMarkdownEditor()`: Switches between Monaco and Milkdown
+   - `toggleMarkdownEditor()`: Switches between CodeMirror and Milkdown
    - `canUseMilkdown(path)`: Checks if file can use Milkdown
 
 7. **Empty Document Handling**:
@@ -819,9 +820,9 @@ workbox: {
   - Maintains inline flex layout for both panes visibility
   - Slides out left when collapsed (translateX(-100%))
   - Touch-friendly 44px minimum touch targets
-- **Monaco Editor**: Mobile-optimized settings
+- **CodeMirror Editor**: Mobile-optimized settings
   - Disabled line numbers on mobile
-  - Disabled minimap on mobile
+  - Responsive font sizing
   - Disabled context menu on mobile
   - Reduced line decorations width
 - **Toolbar**: Compact layout on mobile

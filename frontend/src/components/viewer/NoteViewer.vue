@@ -21,7 +21,7 @@
 
       <!-- Scrollable Content Area -->
       <div class="note-scroll-content">
-        <!-- Editor View (Monaco or Milkdown) -->
+        <!-- Editor View (CodeMirror or Milkdown) -->
         <div class="editor-view">
           <MilkdownEditor
             v-if="shouldUseMilkdown"
@@ -30,10 +30,10 @@
             :path="selectedNote.path"
             @save="handleSave"
           />
-          <MonacoEditor
+          <CodeMirrorEditor
             v-else
-            ref="monacoEditorRef"
-            :key="`monaco-${selectedNote.path}-${editorKey}`"
+            ref="codemirrorEditorRef"
+            :key="`codemirror-${selectedNote.path}-${editorKey}`"
             v-model="editableContent"
             :path="selectedNote.path"
             @save="handleSave"
@@ -75,7 +75,7 @@ import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
 import TabsBar from './TabsBar.vue'
 import ViewerToolbar from './ViewerToolbar.vue'
-import MonacoEditor from '@/components/editor/MonacoEditor.vue'
+import CodeMirrorEditor from '@/components/editor/CodeMirrorEditor.vue'
 import MilkdownEditor from '@/components/editor/MilkdownEditor.vue'
 import type { ComponentPublicInstance } from 'vue'
 
@@ -101,7 +101,7 @@ const editorStore = useEditorStore()
 const editableContent = ref('')
 const saveStatus = ref<'saving' | 'saved' | 'error' | null>(null)
 const editorKey = ref(0) // Key to force editor re-render when needed
-const monacoEditorRef = ref<ComponentPublicInstance<{ focus: () => void }> | null>(null)
+const codemirrorEditorRef = ref<ComponentPublicInstance<{ focus: () => void }> | null>(null)
 let saveStatusTimeout: ReturnType<typeof setTimeout> | null = null
 
 // Computed properties
@@ -166,8 +166,8 @@ watch(selectedNote, async (newNote, oldNote) => {
       await nextTick()
       // Use setTimeout to ensure editor is fully initialized
       setTimeout(() => {
-        if (monacoEditorRef.value && !shouldUseMilkdown.value) {
-          monacoEditorRef.value.focus()
+        if (codemirrorEditorRef.value && !shouldUseMilkdown.value) {
+          codemirrorEditorRef.value.focus()
         }
       }, 100)
     }

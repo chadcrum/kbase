@@ -18,7 +18,7 @@ KBase is a web-based note-taking application inspired by Obsidian and Joplin, de
 - No database dependency - filesystem is the source of truth
 
 ### Editor Experience
-- Monaco code editor with syntax highlighting (primary)
+- CodeMirror text editor (primary)
 - Supports all file types with language detection
 - Auto-save functionality with visual feedback
 

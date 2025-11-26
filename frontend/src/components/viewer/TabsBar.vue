@@ -244,7 +244,7 @@ const editorIcon = computed(() => {
 
 const editorToggleTitle = computed(() => {
   return editorStore.markdownEditor === 'milkdown'
-    ? 'Switch to Monaco Editor'
+    ? 'Switch to CodeMirror Editor'
     : 'Switch to Milkdown Editor'
 })
 

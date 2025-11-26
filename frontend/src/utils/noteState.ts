@@ -1,13 +1,15 @@
-import type { editor as MonacoEditorNamespace } from 'monaco-editor'
-
 interface StorageLike {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
   removeItem(key: string): void
 }
 
-export interface MonacoEditorState {
-  viewState?: MonacoEditorNamespace.ICodeEditorViewState
+export interface CodeMirrorEditorState {
+  selection?: {
+    from: number
+    to: number
+  }
+  scrollTop?: number
 }
 
 export interface MilkdownSelectionState {
@@ -20,7 +22,7 @@ export interface MilkdownScrollState {
 }
 
 export interface NoteEditorState {
-  monaco?: MonacoEditorState
+  codemirror?: CodeMirrorEditorState
   milkdown?: {
     selection?: MilkdownSelectionState
     scroll?: MilkdownScrollState

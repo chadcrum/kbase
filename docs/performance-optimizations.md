@@ -225,10 +225,10 @@ runtimeCaching: [
 
 ### Mobile Performance
 
-**Monaco Editor Optimizations** (`frontend/src/components/editor/MonacoEditor.vue`):
+**CodeMirror Editor Optimizations** (`frontend/src/components/editor/CodeMirrorEditor.vue`):
 - **Mobile Detection**: Automatically detects screen width < 768px
-- **Disabled Features**: Line numbers, minimap, context menu on mobile
-- **Reduced Decorations**: Narrower line decorations (4px vs 10px)
+- **Disabled Features**: Line numbers on mobile
+- **Responsive Font Sizing**: Optimized font size for mobile
 - **Benefits**:
   - Reduced memory usage on mobile devices
   - Better touch interaction

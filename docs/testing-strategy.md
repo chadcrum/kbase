@@ -461,7 +461,7 @@ npx playwright show-trace trace.zip
 **Test Areas**:
 - ✅ Sidebar overlay mode (< 768px)
 - ✅ Touch-friendly targets (44x44px minimum)
-- ✅ Monaco Editor mobile optimizations
+- ✅ CodeMirror Editor mobile optimizations
 - ✅ Toolbar compact layout on mobile
 - ✅ OmniSearch full-screen modal
 - ✅ Safe area insets for notched devices

@@ -6,30 +6,57 @@ import ViewerToolbar from './ViewerToolbar.vue'
 import { useVaultStore } from '@/stores/vault'
 import type { NoteData } from '@/types'
 
-// Mock Monaco editor to avoid initialization issues in tests
-vi.mock('@monaco-editor/loader', () => ({
-  default: {
-    init: vi.fn(() => Promise.resolve({
-      editor: {
-        create: vi.fn(() => ({
-          getValue: vi.fn(() => 'test content'),
-          setValue: vi.fn(),
-          onDidChangeModelContent: vi.fn(),
-          dispose: vi.fn(),
-          layout: vi.fn(),
-          getModel: vi.fn(() => null)
-        })),
-        setModelLanguage: vi.fn()
-      }
-    }))
+// Mock CodeMirror to avoid initialization issues in tests
+vi.mock('@codemirror/state', () => ({
+  EditorState: {
+    create: vi.fn(() => ({
+      doc: { toString: vi.fn(() => 'test content'), length: 12 },
+      selection: { main: { from: 0, to: 0 } }
+    })),
+    tabSize: { of: vi.fn(() => ({})) }
   }
 }))
 
-// Mock MonacoEditor component
-vi.mock('@/components/editor/MonacoEditor.vue', () => ({
+vi.mock('@codemirror/view', () => ({
+  EditorView: vi.fn().mockImplementation(() => ({
+    state: {
+      doc: { toString: vi.fn(() => 'test content'), length: 12 },
+      selection: { main: { from: 0, to: 0 } }
+    },
+    scrollDOM: { scrollTop: 0 },
+    dispatch: vi.fn(),
+    focus: vi.fn(),
+    destroy: vi.fn(),
+    requestMeasure: vi.fn(),
+    setState: vi.fn()
+  })),
+  keymap: { of: vi.fn(() => ({})) },
+  EditorView: {
+    lineWrapping: {},
+    editable: { of: vi.fn(() => ({})) },
+    contentAttributes: { of: vi.fn(() => ({})) },
+    updateListener: { of: vi.fn(() => ({})) }
+  }
+}))
+
+vi.mock('@codemirror/commands', () => ({
+  indentWithTab: {}
+}))
+
+vi.mock('@codemirror/search', () => ({
+  search: vi.fn(() => ({})),
+  searchKeymap: []
+}))
+
+vi.mock('@codemirror/theme-one-dark', () => ({
+  oneDark: {}
+}))
+
+// Mock CodeMirrorEditor component
+vi.mock('@/components/editor/CodeMirrorEditor.vue', () => ({
   default: {
-    name: 'MonacoEditor',
-    template: '<div class="monaco-editor-mock"></div>',
+    name: 'CodeMirrorEditor',
+    template: '<div class="codemirror-editor-mock"></div>',
     props: ['modelValue', 'path', 'disabled'],
     emits: ['update:modelValue', 'save']
   }

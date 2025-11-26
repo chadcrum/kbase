@@ -169,10 +169,10 @@ All endpoints (except login and config) require authentication via JWT token in 
 - **Response**: Success message and path
 - **Status Codes**: 200 (updated), 404 (not found), 400 (invalid path or binary file)
 - **Notes**:
-  - Frontend editors (Monaco and Milkdown) implement auto-save with 1 second debounce
+  - Frontend editors (CodeMirror and Milkdown) implement auto-save with 1 second debounce
   - Changes are automatically saved after user stops typing
   - Save status feedback provided in UI (saving/saved/error states)
-  - Milkdown editor available for markdown (.md) files as optional alternative to Monaco
+  - Milkdown editor available for markdown (.md) files as optional alternative to CodeMirror
   - Milkdown saves natively as markdown (no conversion needed)
   - Binary files cannot be updated (returns 400 error)
 
@@ -580,8 +580,8 @@ All endpoints validate file paths to prevent directory traversal attacks:
   - Detection methods: null byte check, UTF-8 validation, file size limit (10MB)
   - Binary files cannot be opened in the browser editor
 - **Editor Behavior**:
-  - Markdown files (`.md`, `.markdown`) can use either Monaco or Milkdown editor
-  - All other file types use Monaco editor only
+  - Markdown files (`.md`, `.markdown`) can use either CodeMirror or Milkdown editor
+  - All other file types use CodeMirror editor only
   - Editor toggle button only appears for markdown files
 - Directory operations work with any valid directory name
 

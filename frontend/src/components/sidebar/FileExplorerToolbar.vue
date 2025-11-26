@@ -92,15 +92,7 @@
           <span class="label">Sort directories with files</span>
         </button>
 
-        <button
-          class="toolbar-dropdown-item toolbar-dropdown-checkbox"
-          role="menuitemcheckbox"
-          :aria-checked="autoSaveEnabled"
-          @click="handleToggleAutoSave"
-        >
-          <span class="icon">{{ autoSaveEnabled ? '☑' : '☐' }}</span>
-          <span class="label">Auto-save</span>
-        </button>
+
 
         <div class="toolbar-dropdown-divider" role="separator"></div>
 
@@ -200,8 +192,7 @@ const sortBy = computed(() => vaultStore.sortBy)
 const sortOrder = computed(() => vaultStore.sortOrder)
 const sortDirectoriesWithFiles = computed(() => vaultStore.sortDirectoriesWithFiles)
 
-// Auto-save state from store
-const autoSaveEnabled = computed(() => editorStore.isAutoSaveEnabled)
+
 
 // Collapse/Expand all state
 const hasExpandedPaths = computed(() => vaultStore.hasExpandedPaths)
@@ -375,13 +366,7 @@ const handleToggleSortDirectoriesWithFiles = () => {
   // Don't close menu to allow toggling
 }
 
-/**
- * Toggles auto-save enabled/disabled
- */
-const handleToggleAutoSave = () => {
-  editorStore.toggleAutoSave()
-  // Don't close menu to allow toggling
-}
+
 
 /**
  * Collapses all expanded directories

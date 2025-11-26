@@ -145,12 +145,17 @@ watch(selectedNote, async (newNote, oldNote) => {
     // Always update content when note changes - force update even if appears same
     // This ensures restored content is displayed
     const previousContent = editableContent.value
-    editableContent.value = newNote.content
+    
+    // Only update editableContent if it's different to avoid triggering watchers downstream
+    // or if it's a different file entirely
+    if (previousContent !== newNote.content || (oldNote && oldNote.path !== newNote.path)) {
+      editableContent.value = newNote.content
+    }
     
     // Force editor re-render if content changed for same path (restore scenario)
     // OR if content appears same but we're forcing a refresh (bypassCache scenario)
-    // Force editor re-render if content changed for same path (restore scenario)
-    if (isContentUpdate) {
+    // BUT skip if this is just a save operation (content matches)
+    if (isContentUpdate && previousContent !== newNote.content) {
       editorKey.value++
       console.log('Forcing editor refresh - content update for same path')
     }

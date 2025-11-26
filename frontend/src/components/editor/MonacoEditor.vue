@@ -47,13 +47,13 @@ const editorStore = useEditorStore()
 const editorContainer = ref<HTMLElement | null>(null)
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null
 let monaco: typeof Monaco | null = null
-let saveInterval: ReturnType<typeof setInterval> | null = null
+let saveTimeout: ReturnType<typeof setTimeout> | null = null
 let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
 let eventDisposables: Monaco.IDisposable[] = []
 let lastSavedValue = ref<string>(props.modelValue)
 
-// Auto-save interval (5 minutes)
-const AUTO_SAVE_INTERVAL = 5 * 60 * 1000 // 5 minutes in milliseconds
+// Auto-save debounce (1 second)
+const AUTO_SAVE_DELAY = 1000
 const STATE_SAVE_DELAY = 150
 
 const scheduleStateSave = () => {
@@ -270,21 +270,23 @@ onMounted(async () => {
       
       // Emit update for v-model
       emit('update:modelValue', value)
-    })
-    
-    // Start periodic auto-save
-    if (editorStore.isAutoSaveEnabled) {
-      saveInterval = setInterval(() => {
-        if (!editor || props.disabled || !editorStore.isAutoSaveEnabled) return
+      
+      // Debounced auto-save
+      if (saveTimeout) {
+        clearTimeout(saveTimeout)
+      }
+      
+      saveTimeout = setTimeout(() => {
+        if (!editor || props.disabled) return
         
-        const value = editor.getValue()
+        const currentValue = editor.getValue()
         // Only save if content has changed since last save
-        if (value !== lastSavedValue.value) {
-          lastSavedValue.value = value
-          emit('save', value)
+        if (currentValue !== lastSavedValue.value) {
+          lastSavedValue.value = currentValue
+          emit('save', currentValue)
         }
-      }, AUTO_SAVE_INTERVAL)
-    }
+      }, AUTO_SAVE_DELAY)
+    })
 
     // Handle window resize
     const resizeObserver = new ResizeObserver(() => {
@@ -379,9 +381,9 @@ watch(() => themeStore.isDarkMode, () => {
 
 // Cleanup on unmount
 onBeforeUnmount(() => {
-  if (saveInterval) {
-    clearInterval(saveInterval)
-    saveInterval = null
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+    saveTimeout = null
   }
   if (stateSaveTimeout) {
     clearTimeout(stateSaveTimeout)

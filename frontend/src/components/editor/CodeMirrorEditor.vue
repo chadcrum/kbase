@@ -12,7 +12,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { EditorState, Extension } from '@codemirror/state'
 import { EditorView, keymap, ViewUpdate, lineNumbers, drawSelection } from '@codemirror/view'
-import { indentWithTab } from '@codemirror/commands'
+import { indentWithTab, defaultKeymap } from '@codemirror/commands'
 import { searchKeymap, search } from '@codemirror/search'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { useThemeStore } from '@/stores/theme'
@@ -148,8 +148,9 @@ const getExtensions = (): Extension[] => {
     // Search functionality
     search(),
     
-    // Key bindings
+    // Key bindings - include default keymap for basic functionality like Enter
     keymap.of([
+      ...defaultKeymap, // Essential default key bindings (Enter, Backspace, etc.)
       indentWithTab, // Tab/Shift-Tab for indentation
       ...searchKeymap, // Built-in search (Ctrl+F)
       {

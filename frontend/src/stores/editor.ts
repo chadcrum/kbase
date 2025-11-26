@@ -54,6 +54,11 @@ export const useEditorStore = defineStore('editor', () => {
     // State
     markdownEditor,
 
+    // Methods
+    getEditorForFile,
+    setMarkdownEditor,
+    toggleMarkdownEditor,
+    canUseMilkdown,
   }
 })
 

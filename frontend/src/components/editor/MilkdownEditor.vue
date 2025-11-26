@@ -809,9 +809,6 @@ watch(() => props.modelValue, async (newValue) => {
       await new Promise(resolve => setTimeout(resolve, 100))
       await updateInProgressCheckboxes(newValue)
       
-      // Restart auto-save after editor recreation
-      stopAutoSave()
-      startAutoSave()
     } catch (error) {
       console.error('Failed to update editor content:', error)
     }

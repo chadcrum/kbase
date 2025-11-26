@@ -28,10 +28,29 @@ echo "Logging into GHCR..."
 USERNAME="${GITHUB_ACTOR:-github}"  # fallback for local use
 echo "$GITHUB_TOKEN" | podman login ghcr.io -u "$USERNAME" --password-stdin
 
+# Verify we're in the repository root and Containerfile exists
+if [[ ! -f "Containerfile" ]]; then
+  echo "❌ Error: Containerfile not found. Please run this script from the repository root."
+  exit 1
+fi
+
+# Remove existing images with the same tags to ensure clean build
+echo "Removing existing images with same tags (if any)..."
+podman rmi "$IMAGE_LATEST" 2>/dev/null || true
+podman rmi "$IMAGE_COMMIT" 2>/dev/null || true
+
 # Build the podman image using the Containerfile
 echo "Building podman image $IMAGE_LATEST..."
-# Context is repository root, podmanfile is Containerfile
-podman build -f Containerfile -t "$IMAGE_LATEST" .
+echo "Build context: $(pwd)"
+echo "Containerfile: Containerfile"
+# Context is repository root, Containerfile is Containerfile
+# Match GitHub Actions workflow: context: ., file: Containerfile
+# Use --no-cache to ensure fresh build matching GitHub Actions (can be removed for faster builds)
+podman build --no-cache -f Containerfile -t "$IMAGE_LATEST" .
+
+# Verify the image was built correctly
+echo "Verifying image CMD..."
+podman inspect "$IMAGE_LATEST" --format '{{.Config.Cmd}}' || echo "Warning: Could not inspect image CMD"
 
 # Tag with commit hash
 echo "Tagging image as $IMAGE_COMMIT..."

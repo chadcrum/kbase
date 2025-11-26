@@ -208,6 +208,10 @@ const historyModalPath = ref<string | null>(null)
 const showShareDialog = ref(false)
 const shareUrl = ref('')
 
+// State for preventing paste after middle-click
+let preventPasteUntil: number | null = null
+const PREVENT_PASTE_DURATION = 500 // ms
+
 // Computed
 const tabs = computed(() => tabsStore.tabs)
 const activeTabId = computed(() => tabsStore.activeTabId)
@@ -341,6 +345,9 @@ const handleTabMouseDown = (event: MouseEvent, id: string) => {
         tabElement.draggable = true
       }, 0)
     }
+    // Set flag to prevent paste events for a short duration
+    // This prevents browser's default middle-click paste behavior
+    preventPasteUntil = Date.now() + PREVENT_PASTE_DURATION
     handleCloseTab(id)
   }
 }
@@ -862,11 +869,24 @@ const handleResize = () => {
   }
 }
 
+// Handle paste events to prevent paste after middle-click
+const handlePaste = (event: ClipboardEvent) => {
+  // If we recently middle-clicked a tab, prevent paste
+  if (preventPasteUntil && Date.now() < preventPasteUntil) {
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+    return false
+  }
+}
+
 // Setup click outside listener for dropdown
 onMounted(() => {
   if (typeof document !== 'undefined') {
     document.addEventListener('click', handleClickOutside)
     window.addEventListener('resize', handleResize)
+    // Add paste event listener to prevent paste after middle-click
+    document.addEventListener('paste', handlePaste, true) // Use capture phase
   }
 })
 
@@ -881,6 +901,7 @@ onUnmounted(() => {
   if (typeof document !== 'undefined') {
     document.removeEventListener('click', handleClickOutside)
     window.removeEventListener('resize', handleResize)
+    document.removeEventListener('paste', handlePaste, true)
   }
 })
 

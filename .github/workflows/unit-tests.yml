@@ -1,10 +1,11 @@
 name: Unit Tests
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  # Automated triggers disabled - uncomment to re-enable
+  # push:
+  #   branches: [ main, develop ]
+  # pull_request:
+  #   branches: [ main, develop ]
   workflow_dispatch:
 
 jobs:

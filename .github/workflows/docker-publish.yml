@@ -1,8 +1,9 @@
 name: Docker Build and Push to GHCR
 
 on:
-  push:
-    branches: [ main ]
+  # Automated triggers disabled - uncomment to re-enable
+  # push:
+  #   branches: [ main ]
   workflow_dispatch:
 
 permissions:

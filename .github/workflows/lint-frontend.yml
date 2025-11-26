@@ -1,16 +1,17 @@
 name: Frontend Linting
 
 on:
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/lint-frontend.yml'
-  pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/lint-frontend.yml'
+  # Automated triggers disabled - uncomment to re-enable
+  # push:
+  #   branches: [ main, develop ]
+  #   paths:
+  #     - 'frontend/**'
+  #     - '.github/workflows/lint-frontend.yml'
+  # pull_request:
+  #   branches: [ main, develop ]
+  #   paths:
+  #     - 'frontend/**'
+  #     - '.github/workflows/lint-frontend.yml'
   workflow_dispatch:
 
 jobs:

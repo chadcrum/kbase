@@ -1,16 +1,17 @@
 name: Backend Linting
 
 on:
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/lint-backend.yml'
-  pull_request:
-    branches: [ main, develop ]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/lint-backend.yml'
+  # Automated triggers disabled - uncomment to re-enable
+  # push:
+  #   branches: [ main, develop ]
+  #   paths:
+  #     - 'backend/**'
+  #     - '.github/workflows/lint-backend.yml'
+  # pull_request:
+  #   branches: [ main, develop ]
+  #   paths:
+  #     - 'backend/**'
+  #     - '.github/workflows/lint-backend.yml'
   workflow_dispatch:
 
 jobs:

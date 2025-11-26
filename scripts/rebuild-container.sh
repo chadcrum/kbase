@@ -1,26 +1,38 @@
 #!/usr/bin/env bash
 
+# Exit on any error, treat unset variables as errors, and pipe failures as errors
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "${ROOT_DIR}"
-
-if [[ ! -f "${ROOT_DIR}/compose.yaml" && ! -f "${ROOT_DIR}/compose.yml" ]]; then
-  echo "compose.yaml not found in ${ROOT_DIR}" >&2
-  exit 1
+# Load environment variables from .env if present (ignore if missing)
+if [[ -f ".env" ]]; then
+  # shellcheck disable=SC1091
+  source .env
 fi
 
-COMPOSE_CMD=(podman compose)
+# Ensure required environment variables are set
+: "${GITHUB_TOKEN:?GITHUB_TOKEN is required in .env or environment}"
+: "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required (owner/repo)}"
 
-echo "Stopping existing containers (if any)..."
-"${COMPOSE_CMD[@]}" down --remove-orphans
+# Optional tag, default to 'latest'
+TAG="${TAG:-latest}"
 
-echo "Rebuilding containers from compose.yaml..."
-"${COMPOSE_CMD[@]}" build --pull
+# Docker image name
+IMAGE="ghcr.io/${GITHUB_REPOSITORY}:${TAG}"
 
-echo "Starting containers..."
-"${COMPOSE_CMD[@]}" up -d --force-recreate
+# Log in to GitHub Container Registry
+echo "Logging into GHCR..."
+# Use the token as password; username can be any non-empty string (github.actor works in CI)
+USERNAME="${GITHUB_ACTOR:-github}"  # fallback for local use
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$USERNAME" --password-stdin
 
-echo "Container rebuild complete. Current status:"
-"${COMPOSE_CMD[@]}" ps
+# Build the Docker image using the Containerfile
+echo "Building Docker image $IMAGE..."
+# Context is repository root, Dockerfile is Containerfile
+docker build -f Containerfile -t "$IMAGE" .
+
+# Push the image to GHCR
+echo "Pushing Docker image $IMAGE..."
+docker push "$IMAGE"
+
+echo "✅ Build and push completed successfully."
 

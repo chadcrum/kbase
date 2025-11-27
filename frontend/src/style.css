@@ -1,2 +1,24 @@
 /* Additional global styles can be added here */
 
+
+/* Mobile font size adjustment */
+@media (max-width: 768px) {
+  html {
+    font-size: 18px;
+  }
+  
+  /* Override other fixed font sizes if needed */
+  .fixed-font-size {
+    font-size: calc(24px * 1.25);
+  }
+  
+  /* Scale up other elements */
+  .sidebar {
+    font-size: 1.3rem;
+  }
+  
+  .editor-toolbar {
+    font-size: 22px;
+  }
+}
+

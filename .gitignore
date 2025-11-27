@@ -451,3 +451,4 @@ out/
 sw.js
 workbox-*.js
 a.out
+.aider*

@@ -260,7 +260,7 @@ function setupHistoryNavigation() {
 Phase 3 completed successfully. Implemented auto-switch to editor on file selection for mobile devices, added smooth CSS transitions using opacity and visibility, and added browser back button support for mobile pane navigation. All type-checks pass.
 
 Commits:
-- 1052e13 feat(ui): add mobile pane edge cases and polish
+- 02adb85 feat(ui): add mobile pane edge cases and polish
 
 ---
 

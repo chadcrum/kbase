@@ -6,6 +6,7 @@ import TabsBar from './TabsBar.vue'
 import { useTabsStore } from '@/stores/tabs'
 import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
+import { useUIStore } from '@/stores/ui'
 
 // Mock stores
 vi.mock('@/stores/tabs', () => ({
@@ -16,6 +17,10 @@ vi.mock('@/stores/vault', () => ({
   useVaultStore: vi.fn()
 }))
 
+vi.mock('@/stores/ui', () => ({
+  useUIStore: vi.fn()
+}))
+
 vi.mock('@/stores/editor', () => ({
   useEditorStore: vi.fn()
 }))
@@ -24,6 +29,7 @@ describe('TabsBar', () => {
   let mockTabsStore: any
   let mockVaultStore: any
   let mockEditorStore: any
+  let mockUIStore: any
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -58,9 +64,16 @@ describe('TabsBar', () => {
       toggleMarkdownEditor: vi.fn()
     }
 
+    mockUIStore = {
+      toggleSidebar: vi.fn(),
+      isMobileView: false,
+      activeMobilePane: 'sidebar'
+    }
+
     ;(useTabsStore as any).mockReturnValue(mockTabsStore)
     ;(useVaultStore as any).mockReturnValue(mockVaultStore)
     ;(useEditorStore as any).mockReturnValue(mockEditorStore)
+    ;(useUIStore as any).mockReturnValue(mockUIStore)
   })
 
   it('renders tabs correctly', () => {
@@ -138,10 +151,10 @@ describe('TabsBar', () => {
   it('handles sidebar toggle click', async () => {
     const wrapper = mount(TabsBar)
     const sidebarToggle = wrapper.find('.sidebar-toggle-btn')
-    
+
     await sidebarToggle.trigger('click')
-    
-    expect(mockVaultStore.toggleSidebar).toHaveBeenCalled()
+
+    expect(mockUIStore.toggleSidebar).toHaveBeenCalled()
   })
 
   it('renders search button', () => {

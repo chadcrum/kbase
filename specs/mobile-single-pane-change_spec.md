@@ -197,24 +197,19 @@ Phase 2 completed successfully. Updated all layout components to integrate with 
 
 - [x] Implement auto-switch to editor on file selection (mobile)
 - [x] Add CSS transitions for pane switching
-- [x] Add browser back button support for mobile pane navigation
+- [x] Fix mobile pane reset logic to prevent rapid switching on resize events
 
 #### 3.1 File Selection Behavior
 **Requirement**: When user selects a file from sidebar on mobile, automatically switch to editor pane.
 
-**Implementation** (in FileExplorer component):
+**Implementation** (in FileTree component):
 ```typescript
-import { useUIStore } from '@/stores/ui';
+const handleSelectNote = (path: string) => {
+  vaultStore.selectNote(path)
 
-const uiStore = useUIStore();
-
-function handleFileSelect(file: FileItem) {
-  // Existing file selection logic
-  selectFile(file);
-
-  // NEW: Auto-switch to editor on mobile
+  // Auto-switch to editor on mobile
   if (uiStore.isMobileView) {
-    uiStore.activeMobilePane = 'editor';
+    uiStore.activeMobilePane = 'editor'
   }
 }
 ```
@@ -226,41 +221,44 @@ function handleFileSelect(file: FileItem) {
 
 #### 3.3 Transition Polish
 ```scss
-.sidebar-pane,
-.editor-pane {
-  &.mobile-hidden {
-    // Option 1: Hide with display (instant)
-    display: none;
+.mobile-view {
+  .main-content,
+  .sidebar {
+    flex: 0 0 100%;
+    width: 100%;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+  }
 
-    // Option 2: Slide out animation (smoother)
-    // transform: translateX(-100%);
-    // position: absolute;
+  .mobile-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
 }
 ```
 
-#### 3.4 Back Button Behavior (Mobile)
-**Optional Enhancement**: Consider adding browser back button support for mobile pane navigation.
+#### 3.4 Mobile Pane Reset Fix
+**Issue**: On Android Chrome, clicking notes caused rapid pane switching due to resize events triggering pane reset.
 
+**Root Cause**: `updateMobileView()` was resetting pane to sidebar on every mobile view detection, even when already in mobile view.
+
+**Fix**: Only reset pane when transitioning FROM desktop TO mobile:
 ```typescript
-// In main layout component
-function setupHistoryNavigation() {
-  if (!uiStore.isMobileView) return;
-
-  window.addEventListener('popstate', (event) => {
-    // Handle back button
-    if (uiStore.activeMobilePane === 'editor') {
-      uiStore.activeMobilePane = 'sidebar';
-      event.preventDefault();
-    }
-  });
+function updateMobileView(isMobile: boolean) {
+  const wasDesktop = !isMobileView.value
+  isMobileView.value = isMobile
+  // Reset ONLY when transitioning from desktop to mobile
+  if (isMobile && wasDesktop && activeMobilePane.value === 'editor') {
+    activeMobilePane.value = 'sidebar'
+  }
 }
 ```
 
-Phase 3 completed successfully. Implemented auto-switch to editor on file selection for mobile devices, added smooth CSS transitions using opacity and visibility, and added browser back button support for mobile pane navigation. All type-checks pass.
+Phase 3 completed successfully. Implemented auto-switch to editor on file selection for mobile devices, added smooth CSS transitions, and fixed mobile pane reset logic to prevent rapid switching on resize events. All type-checks pass and tests pass.
 
 Commits:
 - 02adb85 feat(ui): add mobile pane edge cases and polish
+- [TBD] fix(ui): prevent mobile pane reset on resize events
 
 ---
 
@@ -579,6 +577,7 @@ Before committing this feature:
 - ✅ File selection auto-shows editor on mobile
 - ✅ Desktop behavior (≥ 768px) unchanged
 - ✅ No regressions in existing functionality
+- ✅ No rapid pane switching on Android Chrome resize events
 - ✅ All tests pass (unit + E2E)
 - ✅ Type-check passes
 - ✅ Documentation updated

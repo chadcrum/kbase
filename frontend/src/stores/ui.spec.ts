@@ -50,11 +50,24 @@ describe('UI Store - Mobile Pane Toggle', () => {
       expect(uiStore.isMobileView).toBe(false)
     })
 
-    it('should reset to sidebar when transitioning to mobile', () => {
+    it('should reset to sidebar when transitioning from desktop to mobile', () => {
+      // Start in desktop mode
+      uiStore.isMobileView = false
       uiStore.activeMobilePane = 'editor'
 
+      // Transition to mobile
       uiStore.updateMobileView(true)
       expect(uiStore.activeMobilePane).toBe('sidebar')
+    })
+
+    it('should NOT reset when already in mobile view (resize events)', () => {
+      // Start in mobile mode with editor pane active
+      uiStore.isMobileView = true
+      uiStore.activeMobilePane = 'editor'
+
+      // Resize event triggers update but should not reset pane
+      uiStore.updateMobileView(true)
+      expect(uiStore.activeMobilePane).toBe('editor')
     })
 
     it('should not reset activeMobilePane when transitioning from mobile to desktop', () => {

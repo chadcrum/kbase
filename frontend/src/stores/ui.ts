@@ -23,9 +23,11 @@ export const useUIStore = defineStore('ui', () => {
 
   // Update mobile view detection
   function updateMobileView(isMobile: boolean) {
+    const wasDesktop = !isMobileView.value
     isMobileView.value = isMobile
-    // Reset to sidebar when transitioning to mobile
-    if (isMobile && activeMobilePane.value === 'editor') {
+    // Reset to sidebar ONLY when transitioning from desktop to mobile
+    // Not when already in mobile view (which happens on resize events)
+    if (isMobile && wasDesktop && activeMobilePane.value === 'editor') {
       activeMobilePane.value = 'sidebar'
     }
   }

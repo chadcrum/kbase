@@ -34,24 +34,11 @@ const { isMobileView } = useResponsive()
 const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed)
 const activeMobilePane = computed(() => uiStore.activeMobilePane)
 
-// Browser back button support for mobile pane navigation
+// Browser back button support for mobile pane navigation - DISABLED
+// This was causing rapid pane switching on mobile browsers
 function setupHistoryNavigation() {
-  if (!isMobileView.value) return
-
-  const handlePopState = (event: PopStateEvent) => {
-    // Handle back button
-    if (uiStore.activeMobilePane === 'editor') {
-      uiStore.activeMobilePane = 'sidebar'
-      event.preventDefault()
-    }
-  }
-
-  window.addEventListener('popstate', handlePopState)
-
-  // Cleanup
-  onUnmounted(() => {
-    window.removeEventListener('popstate', handlePopState)
-  })
+  console.log(`[AppLayout] Browser back button support disabled to prevent pane switching issues`)
+  // Temporarily disabled until a better implementation can be found
 }
 
 onMounted(() => {

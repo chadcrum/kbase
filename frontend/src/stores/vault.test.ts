@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useVaultStore, LAST_SELECTED_NOTE_KEY } from './vault'
+import { useUIStore } from './ui'
 import { apiClient } from '@/api/client'
 import type { FileTreeNode, NoteData } from '@/types'
 
@@ -57,16 +58,18 @@ beforeAll(() => {
 
 describe('VaultStore', () => {
   let vaultStore: ReturnType<typeof useVaultStore>
+  let uiStore: ReturnType<typeof useUIStore>
   let originalWindow: Window | undefined
 
   beforeEach(() => {
     // Store original window if it exists
     originalWindow = typeof window !== 'undefined' ? window : undefined
-    
+
     // Create a fresh Pinia instance for each test
     setActivePinia(createPinia())
     vaultStore = useVaultStore()
-    
+    uiStore = useUIStore()
+
     // Reset all mocks
     vi.clearAllMocks()
     localStorage.clear()
@@ -202,7 +205,7 @@ describe('VaultStore', () => {
 
       expect(result).toBe(true)
       expect(mockedApiClient.getNotes).toHaveBeenCalled()
-      expect(mockedApiClient.getNote).toHaveBeenCalledWith('/note1.md')
+      expect(mockedApiClient.getNote).toHaveBeenCalledWith('/note1.md', false)
       expect(vaultStore.selectedNote).toEqual(mockNote)
       expect(vaultStore.isExpanded('/')).toBe(true)
       expect(localStorage.getItem(LAST_SELECTED_NOTE_KEY)).toBe('/note1.md')
@@ -288,7 +291,7 @@ describe('VaultStore', () => {
 
       const result = await vaultStore.loadNote('/test.md')
 
-      expect(mockedApiClient.getNote).toHaveBeenCalledWith('/test.md')
+      expect(mockedApiClient.getNote).toHaveBeenCalledWith('/test.md', false)
       expect(result).toBe(true)
       expect(vaultStore.selectedNote).toEqual(mockNote)
       expect(vaultStore.error).toBeNull()
@@ -346,7 +349,7 @@ describe('VaultStore', () => {
       // Wait for the async loadNote to complete
       await new Promise(resolve => setTimeout(resolve, 0))
 
-      expect(mockedApiClient.getNote).toHaveBeenCalledWith('/test.md')
+      expect(mockedApiClient.getNote).toHaveBeenCalledWith('/test.md', false)
       expect(vaultStore.selectedNote).toEqual(mockNote)
     })
 
@@ -414,7 +417,7 @@ describe('VaultStore', () => {
 
       // Ensure sidebar is not pinned and not collapsed
       vaultStore.isSidebarPinned = false
-      vaultStore.isSidebarCollapsed = false
+      uiStore.sidebarCollapsed = false
 
       vaultStore.selectNote('/test.md')
 
@@ -435,7 +438,7 @@ describe('VaultStore', () => {
 
       // Ensure sidebar is pinned and not collapsed
       vaultStore.isSidebarPinned = true
-      vaultStore.isSidebarCollapsed = false
+      uiStore.sidebarCollapsed = false
 
       vaultStore.selectNote('/test.md')
 
@@ -456,7 +459,7 @@ describe('VaultStore', () => {
 
       // Ensure sidebar is not pinned and not collapsed
       vaultStore.isSidebarPinned = false
-      vaultStore.isSidebarCollapsed = false
+      uiStore.sidebarCollapsed = false
 
       vaultStore.selectNote('/test.md', false)
 
@@ -546,7 +549,7 @@ describe('VaultStore', () => {
 
       expect(result).toBe(true)
       expect(mockedApiClient.getNotes).toHaveBeenCalled()
-      expect(mockedApiClient.getNote).toHaveBeenCalledWith('/test.md')
+      expect(mockedApiClient.getNote).toHaveBeenCalledWith('/test.md', false)
       expect(vaultStore.fileTree).toEqual(mockTree)
       expect(vaultStore.selectedNote).toEqual(mockNote)
     })
@@ -757,7 +760,7 @@ describe('VaultStore', () => {
 
       expect(mockedApiClient.createNote).toHaveBeenCalledWith('new-note.md', '')
       expect(mockedApiClient.getNotes).toHaveBeenCalled()
-      expect(mockedApiClient.getNote).toHaveBeenCalledWith('new-note.md')
+      expect(mockedApiClient.getNote).toHaveBeenCalledWith('new-note.md', false)
       expect(result).toBe(true)
       expect(vaultStore.fileTree).toEqual(mockTree)
       expect(vaultStore.selectedNote).toEqual(mockNote)

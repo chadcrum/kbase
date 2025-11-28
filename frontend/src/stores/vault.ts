@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { apiClient } from '@/api/client'
 import type { FileTreeNode, NoteData } from '@/types'
 import { useTabsStore } from './tabs'
+import { useUIStore } from './ui'
 import { windowSyncService } from '@/composables/useWindowSync'
 
 export type SortBy = 'name' | 'created' | 'modified'
@@ -96,15 +97,14 @@ export const useVaultStore = defineStore('vault', () => {
   const expandedPaths = ref<Set<string>>(new Set())
   const isSaving = ref(false)
   const saveError = ref<string | null>(null)
-  
+
   // Sort state - load from localStorage
   const sortBy = ref<SortBy>(readSortByPreference())
   const sortOrder = ref<SortOrder>(readSortOrderPreference())
   const sortDirectoriesWithFiles = ref<boolean>(readSortDirectoriesWithFilesPreference())
 
-  // Sidebar state
-  // Desktop: pinned by default, Mobile: unpinned by default
-  const isSidebarCollapsed = ref(false)
+  // Sidebar state - now managed by UI store
+  const uiStore = useUIStore()
   const isSidebarPinned = ref(isDesktopViewport())
   const sidebarWidth = ref<number>(readSidebarWidthPreference())
 
@@ -112,6 +112,7 @@ export const useVaultStore = defineStore('vault', () => {
   const hasError = computed(() => error.value !== null)
   const isNoteSelected = computed(() => selectedNote.value !== null)
   const selectedNotePath = computed(() => selectedNote.value?.path || null)
+  const isSidebarCollapsed = computed(() => uiStore.isSidebarCollapsed)
   
   // Helper function to get all file paths from file tree
   const getAllFilePaths = (tree: FileTreeNode | null): string[] => {
@@ -730,7 +731,7 @@ export const useVaultStore = defineStore('vault', () => {
 
   // Sidebar actions
   const toggleSidebar = () => {
-    isSidebarCollapsed.value = !isSidebarCollapsed.value
+    uiStore.toggleSidebar()
   }
 
   const toggleSidebarPin = () => {
@@ -739,7 +740,11 @@ export const useVaultStore = defineStore('vault', () => {
 
   const collapseSidebarIfNotPinned = () => {
     if (!isSidebarPinned.value) {
-      isSidebarCollapsed.value = true
+      // For desktop behavior, collapse sidebar if not pinned
+      // On mobile, this function is called but the UI store handles the logic
+      if (!uiStore.isMobileView) {
+        uiStore.sidebarCollapsed = true
+      }
     }
   }
 

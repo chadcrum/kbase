@@ -219,6 +219,11 @@ const tabs = computed(() => tabsStore.tabs)
 const activeTabId = computed(() => tabsStore.activeTabId)
 
 const toolbarLeft = computed(() => {
+  // On mobile, toolbar is always at left edge since sidebar takes full width or is hidden
+  if (uiStore.isMobileView) {
+    return '0px'
+  }
+  // On desktop, position based on sidebar collapse state
   return vaultStore.isSidebarCollapsed ? '0px' : `${vaultStore.sidebarWidth}px`
 })
 

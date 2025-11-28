@@ -26,6 +26,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useVaultStore } from '@/stores/vault'
+import { useUIStore } from '@/stores/ui'
 import FileTreeNode from './FileTreeNode.vue'
 
 // @ts-ignore
@@ -35,6 +36,7 @@ const emit = defineEmits<{
 
 // Store
 const vaultStore = useVaultStore()
+const uiStore = useUIStore()
 
 // Computed properties
 const isLoading = computed(() => vaultStore.isLoading)
@@ -50,6 +52,11 @@ const handleToggleExpand = (path: string) => {
 
 const handleSelectNote = (path: string) => {
   vaultStore.selectNote(path)
+
+  // Auto-switch to editor on mobile
+  if (uiStore.isMobileView) {
+    uiStore.activeMobilePane = 'editor'
+  }
 }
 </script>
 

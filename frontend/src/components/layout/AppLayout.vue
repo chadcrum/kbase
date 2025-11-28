@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useUIStore } from '@/stores/ui'
 import { useResponsive } from '@/composables/useResponsive'
 import Sidebar from '@/components/sidebar/Sidebar.vue'
@@ -33,6 +33,30 @@ const { isMobileView } = useResponsive()
 
 const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed)
 const activeMobilePane = computed(() => uiStore.activeMobilePane)
+
+// Browser back button support for mobile pane navigation
+function setupHistoryNavigation() {
+  if (!isMobileView.value) return
+
+  const handlePopState = (event: PopStateEvent) => {
+    // Handle back button
+    if (uiStore.activeMobilePane === 'editor') {
+      uiStore.activeMobilePane = 'sidebar'
+      event.preventDefault()
+    }
+  }
+
+  window.addEventListener('popstate', handlePopState)
+
+  // Cleanup
+  onUnmounted(() => {
+    window.removeEventListener('popstate', handlePopState)
+  })
+}
+
+onMounted(() => {
+  setupHistoryNavigation()
+})
 </script>
 
 <style scoped>
@@ -62,11 +86,13 @@ const activeMobilePane = computed(() => uiStore.activeMobilePane)
   .sidebar {
     flex: 0 0 100%;
     width: 100%;
-    transition: transform 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
   }
 
   .mobile-hidden {
-    display: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
 }
 

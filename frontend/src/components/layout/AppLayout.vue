@@ -1,21 +1,38 @@
 <template>
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'mobile-view': isMobileView }">
     <BackendWarning />
-    <Sidebar :class="{ 'collapsed': vaultStore.isSidebarCollapsed }" />
-    <ResizeHandle v-if="!vaultStore.isSidebarCollapsed" />
-    <main class="main-content">
+    <Sidebar
+      :class="{
+        'mobile-hidden': isMobileView && activeMobilePane !== 'sidebar',
+        'collapsed': !isMobileView && sidebarCollapsed
+      }"
+    />
+    <ResizeHandle v-if="!isMobileView && !sidebarCollapsed" />
+    <main
+      class="main-content"
+      :class="{
+        'mobile-hidden': isMobileView && activeMobilePane !== 'editor',
+        'expanded': !isMobileView && sidebarCollapsed
+      }"
+    >
       <slot />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useVaultStore } from '@/stores/vault'
+import { computed } from 'vue'
+import { useUIStore } from '@/stores/ui'
+import { useResponsive } from '@/composables/useResponsive'
 import Sidebar from '@/components/sidebar/Sidebar.vue'
 import BackendWarning from '@/components/common/BackendWarning.vue'
 import ResizeHandle from './ResizeHandle.vue'
 
-const vaultStore = useVaultStore()
+const uiStore = useUIStore()
+const { isMobileView } = useResponsive()
+
+const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed)
+const activeMobilePane = computed(() => uiStore.activeMobilePane)
 </script>
 
 <style scoped>
@@ -32,17 +49,24 @@ const vaultStore = useVaultStore()
   flex-direction: column;
   overflow: hidden;
   background-color: var(--bg-secondary);
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-/* Responsive design - maintain side-by-side on mobile */
-@media (max-width: 768px) {
-  .app-layout {
-    /* Keep flex row layout for side-by-side panes */
+.expanded {
+  flex: 1;
+}
+
+/* Mobile-specific styles */
+.mobile-view {
+  .main-content,
+  .sidebar {
+    flex: 0 0 100%;
+    width: 100%;
+    transition: transform 0.3s ease;
   }
-  
-  .main-content {
-    /* Natural flex sizing alongside sidebar */
+
+  .mobile-hidden {
+    display: none;
   }
 }
 

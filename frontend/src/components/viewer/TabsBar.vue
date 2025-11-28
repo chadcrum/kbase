@@ -154,6 +154,7 @@ import { computed, ref, watch, onBeforeUnmount, onMounted, onUnmounted, nextTick
 import { useTabsStore } from '@/stores/tabs'
 import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
+import { useUIStore } from '@/stores/ui'
 import ContextMenu, { type ContextMenuItem } from '@/components/sidebar/ContextMenu.vue'
 import FileHistoryModal from '@/components/common/FileHistoryModal.vue'
 import ShareDialog from '@/components/common/ShareDialog.vue'
@@ -176,6 +177,7 @@ const emit = defineEmits<{
 const tabsStore = useTabsStore()
 const vaultStore = useVaultStore()
 const editorStore = useEditorStore()
+const uiStore = useUIStore()
 
 // Refs
 const tabsContainerRef = ref<HTMLElement | null>(null)
@@ -222,15 +224,33 @@ const toolbarLeft = computed(() => {
 
 // Sidebar toggle
 const toggleSidebar = () => {
-  vaultStore.toggleSidebar()
+  uiStore.toggleSidebar()
 }
 
 const sidebarToggleIcon = computed(() => {
-  return vaultStore.isSidebarCollapsed ? '»' : '«'
+  if (uiStore.isMobileView) {
+    // Mobile: show opposite of current pane
+    return uiStore.activeMobilePane === 'sidebar'
+      ? '»'  // Clicking will show editor
+      : '«';   // Clicking will show sidebar
+  } else {
+    // Desktop: show based on sidebar state
+    return uiStore.sidebarCollapsed
+      ? '»'
+      : '«';
+  }
 })
 
 const sidebarToggleTitle = computed(() => {
-  return vaultStore.isSidebarCollapsed ? 'Show Sidebar' : 'Hide Sidebar'
+  if (uiStore.isMobileView) {
+    return uiStore.activeMobilePane === 'sidebar'
+      ? 'Show Editor'
+      : 'Show File Explorer';
+  } else {
+    return uiStore.sidebarCollapsed
+      ? 'Show Sidebar'
+      : 'Hide Sidebar';
+  }
 })
 
 // Editor toggle

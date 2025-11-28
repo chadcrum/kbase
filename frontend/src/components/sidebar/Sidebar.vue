@@ -18,12 +18,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useVaultStore } from '@/stores/vault'
+import { useUIStore } from '@/stores/ui'
 import FileTree from './FileTree.vue'
 import FileExplorerToolbar from './FileExplorerToolbar.vue'
 // import type { FileTreeNode } from '@/types' // Not used in this component
 
 // Store
 const vaultStore = useVaultStore()
+const uiStore = useUIStore()
 
 // Template ref
 const sidebarContentRef = ref<HTMLElement | null>(null)
@@ -32,6 +34,7 @@ const sidebarContentRef = ref<HTMLElement | null>(null)
 const fileTree = computed(() => vaultStore.fileTree)
 const isLoading = computed(() => vaultStore.isLoading)
 const sidebarWidth = computed(() => `${vaultStore.sidebarWidth}px`)
+const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed)
 
 // Methods
 const handleRefresh = () => {
@@ -75,6 +78,10 @@ onMounted(() => {
   margin-left: calc(-1 * v-bind(sidebarWidth));
   opacity: 0;
   pointer-events: none;
+}
+
+.sidebar.mobile-hidden {
+  display: none;
 }
 
 .sidebar-content {

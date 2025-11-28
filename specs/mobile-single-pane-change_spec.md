@@ -90,7 +90,7 @@ This specification defines the implementation of a mobile-specific dual-pane tog
 Phase 1 completed successfully. Created UI store with mobile pane state management, responsive composable for breakpoint detection, updated vault store to integrate with UI store, ensured type safety, and added comprehensive unit tests. All tests pass and type-check succeeds.
 
 Commits:
-- feat(ui): add mobile single-pane toggle state management
+- 1052e12 feat(ui): add mobile single-pane toggle state management
 
 #### 1.1 Pinia Store Updates
 **File**: `frontend/src/stores/ui.ts` (or similar)
@@ -184,147 +184,12 @@ export function useResponsive() {
 
 ### Phase 2: Layout Component Updates
 
-#### 2.1 Main Layout Component
-**File**: `frontend/src/components/AppLayout.vue` (or similar)
+- [x] Updated AppLayout.vue to use UI store and implement mobile single-pane layout with responsive classes
+- [x] Updated TabsBar.vue to use UI store for toggle button logic and dynamic icons/titles
+- [x] Updated Sidebar.vue to use UI store for collapsed state and added mobile-hidden CSS class
+- [x] Ran type-check to ensure no TypeScript errors
 
-**Template Structure**:
-```vue
-<template>
-  <div class="app-layout" :class="{ 'mobile-view': isMobileView }">
-    <!-- Sidebar -->
-    <aside 
-      class="sidebar-pane"
-      :class="{
-        'mobile-hidden': isMobileView && activeMobilePane !== 'sidebar',
-        'collapsed': !isMobileView && sidebarCollapsed
-      }"
-    >
-      <SidebarHeader />
-      <FileExplorer />
-    </aside>
-
-    <!-- Editor Pane -->
-    <main 
-      class="editor-pane"
-      :class="{
-        'mobile-hidden': isMobileView && activeMobilePane !== 'editor',
-        'expanded': !isMobileView && sidebarCollapsed
-      }"
-    >
-      <EditorView />
-    </main>
-  </div>
-</template>
-
-<script setup lang="ts">
-import { useUIStore } from '@/stores/ui';
-import { useResponsive } from '@/composables/useResponsive';
-
-const uiStore = useUIStore();
-const { isMobileView } = useResponsive();
-
-const sidebarCollapsed = computed(() => uiStore.sidebarCollapsed);
-const activeMobilePane = computed(() => uiStore.activeMobilePane);
-</script>
-```
-
-**Styles** (SCSS):
-```scss
-.app-layout {
-  display: flex;
-  height: 100vh;
-  width: 100%;
-
-  .sidebar-pane {
-    flex: 0 0 300px;
-    transition: all 0.3s ease;
-    overflow-y: auto;
-
-    &.collapsed {
-      flex: 0 0 0;
-      width: 0;
-    }
-  }
-
-  .editor-pane {
-    flex: 1;
-    transition: all 0.3s ease;
-    overflow: hidden;
-
-    &.expanded {
-      flex: 1;
-    }
-  }
-
-  // Mobile-specific styles
-  &.mobile-view {
-    .sidebar-pane,
-    .editor-pane {
-      flex: 0 0 100%;
-      width: 100%;
-      transition: transform 0.3s ease;
-
-      &.mobile-hidden {
-        display: none; // or transform: translateX(-100%);
-      }
-    }
-  }
-}
-```
-
-#### 2.2 Collapse Button Updates
-**File**: `frontend/src/components/SidebarHeader.vue` (or CollapseButton.vue)
-
-**Template**:
-```vue
-<template>
-  <button 
-    class="collapse-toggle"
-    @click="handleToggle"
-    :aria-label="buttonLabel"
-    :title="buttonLabel"
-  >
-    <Icon :name="buttonIcon" />
-  </button>
-</template>
-
-<script setup lang="ts">
-import { useUIStore } from '@/stores/ui';
-import { computed } from 'vue';
-
-const uiStore = useUIStore();
-
-const buttonIcon = computed(() => {
-  if (uiStore.isMobileView) {
-    // Mobile: show opposite of current pane
-    return uiStore.activeMobilePane === 'sidebar' 
-      ? 'chevron-right'  // Clicking will show editor
-      : 'chevron-left';   // Clicking will show sidebar
-  } else {
-    // Desktop: show based on sidebar state
-    return uiStore.sidebarCollapsed 
-      ? 'chevron-right' 
-      : 'chevron-left';
-  }
-});
-
-const buttonLabel = computed(() => {
-  if (uiStore.isMobileView) {
-    return uiStore.activeMobilePane === 'sidebar'
-      ? 'Show Editor'
-      : 'Show File Explorer';
-  } else {
-    return uiStore.sidebarCollapsed 
-      ? 'Expand Sidebar' 
-      : 'Collapse Sidebar';
-  }
-});
-
-function handleToggle() {
-  uiStore.toggleSidebar(); // Uses updated logic from store
-}
-</script>
-```
+Phase 2 completed successfully. Updated all layout components to integrate with the UI store for mobile single-pane functionality. AppLayout now uses responsive classes for mobile view, TabsBar toggle button adapts its behavior and appearance based on mobile/desktop context, and Sidebar properly handles mobile visibility states. All type-checks pass.
 
 ---
 

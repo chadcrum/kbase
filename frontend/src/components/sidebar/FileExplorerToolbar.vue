@@ -2,7 +2,7 @@
   <div class="toolbar">
     <div class="toolbar-header toolbar-menu">
       <button
-        @click="toggleMenu"
+        @click.stop="toggleMenu"
         class="toolbar-button toolbar-menu-trigger"
         title="File Explorer actions"
         aria-haspopup="true"
@@ -553,7 +553,7 @@ onUnmounted(() => {
 .toolbar-dropdown {
   position: absolute;
   top: calc(100% + 0.5rem);
-  right: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   min-width: 220px;

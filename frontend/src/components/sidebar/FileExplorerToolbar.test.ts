@@ -137,13 +137,13 @@ describe('FileExplorerToolbar', () => {
     const wrapper = mountToolbar()
 
     await openMenu(wrapper)
-    await wrapper.findAll('.toolbar-dropdown-item')[2].trigger('click')
+    await wrapper.findAll('.toolbar-dropdown-item')[3].trigger('click')
 
     expect(wrapper.emitted('refresh')).toBeTruthy()
 
     const loadingWrapper = mountToolbar(true)
     await openMenu(loadingWrapper)
-    const refreshItem = loadingWrapper.findAll('.toolbar-dropdown-item')[2]
+    const refreshItem = loadingWrapper.findAll('.toolbar-dropdown-item')[3]
     expect(refreshItem.attributes('disabled')).toBeDefined()
   })
 
@@ -152,11 +152,11 @@ describe('FileExplorerToolbar', () => {
     const wrapper = mountToolbar()
 
     await openMenu(wrapper)
-    await wrapper.findAll('.toolbar-dropdown-item')[3].trigger('click')
+    await wrapper.findAll('.toolbar-dropdown-item')[4].trigger('click')
     expect(mockVaultStore.toggleSortOrder).toHaveBeenCalled()
 
     await openMenu(wrapper)
-    await wrapper.findAll('.toolbar-dropdown-item')[5].trigger('click') // Created Date option
+    await wrapper.findAll('.toolbar-dropdown-item')[6].trigger('click') // Created Date option
     expect(mockVaultStore.setSortBy).toHaveBeenCalledWith('created')
 
     await openMenu(wrapper)

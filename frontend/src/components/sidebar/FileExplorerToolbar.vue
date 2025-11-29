@@ -2,8 +2,7 @@
   <div class="toolbar">
     <div class="toolbar-header toolbar-menu">
       <button
-        @click.stop="toggleMenu"
-        @touchstart.stop="toggleMenu"
+        @click="handleMenuToggle"
         class="toolbar-button toolbar-menu-trigger"
         title="File Explorer actions"
         aria-haspopup="true"
@@ -469,12 +468,8 @@ const handleLogout = () => {
 /**
  * Close dropdown when clicking outside
  */
-const handleClickOutside = (event: MouseEvent) => {
+const handleClickOutside = (event: MouseEvent | TouchEvent) => {
   const target = event.target as HTMLElement
-  // Don't close if clicking on the menu trigger button itself
-  if (target.closest('.toolbar-menu-trigger')) {
-    return
-  }
   if (!target.closest('.toolbar-menu')) {
     showMenu.value = false
   }
@@ -485,6 +480,16 @@ const handleClickOutside = (event: MouseEvent) => {
  */
 const toggleMenu = () => {
   showMenu.value = !showMenu.value
+}
+
+/**
+ * Handles menu toggle for button click
+ * Stops propagation to prevent immediate closing by handleClickOutside
+ */
+const handleMenuToggle = (event: MouseEvent) => {
+  event.stopPropagation()
+  event.preventDefault()
+  toggleMenu()
 }
 
 // Setup listeners

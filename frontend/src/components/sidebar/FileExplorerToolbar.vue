@@ -1,15 +1,100 @@
 <template>
   <div class="toolbar">
     <div class="toolbar-header toolbar-menu">
-      <button
-        @click="handleMenuToggle"
-        class="toolbar-button toolbar-menu-trigger"
-        title="File Explorer actions"
-        aria-haspopup="true"
-        :aria-expanded="showMenu"
-      >
-        <span class="icon">☰</span>
-      </button>
+      <div class="toolbar-menu-wrapper">
+        <button
+          @click="handleMenuToggle"
+          class="toolbar-button toolbar-menu-trigger"
+          title="File Explorer actions"
+          aria-haspopup="true"
+          :aria-expanded="showMenu"
+        >
+          <span class="icon">☰</span>
+        </button>
+        <div
+          v-if="showMenu"
+          class="toolbar-dropdown"
+          role="menu"
+        >
+          <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFolder">
+            <span class="icon">📁</span>
+            <span class="label">New Folder</span>
+          </button>
+          <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFile">
+            <span class="icon">📄</span>
+            <span class="label">New File</span>
+          </button>
+          <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewDateFile">
+            <span class="icon">📅</span>
+            <span class="label">New Date File</span>
+          </button>
+          <button
+            class="toolbar-dropdown-item"
+            role="menuitem"
+            @click="handleRefresh"
+            :disabled="isLoading"
+          >
+            <span class="icon">🔄</span>
+            <span class="label">Refresh</span>
+          </button>
+
+          <div class="toolbar-dropdown-divider" role="separator"></div>
+
+          <button class="toolbar-dropdown-item" role="menuitem" @click="handleToggleSortOrder">
+            <span class="icon">{{ sortOrder === 'asc' ? '⬆️' : '⬇️' }}</span>
+            <span class="label">{{ sortOrderTitle }}</span>
+          </button>
+
+          <div class="toolbar-dropdown-subheader">Sort by</div>
+          <button
+            v-for="option in sortOptions"
+            :key="`sort-${option.value}`"
+            class="toolbar-dropdown-item"
+            role="menuitemradio"
+            :aria-checked="sortBy === option.value"
+            :class="{ active: sortBy === option.value }"
+            @click="handleSortByChange(option.value)"
+          >
+            <span class="icon">{{ sortBy === option.value ? '✓' : '' }}</span>
+            <span class="label">{{ option.label }}</span>
+          </button>
+
+          <div class="toolbar-dropdown-divider" role="separator"></div>
+
+          <button
+            class="toolbar-dropdown-item toolbar-dropdown-checkbox"
+            role="menuitemcheckbox"
+            :aria-checked="sortDirectoriesWithFiles"
+            @click="handleToggleSortDirectoriesWithFiles"
+          >
+            <span class="icon">{{ sortDirectoriesWithFiles ? '☑' : '☐' }}</span>
+            <span class="label">Sort directories with files</span>
+          </button>
+
+
+
+          <div class="toolbar-dropdown-divider" role="separator"></div>
+
+          <div class="toolbar-dropdown-subheader">Application</div>
+          <button
+            class="toolbar-dropdown-item theme-toggle-btn"
+            role="menuitem"
+            @click="handleToggleTheme"
+          >
+            <span class="icon">{{ themeIcon }}</span>
+            <span class="label">{{ themeToggleLabel }}</span>
+          </button>
+
+          <button
+            class="toolbar-dropdown-item logout-btn"
+            role="menuitem"
+            @click="handleLogout"
+          >
+            <span class="icon">🚪</span>
+            <span class="label">Logout</span>
+          </button>
+        </div>
+      </div>
       <button
         @click="handleTogglePin"
         class="toolbar-button toolbar-pin-btn"
@@ -59,88 +144,8 @@
       </button>
     </div>
 
-    <div
-      v-if="showMenu"
-      class="toolbar-dropdown"
-      role="menu"
-    >
-      <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFolder">
-        <span class="icon">📁</span>
-        <span class="label">New Folder</span>
-      </button>
-      <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFile">
-        <span class="icon">📄</span>
-        <span class="label">New File</span>
-      </button>
-      <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewDateFile">
-        <span class="icon">📅</span>
-        <span class="label">New Date File</span>
-      </button>
-      <button
-        class="toolbar-dropdown-item"
-        role="menuitem"
-        @click="handleRefresh"
-        :disabled="isLoading"
-      >
-        <span class="icon">🔄</span>
-        <span class="label">Refresh</span>
-      </button>
-
-      <div class="toolbar-dropdown-divider" role="separator"></div>
-
-      <button class="toolbar-dropdown-item" role="menuitem" @click="handleToggleSortOrder">
-        <span class="icon">{{ sortOrder === 'asc' ? '⬆️' : '⬇️' }}</span>
-        <span class="label">{{ sortOrderTitle }}</span>
-      </button>
-
-      <div class="toolbar-dropdown-subheader">Sort by</div>
-      <button
-        v-for="option in sortOptions"
-        :key="`sort-${option.value}`"
-        class="toolbar-dropdown-item"
-        role="menuitemradio"
-        :aria-checked="sortBy === option.value"
-        :class="{ active: sortBy === option.value }"
-        @click="handleSortByChange(option.value)"
-      >
-        <span class="icon">{{ sortBy === option.value ? '✓' : '' }}</span>
-        <span class="label">{{ option.label }}</span>
-      </button>
-
-      <div class="toolbar-dropdown-divider" role="separator"></div>
-
-      <button
-        class="toolbar-dropdown-item toolbar-dropdown-checkbox"
-        role="menuitemcheckbox"
-        :aria-checked="sortDirectoriesWithFiles"
-        @click="handleToggleSortDirectoriesWithFiles"
-      >
-        <span class="icon">{{ sortDirectoriesWithFiles ? '☑' : '☐' }}</span>
-        <span class="label">Sort directories with files</span>
-      </button>
-
-
-
-      <div class="toolbar-dropdown-divider" role="separator"></div>
-
-      <div class="toolbar-dropdown-subheader">Application</div>
-      <button
-        class="toolbar-dropdown-item theme-toggle-btn"
-        role="menuitem"
-        @click="handleToggleTheme"
-      >
-        <span class="icon">{{ themeIcon }}</span>
-        <span class="label">{{ themeToggleLabel }}</span>
-      </button>
-
-      <button
-        class="toolbar-dropdown-item logout-btn"
-        role="menuitem"
-        @click="handleLogout"
-      >
-        <span class="icon">🚪</span>
-        <span class="label">Logout</span>
-      </button>
+    <!-- The dropdown is now inside toolbar-menu-wrapper above -->
+    <div v-if="false" class="toolbar-dropdown">
     </div>
 
     <!-- Error Display -->
@@ -470,7 +475,7 @@ const handleLogout = () => {
  */
 const handleClickOutside = (event: MouseEvent | TouchEvent) => {
   const target = event.target as HTMLElement
-  if (!target.closest('.toolbar-menu')) {
+  if (!target.closest('.toolbar-menu-wrapper')) {
     showMenu.value = false
   }
 }
@@ -551,6 +556,11 @@ onUnmounted(() => {
   width: 100%;
 }
 
+.toolbar-menu-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
 .toolbar-menu-trigger {
   min-width: 1.5rem;
   min-height: 1.5rem;
@@ -565,7 +575,7 @@ onUnmounted(() => {
 .toolbar-dropdown {
   position: absolute;
   top: calc(100% + 0.5rem);
-  right: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   min-width: 220px;

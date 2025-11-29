@@ -8,6 +8,7 @@
     @paste="handlePaste"
     @drop="handleDrop"
     @dragover.prevent
+    @toolbar-action="handleToolbarAction"
   ></div>
 
   <!-- Context Menu -->
@@ -33,7 +34,7 @@ import {
   KeymapReady,
   remarkStringifyOptionsCtx,
 } from '@milkdown/core'
-import { commonmark, sinkListItemCommand, liftListItemCommand } from '@milkdown/preset-commonmark'
+import { commonmark, sinkListItemCommand, liftListItemCommand, toggleStrongCommand, toggleEmphasisCommand, wrapInHeadingCommand, wrapInBulletListCommand, setBlockTypeCommand } from '@milkdown/preset-commonmark'
 import { gfm } from '@milkdown/preset-gfm'
 import { history, undoCommand, redoCommand } from '@milkdown/plugin-history'
 import { indent, indentConfig } from '@milkdown/plugin-indent'
@@ -997,6 +998,31 @@ const insertDateAtCursor = async () => {
     // Insert the date string at the current cursor position
     const tr = state.tr.insertText(dateStr, selection.from, selection.to)
     dispatch(tr)
+  })
+}
+
+const handleToolbarAction = async (event: CustomEvent) => {
+  if (!editor || props.disabled || props.readonly) return
+
+  const { command } = event.detail
+  if (!command) return
+
+  await editor.action((ctx) => {
+    const commandManager = ctx.get(commandsCtx)
+
+    // Map toolbar command names to Milkdown command keys
+    const commandMap: Record<string, any> = {
+      'ToggleBold': commandManager.call(toggleStrongCommand.key),
+      'ToggleItalic': commandManager.call(toggleEmphasisCommand.key),
+      'TurnIntoH2': commandManager.call(wrapInHeadingCommand.key, { level: 2 }),
+      'WrapInBulletList': commandManager.call(wrapInBulletListCommand.key),
+      'TurnIntoCodeFence': commandManager.call(setBlockTypeCommand.key, { type: 'code_block' })
+    }
+
+    const milkdownCommand = commandMap[command]
+    if (milkdownCommand) {
+      return milkdownCommand
+    }
   })
 }
 

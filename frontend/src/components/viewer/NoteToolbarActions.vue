@@ -95,9 +95,55 @@ const openSearch = () => {
 
 // Editor actions for markdown files
 const editorActions = computed<EditorAction[]>(() => {
-  // For now, return empty array - will implement actual actions in Phase 3
-  return []
+  return [
+    {
+      id: 'bold',
+      icon: 'B',
+      label: 'Bold (Ctrl+B)',
+      onClick: () => executeEditorCommand('ToggleBold'),
+      shortcut: 'Ctrl+B'
+    },
+    {
+      id: 'italic',
+      icon: 'I',
+      label: 'Italic (Ctrl+I)',
+      onClick: () => executeEditorCommand('ToggleItalic'),
+      shortcut: 'Ctrl+I'
+    },
+    {
+      id: 'heading',
+      icon: 'H',
+      label: 'Heading',
+      onClick: () => executeEditorCommand('TurnIntoH2')
+    },
+    {
+      id: 'bullet-list',
+      icon: '•',
+      label: 'Bullet List',
+      onClick: () => executeEditorCommand('WrapInBulletList')
+    },
+    {
+      id: 'code-block',
+      icon: '</>',
+      label: 'Code Block',
+      onClick: () => executeEditorCommand('TurnIntoCodeFence')
+    }
+  ]
 })
+
+// Execute editor command by finding the active Milkdown editor
+const executeEditorCommand = (commandName: string) => {
+  // Find the active Milkdown editor in the DOM
+  const milkdownEditor = document.querySelector('.milkdown-editor-container .milkdown .editor .ProseMirror') as HTMLElement
+  if (!milkdownEditor) return
+
+  // Create and dispatch a custom event that the MilkdownEditor can listen to
+  const event = new CustomEvent('toolbar-action', {
+    detail: { command: commandName },
+    bubbles: true
+  })
+  milkdownEditor.dispatchEvent(event)
+}
 </script>
 
 <style scoped>

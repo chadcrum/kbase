@@ -1,23 +1,18 @@
 <template>
   <div class="note-viewer">
-    <!-- Tabs Bar (hidden in popup mode) -->
-    <TabsBar
+    <!-- Unified Note Toolbar (hidden in popup mode) -->
+    <NoteToolbar
       v-if="!isPopup"
       :file-path="selectedNote?.path"
       @open-search="handleOpenSearch"
     />
-    
+
     <!-- Popup title bar (shown only in popup mode) -->
     <div v-if="isPopup && selectedNote" class="popup-title-bar">
       <h2 class="popup-title">{{ getNoteTitle(selectedNote.path) }}</h2>
     </div>
-    
+
     <div v-if="selectedNote" class="note-content" :class="{ 'is-popup': isPopup }">
-      <!-- Viewer Toolbar -->
-      <ViewerToolbar
-        :file-name="getNoteTitle(selectedNote.path)"
-        :file-path="selectedNote.path"
-      />
 
       <!-- Scrollable Content Area -->
       <div class="note-scroll-content">
@@ -73,8 +68,7 @@
 import { computed, ref, watch, nextTick } from 'vue'
 import { useVaultStore } from '@/stores/vault'
 import { useEditorStore } from '@/stores/editor'
-import TabsBar from './TabsBar.vue'
-import ViewerToolbar from './ViewerToolbar.vue'
+import NoteToolbar from './NoteToolbar.vue'
 import CodeMirrorEditor from '@/components/editor/CodeMirrorEditor.vue'
 import MilkdownEditor from '@/components/editor/MilkdownEditor.vue'
 import type { ComponentPublicInstance } from 'vue'

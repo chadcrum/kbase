@@ -1,7 +1,12 @@
 <template>
   <div class="tabs-bar" :style="{ '--toolbar-left': toolbarLeft }">
-    <!-- Sidebar toggle at far left -->
-    <button class="sidebar-toggle-btn" @click="toggleSidebar" :title="sidebarToggleTitle">
+    <!-- Sidebar toggle at far left - hide on mobile when sidebar is active -->
+    <button
+      v-if="!shouldShowToggleInSidebarToolbar"
+      class="sidebar-toggle-btn"
+      @click="toggleSidebar"
+      :title="sidebarToggleTitle"
+    >
       <span class="toggle-icon">{{ sidebarToggleIcon }}</span>
     </button>
 
@@ -256,6 +261,11 @@ const sidebarToggleTitle = computed(() => {
       ? 'Show Sidebar'
       : 'Hide Sidebar';
   }
+})
+
+// Show toggle button in sidebar toolbar on mobile when sidebar is active
+const shouldShowToggleInSidebarToolbar = computed(() => {
+  return uiStore.isMobileView && uiStore.activeMobilePane === 'sidebar'
 })
 
 // Editor toggle

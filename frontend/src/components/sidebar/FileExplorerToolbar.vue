@@ -36,85 +36,97 @@
       >
         <span class="icon">⬆️</span>
       </button>
-      <div
-        v-if="showMenu"
-        class="toolbar-dropdown"
-        role="menu"
+    </div>
+
+    <!-- Mobile pane toggle button - positioned at far right when sidebar is full screen on mobile -->
+    <button
+      v-if="showMobileToggleButton"
+      @click="handleMobileToggle"
+      class="toolbar-button toolbar-mobile-toggle-btn"
+      :title="mobileToggleTitle"
+      aria-label="Show Editor"
+    >
+      <span class="icon">{{ mobileToggleIcon }}</span>
+    </button>
+
+    <div
+      v-if="showMenu"
+      class="toolbar-dropdown"
+      role="menu"
+    >
+      <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFolder">
+        <span class="icon">📁</span>
+        <span class="label">New Folder</span>
+      </button>
+      <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFile">
+        <span class="icon">📄</span>
+        <span class="label">New File</span>
+      </button>
+      <button
+        class="toolbar-dropdown-item"
+        role="menuitem"
+        @click="handleRefresh"
+        :disabled="isLoading"
       >
-        <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFolder">
-          <span class="icon">📁</span>
-          <span class="label">New Folder</span>
-        </button>
-        <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewFile">
-          <span class="icon">📄</span>
-          <span class="label">New File</span>
-        </button>
-        <button
-          class="toolbar-dropdown-item"
-          role="menuitem"
-          @click="handleRefresh"
-          :disabled="isLoading"
-        >
-          <span class="icon">🔄</span>
-          <span class="label">Refresh</span>
-        </button>
+        <span class="icon">🔄</span>
+        <span class="label">Refresh</span>
+      </button>
 
-        <div class="toolbar-dropdown-divider" role="separator"></div>
+      <div class="toolbar-dropdown-divider" role="separator"></div>
 
-        <button class="toolbar-dropdown-item" role="menuitem" @click="handleToggleSortOrder">
-          <span class="icon">{{ sortOrder === 'asc' ? '⬆️' : '⬇️' }}</span>
-          <span class="label">{{ sortOrderTitle }}</span>
-        </button>
+      <button class="toolbar-dropdown-item" role="menuitem" @click="handleToggleSortOrder">
+        <span class="icon">{{ sortOrder === 'asc' ? '⬆️' : '⬇️' }}</span>
+        <span class="label">{{ sortOrderTitle }}</span>
+      </button>
 
-        <div class="toolbar-dropdown-subheader">Sort by</div>
-        <button
-          v-for="option in sortOptions"
-          :key="`sort-${option.value}`"
-          class="toolbar-dropdown-item"
-          role="menuitemradio"
-          :aria-checked="sortBy === option.value"
-          :class="{ active: sortBy === option.value }"
-          @click="handleSortByChange(option.value)"
-        >
-          <span class="icon">{{ sortBy === option.value ? '✓' : '' }}</span>
-          <span class="label">{{ option.label }}</span>
-        </button>
+      <div class="toolbar-dropdown-subheader">Sort by</div>
+      <button
+        v-for="option in sortOptions"
+        :key="`sort-${option.value}`"
+        class="toolbar-dropdown-item"
+        role="menuitemradio"
+        :aria-checked="sortBy === option.value"
+        :class="{ active: sortBy === option.value }"
+        @click="handleSortByChange(option.value)"
+      >
+        <span class="icon">{{ sortBy === option.value ? '✓' : '' }}</span>
+        <span class="label">{{ option.label }}</span>
+      </button>
 
-        <div class="toolbar-dropdown-divider" role="separator"></div>
+      <div class="toolbar-dropdown-divider" role="separator"></div>
 
-        <button
-          class="toolbar-dropdown-item toolbar-dropdown-checkbox"
-          role="menuitemcheckbox"
-          :aria-checked="sortDirectoriesWithFiles"
-          @click="handleToggleSortDirectoriesWithFiles"
-        >
-          <span class="icon">{{ sortDirectoriesWithFiles ? '☑' : '☐' }}</span>
-          <span class="label">Sort directories with files</span>
-        </button>
+      <button
+        class="toolbar-dropdown-item toolbar-dropdown-checkbox"
+        role="menuitemcheckbox"
+        :aria-checked="sortDirectoriesWithFiles"
+        @click="handleToggleSortDirectoriesWithFiles"
+      >
+        <span class="icon">{{ sortDirectoriesWithFiles ? '☑' : '☐' }}</span>
+        <span class="label">Sort directories with files</span>
+      </button>
 
 
 
-        <div class="toolbar-dropdown-divider" role="separator"></div>
+      <div class="toolbar-dropdown-divider" role="separator"></div>
 
-        <div class="toolbar-dropdown-subheader">Application</div>
-        <button
-          class="toolbar-dropdown-item theme-toggle-btn"
-          role="menuitem"
-          @click="handleToggleTheme"
-        >
-          <span class="icon">{{ themeIcon }}</span>
-          <span class="label">{{ themeToggleLabel }}</span>
-        </button>
+      <div class="toolbar-dropdown-subheader">Application</div>
+      <button
+        class="toolbar-dropdown-item theme-toggle-btn"
+        role="menuitem"
+        @click="handleToggleTheme"
+      >
+        <span class="icon">{{ themeIcon }}</span>
+        <span class="label">{{ themeToggleLabel }}</span>
+      </button>
 
-        <button
-          class="toolbar-dropdown-item logout-btn"
-          role="menuitem"
-          @click="handleLogout"
-        >
-          <span class="icon">🚪</span>
-          <span class="label">Logout</span>
-        </button>
-      </div>
+      <button
+        class="toolbar-dropdown-item logout-btn"
+        role="menuitem"
+        @click="handleLogout"
+      >
+        <span class="icon">🚪</span>
+        <span class="label">Logout</span>
+      </button>
     </div>
 
     <!-- Error Display -->
@@ -157,6 +169,7 @@ import { useVaultStore } from '@/stores/vault'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useEditorStore } from '@/stores/editor'
+import { useUIStore } from '@/stores/ui'
 import InputDialog from '@/components/common/InputDialog.vue'
 import type { SortBy } from '@/stores/vault'
 
@@ -175,6 +188,7 @@ const vaultStore = useVaultStore()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const editorStore = useEditorStore()
+const uiStore = useUIStore()
 const router = useRouter()
 const showFolderDialog = ref(false)
 const showFileDialog = ref(false)
@@ -226,8 +240,25 @@ const pinButtonTitle = computed(() => {
   return vaultStore.isSidebarPinned ? 'Unpin sidebar (auto-collapse enabled)' : 'Pin sidebar (prevent auto-collapse)'
 })
 
+// Mobile sidebar toggle button properties
+const showMobileToggleButton = computed(() => {
+  return uiStore.isMobileView && uiStore.activeMobilePane === 'sidebar'
+})
+
+const mobileToggleIcon = computed(() => {
+  return '»' // Clicking will show editor
+})
+
+const mobileToggleTitle = computed(() => {
+  return 'Show Editor'
+})
+
 const handleTogglePin = () => {
   vaultStore.toggleSidebarPin()
+}
+
+const handleMobileToggle = () => {
+  uiStore.toggleSidebar()
 }
 
 /**
@@ -442,7 +473,8 @@ onUnmounted(() => {
 <style scoped>
 .toolbar {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   background: var(--bg-secondary);
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -463,6 +495,7 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--border-color);
   box-shadow: 0 1px 0 var(--border-color-subtle);
   touch-action: none;
+  flex: 1;
 }
 
 .toolbar-menu {
@@ -642,6 +675,11 @@ onUnmounted(() => {
 .toolbar-collapse-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.toolbar-mobile-toggle-btn {
+  margin-left: auto;
+  margin-right: 0.5rem;
 }
 
 /* Touch device accessibility */

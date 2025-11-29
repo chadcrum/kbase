@@ -152,6 +152,7 @@ import DirectoryPickerDialog from './DirectoryPickerDialog.vue'
 import FileHistoryModal from '../common/FileHistoryModal.vue'
 import ShareDialog from '../common/ShareDialog.vue'
 import type { FileTreeNode as FileTreeNodeType } from '@/types'
+import { getCurrentDateString } from '@/utils/dateUtils'
 
 // Props
 interface Props {
@@ -232,12 +233,13 @@ const scrollSelectedIntoView = () => {
 
 const contextMenuItems = computed((): ContextMenuItem[] => {
   const items: ContextMenuItem[] = []
-  
+
   // Add "Create Directory" and "Create Note" options for directories
   if (isDirectory.value) {
     items.push(
       { label: 'Create Directory', icon: '📁', action: 'create-folder' },
-      { label: 'Create Note', icon: '📄', action: 'create-note' }
+      { label: 'Create Note', icon: '📄', action: 'create-note' },
+      { label: 'Create Date File', icon: '📅', action: 'create-date-file' }
     )
   } else {
     // Add "Open in New Window" option for files only
@@ -247,15 +249,15 @@ const contextMenuItems = computed((): ContextMenuItem[] => {
     // Add "Copy Link" option for files only
     items.push({ label: 'Copy Link', icon: '🔗', action: 'share' })
   }
-  
+
   items.push({ label: 'Rename', icon: '✏️', action: 'rename' })
 
   if (props.node.path !== '/') {
     items.push({ label: 'Move…', icon: '🚚', action: 'move' })
   }
-  
+
   items.push({ label: 'Delete', icon: '🗑️', action: 'delete', isDanger: true })
-  
+
   return items
 })
 
@@ -450,6 +452,9 @@ const handleContextMenuAction = async (action: string) => {
     case 'create-note':
       showCreateFileDialog.value = true
       break
+    case 'create-date-file':
+      await createDateFile()
+      break
     case 'open-in-popup':
       openNoteInPopup()
       break
@@ -562,6 +567,7 @@ const handleRenameBlur = () => {
     }
   }, 100)
 }
+
 
 const collectDescendantDirectories = (node: FileTreeNodeType | undefined): string[] => {
   if (!node || node.type !== 'directory' || !node.children) return []
@@ -715,16 +721,37 @@ const createFolderInDirectory = async (folderName: string) => {
  */
 const createNoteInDirectory = async (fileName: string) => {
   // Use filename as-is after validation (no extension enforcement)
-  
+
   // Build the full path for the new file
-  const newNotePath = props.node.path === '/' 
-    ? `/${fileName}` 
+  const newNotePath = props.node.path === '/'
+    ? `/${fileName}`
     : `${props.node.path}/${fileName}`
-  
+
   const success = await vaultStore.createNote(newNotePath)
   if (success) {
     showCreateFileDialog.value = false
-    
+
+    // Auto-expand the directory to show the newly created file
+    if (!isExpanded.value) {
+      emit('toggleExpand', props.node.path)
+    }
+  }
+}
+
+/**
+ * Creates a new file with the current date as filename within the current directory
+ */
+const createDateFile = async () => {
+  const dateStr = getCurrentDateString()
+  const fileName = `${dateStr}.md`
+
+  // Build the full path for the new file
+  const newNotePath = props.node.path === '/'
+    ? `/${fileName}`
+    : `${props.node.path}/${fileName}`
+
+  const success = await vaultStore.createNote(newNotePath)
+  if (success) {
     // Auto-expand the directory to show the newly created file
     if (!isExpanded.value) {
       emit('toggleExpand', props.node.path)

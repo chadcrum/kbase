@@ -1,15 +1,26 @@
 <template>
-  <div 
-    ref="editorContainer" 
+  <div
+    ref="editorContainer"
     class="codemirror-editor-container"
     @mousedown="handleEditorClick"
     @touchstart="handleEditorClick"
+    @contextmenu.prevent="handleContextMenu"
     @paste="handlePaste"
   ></div>
+
+  <!-- Context Menu -->
+  <ContextMenu
+    :is-open="showContextMenu"
+    :x="contextMenuX"
+    :y="contextMenuY"
+    :items="contextMenuItems"
+    @close="showContextMenu = false"
+    @select="handleContextMenuAction"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { EditorState, Extension } from '@codemirror/state'
 import { EditorView, keymap, ViewUpdate, lineNumbers, drawSelection } from '@codemirror/view'
 import { indentWithTab, defaultKeymap } from '@codemirror/commands'
@@ -19,6 +30,8 @@ import { useThemeStore } from '@/stores/theme'
 import { useVaultStore } from '@/stores/vault'
 import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 import { apiClient } from '@/api/client'
+import { getCurrentDateString } from '@/utils/dateUtils'
+import ContextMenu, { type ContextMenuItem } from '@/components/sidebar/ContextMenu.vue'
 
 // Props
 interface Props {
@@ -49,6 +62,11 @@ let editorView: EditorView | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
 let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
 let lastSavedValue = ref<string>(props.modelValue)
+
+// Context menu state
+const showContextMenu = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
 
 // Auto-save debounce (1 second)
 const AUTO_SAVE_DELAY = 1000
@@ -243,6 +261,50 @@ const handlePaste = async (event: ClipboardEvent) => {
       break // Only handle the first image
     }
   }
+}
+
+// Context menu handlers
+const handleContextMenu = (event: MouseEvent) => {
+  if (props.disabled || props.readonly) return
+
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  showContextMenu.value = true
+}
+
+const contextMenuItems = computed((): ContextMenuItem[] => {
+  return [
+    { label: 'Insert Date', icon: '📅', action: 'insert-date' }
+  ]
+})
+
+const handleContextMenuAction = (action: string) => {
+  switch (action) {
+    case 'insert-date':
+      insertDateAtCursor()
+      break
+  }
+}
+
+const insertDateAtCursor = () => {
+  if (!editorView || props.disabled || props.readonly) return
+
+  const dateStr = getCurrentDateString()
+  const state = editorView.state
+  const selection = state.selection.main
+  const from = selection.from
+  const to = selection.to
+
+  editorView.dispatch({
+    changes: {
+      from,
+      to,
+      insert: dateStr
+    },
+    selection: {
+      anchor: from + dateStr.length
+    }
+  })
 }
 
 // Insert image markdown at cursor position

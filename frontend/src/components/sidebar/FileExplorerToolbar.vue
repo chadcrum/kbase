@@ -72,6 +72,10 @@
         <span class="icon">📄</span>
         <span class="label">New File</span>
       </button>
+      <button class="toolbar-dropdown-item" role="menuitem" @click="handleNewDateFile">
+        <span class="icon">📅</span>
+        <span class="label">New Date File</span>
+      </button>
       <button
         class="toolbar-dropdown-item"
         role="menuitem"
@@ -182,6 +186,7 @@ import { useEditorStore } from '@/stores/editor'
 import { useUIStore } from '@/stores/ui'
 import InputDialog from '@/components/common/InputDialog.vue'
 import type { SortBy } from '@/stores/vault'
+import { getCurrentDateString } from '@/utils/dateUtils'
 
 // Props
 defineProps<{
@@ -352,6 +357,20 @@ const handleNewFolder = () => {
 const handleNewFile = () => {
   showFileDialog.value = true
   closeMenu()
+}
+
+/**
+ * Creates a new date file at the root level
+ */
+const handleNewDateFile = async () => {
+  const dateStr = getCurrentDateString()
+  const fileName = `${dateStr}.md`
+
+  const success = await vaultStore.createNote(fileName)
+  if (success) {
+    closeMenu()
+  }
+  // Error handling is done by the store (sets error state)
 }
 
 /**

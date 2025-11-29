@@ -4,14 +4,25 @@
     class="milkdown-editor-container"
     @mousedown="handleContainerPointerDown"
     @touchstart="handleContainerPointerDown"
+    @contextmenu.prevent="handleContextMenu"
     @paste="handlePaste"
     @drop="handleDrop"
     @dragover.prevent
   ></div>
+
+  <!-- Context Menu -->
+  <ContextMenu
+    :is-open="showContextMenu"
+    :x="contextMenuX"
+    :y="contextMenuY"
+    :items="contextMenuItems"
+    @close="showContextMenu = false"
+    @select="handleContextMenuAction"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import {
   Editor,
   editorViewCtx,
@@ -41,6 +52,8 @@ import { loadNoteState, updateNoteStateSegment } from '@/utils/noteState'
 import { milkdownTaskListPlugin } from './plugins/milkdownTaskListPlugin'
 import { milkdownImagePlugin } from './plugins/milkdownImagePlugin'
 import { apiClient } from '@/api/client'
+import { getCurrentDateString } from '@/utils/dateUtils'
+import ContextMenu, { type ContextMenuItem } from '@/components/sidebar/ContextMenu.vue'
 
 // Props
 interface Props {
@@ -75,6 +88,11 @@ let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
 let currentMarkdown = ref<string>(props.modelValue)
 let lastSavedMarkdown = ref<string>(props.modelValue)
 const cleanupFns: Array<() => void> = []
+
+// Context menu state
+const showContextMenu = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
 
 // Custom remark stringify options to use hyphens for unordered list bullets
 const customRemarkOptions: Options = {
@@ -939,6 +957,45 @@ const insertImageAtCursor = async (imagePath: string, filename: string) => {
 
     // Insert the image node at the current cursor position
     const tr = state.tr.replaceSelectionWith(imageNode)
+    dispatch(tr)
+  })
+}
+
+// Context menu handlers
+const handleContextMenu = (event: MouseEvent) => {
+  if (props.disabled || props.readonly) return
+
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  showContextMenu.value = true
+}
+
+const contextMenuItems = computed((): ContextMenuItem[] => {
+  return [
+    { label: 'Insert Date', icon: '📅', action: 'insert-date' }
+  ]
+})
+
+const handleContextMenuAction = (action: string) => {
+  switch (action) {
+    case 'insert-date':
+      insertDateAtCursor()
+      break
+  }
+}
+
+const insertDateAtCursor = async () => {
+  if (!editor || props.disabled || props.readonly) return
+
+  const dateStr = getCurrentDateString()
+
+  await editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx)
+    const { state, dispatch } = view
+    const { selection } = state
+
+    // Insert the date string at the current cursor position
+    const tr = state.tr.insertText(dateStr, selection.from, selection.to)
     dispatch(tr)
   })
 }

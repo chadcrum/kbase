@@ -3,6 +3,7 @@
     <div class="toolbar-header toolbar-menu">
       <button
         @click.stop="toggleMenu"
+        @touchstart.stop="toggleMenu"
         class="toolbar-button toolbar-menu-trigger"
         title="File Explorer actions"
         aria-haspopup="true"
@@ -470,6 +471,10 @@ const handleLogout = () => {
  */
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement
+  // Don't close if clicking on the menu trigger button itself
+  if (target.closest('.toolbar-menu-trigger')) {
+    return
+  }
   if (!target.closest('.toolbar-menu')) {
     showMenu.value = false
   }
@@ -486,6 +491,7 @@ const toggleMenu = () => {
 onMounted(() => {
   if (typeof document !== 'undefined') {
     document.addEventListener('click', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
   }
 
   if (typeof window === 'undefined') {
@@ -496,6 +502,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (typeof document !== 'undefined') {
     document.removeEventListener('click', handleClickOutside)
+    document.removeEventListener('touchstart', handleClickOutside)
   }
 
   if (typeof window === 'undefined') {

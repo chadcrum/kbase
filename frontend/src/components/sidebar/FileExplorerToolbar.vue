@@ -38,16 +38,26 @@
       </button>
     </div>
 
-    <!-- Mobile pane toggle button - positioned at far right when sidebar is full screen on mobile -->
-    <button
-      v-if="showMobileToggleButton"
-      @click="handleMobileToggle"
-      class="toolbar-button toolbar-mobile-toggle-btn"
-      :title="mobileToggleTitle"
-      aria-label="Show Editor"
-    >
-      <span class="icon">{{ mobileToggleIcon }}</span>
-    </button>
+    <!-- Mobile action buttons container - positioned at far right when sidebar is full screen on mobile -->
+    <div v-if="showMobileToggleButton" class="toolbar-mobile-actions">
+      <button
+        @click="handleOpenSearch"
+        class="toolbar-button toolbar-search-btn"
+        title="Open Search"
+        aria-label="Open Search"
+      >
+        <span class="icon">🔍</span>
+      </button>
+
+      <button
+        @click="handleMobileToggle"
+        class="toolbar-button toolbar-mobile-toggle-btn"
+        :title="mobileToggleTitle"
+        aria-label="Show Editor"
+      >
+        <span class="icon">{{ mobileToggleIcon }}</span>
+      </button>
+    </div>
 
     <div
       v-if="showMenu"
@@ -182,6 +192,7 @@ defineProps<{
 const emit = defineEmits<{
   refresh: []
   'scroll-to-top': []
+  'open-search': []
 }>()
 
 const vaultStore = useVaultStore()
@@ -259,6 +270,10 @@ const handleTogglePin = () => {
 
 const handleMobileToggle = () => {
   uiStore.toggleSidebar()
+}
+
+const handleOpenSearch = () => {
+  emit('open-search')
 }
 
 /**
@@ -677,9 +692,12 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-.toolbar-mobile-toggle-btn {
+.toolbar-mobile-actions {
   margin-left: auto;
   margin-right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Touch device accessibility */

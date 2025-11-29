@@ -6,6 +6,7 @@
         'mobile-hidden': isMobileView && activeMobilePane !== 'sidebar',
         'collapsed': !isMobileView && sidebarCollapsed
       }"
+      @open-search="handleOpenSearch"
     />
     <ResizeHandle v-if="!isMobileView && !sidebarCollapsed" />
     <main
@@ -28,6 +29,11 @@ import Sidebar from '@/components/sidebar/Sidebar.vue'
 import BackendWarning from '@/components/common/BackendWarning.vue'
 import ResizeHandle from './ResizeHandle.vue'
 
+// Emits
+const emit = defineEmits<{
+  'open-search': []
+}>()
+
 const uiStore = useUIStore()
 const { isMobileView } = useResponsive()
 
@@ -39,6 +45,13 @@ const activeMobilePane = computed(() => uiStore.activeMobilePane)
 function setupHistoryNavigation() {
   console.log(`[AppLayout] Browser back button support disabled to prevent pane switching issues`)
   // Temporarily disabled until a better implementation can be found
+}
+
+/**
+ * Handles open search event
+ */
+const handleOpenSearch = () => {
+  emit('open-search')
 }
 
 onMounted(() => {

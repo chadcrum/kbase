@@ -1,9 +1,10 @@
 <template>
   <div class="sidebar">
-    <FileExplorerToolbar 
+    <FileExplorerToolbar
       :is-loading="isLoading"
       @refresh="handleRefresh"
       @scroll-to-top="handleScrollToTop"
+      @open-search="handleOpenSearch"
     />
     
     <div ref="sidebarContentRef" class="sidebar-content">
@@ -22,6 +23,11 @@ import { useUIStore } from '@/stores/ui'
 import FileTree from './FileTree.vue'
 import FileExplorerToolbar from './FileExplorerToolbar.vue'
 // import type { FileTreeNode } from '@/types' // Not used in this component
+
+// Emits
+const emit = defineEmits<{
+  'open-search': []
+}>()
 
 // Store
 const vaultStore = useVaultStore()
@@ -51,6 +57,13 @@ const handleScrollToTop = () => {
       behavior: 'smooth'
     })
   }
+}
+
+/**
+ * Handles open search event
+ */
+const handleOpenSearch = () => {
+  emit('open-search')
 }
 
 // Lifecycle

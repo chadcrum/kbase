@@ -5,7 +5,7 @@
     <OmniSearch v-model:isOpen="isOmniSearchOpen" />
   </div>
   <!-- Normal mode: render with AppLayout -->
-  <AppLayout v-else>
+  <AppLayout v-else @open-search="isOmniSearchOpen = true">
     <NoteViewer @open-search="isOmniSearchOpen = true" />
     <OmniSearch v-model:isOpen="isOmniSearchOpen" />
   </AppLayout>

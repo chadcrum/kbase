@@ -1,0 +1,40 @@
+/* Remove default list styling from task list items */
+.milkdown .task-list-item {
+  list-style: none;
+  position: relative;
+  padding-left: 0 !important;
+}
+
+/* Position checkbox absolutely to prevent layout shift */
+.milkdown .task-list-item input[type="checkbox"] {
+  position: absolute;
+  left: 0;
+  top: 0.35em;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Offset label text to make room for checkbox */
+.milkdown .task-list-item label {
+  display: block;
+  margin-left: 1.8em;
+  min-height: 1.5em;
+}
+
+/* Indent nested task lists consistently */
+.milkdown ul.contains-task-list,
+.milkdown ul ul.contains-task-list {
+  padding-left: 2em;  /* Adjust this value to match your desired indent */
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+/* Ensure task list container has proper spacing */
+.milkdown .contains-task-list {
+  list-style: none;
+}
+
+/* Prevent checkbox from jumping lines on indent/outdent */
+.milkdown .task-list-item > * {
+  vertical-align: top;
+}

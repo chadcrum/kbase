@@ -36,7 +36,7 @@ import {
 import { commonmark, sinkListItemCommand, liftListItemCommand } from '@milkdown/preset-commonmark'
 import { gfm } from '@milkdown/preset-gfm'
 import { history, undoCommand, redoCommand } from '@milkdown/plugin-history'
-import { indent } from '@milkdown/plugin-indent'
+import { indent, indentConfig } from '@milkdown/plugin-indent'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { nord } from '@milkdown/theme-nord'
 import type { MilkdownPlugin } from '@milkdown/ctx'
@@ -745,9 +745,9 @@ onMounted(async () => {
       .config(nord)
       .use(commonmark)
       .use(gfm)
+      .use(indent)
       .use(history)
       .use(historyKeymapPlugin)
-      .use(indent)
       .use(textIndentPlugin)
       .use(taskListEnterPlugin)
       .use(taskListUncheckProsePlugin)
@@ -807,9 +807,9 @@ watch(() => props.modelValue, async (newValue) => {
         .config(nord)
         .use(commonmark)
         .use(gfm)
+        .use(indent)
         .use(history)
         .use(historyKeymapPlugin)
-        .use(indent)
         .use(textIndentPlugin)
         .use(taskListEnterPlugin)
         .use(taskListUncheckProsePlugin)
@@ -1273,6 +1273,34 @@ onBeforeUnmount(() => {
 .milkdown-editor-container.light :deep(.milkdown .milkdown-task-item--in-progress > p:first-of-type),
 .milkdown-editor-container.light :deep(.milkdown .task-list-item.milkdown-task-item--in-progress > p) {
   color: #16a34a; /* darker green for light mode */
+}
+
+/* Fix checkbox jumping and right-shift */
+.milkdown-editor-container :deep(.milkdown .task-list-item) {
+  list-style: none;
+  position: relative;
+  padding-left: 0 !important;
+}
+
+.milkdown-editor-container :deep(.milkdown .task-list-item > input[type="checkbox"]) {
+  position: absolute;
+  left: 0;
+  top: 0.35em;
+  margin: 0;
+}
+
+.milkdown-editor-container :deep(.milkdown .task-list-item > label) {
+  display: block;
+  margin-left: 1.8em;        /* space for checkbox + gap */
+  min-height: 1.5em;
+}
+
+.milkdown-editor-container :deep(.milkdown ul.contains-task-list) {
+  padding-left: 1.5em;
+}
+
+.milkdown-editor-container :deep(.milkdown ul ul.contains-task-list) {
+  padding-left: 1.5em;       /* consistent nesting */
 }
 
 .milkdown-editor-container :deep(.milkdown ul.contains-task-list) {

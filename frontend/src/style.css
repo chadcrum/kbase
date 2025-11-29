@@ -1,5 +1,7 @@
 /* Additional global styles can be added here */
 
+@import './styles/editor.css';
+
 
 /* Mobile font size adjustment */
 @media (max-width: 768px) {

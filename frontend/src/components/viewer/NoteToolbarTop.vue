@@ -122,7 +122,7 @@ const uiStore = useUIStore()
 const tabsDropdownContainerRef = ref<HTMLElement | null>(null)
 const tabsDropdownBtnRef = ref<HTMLElement | null>(null)
 const showTabsDropdown = ref(false)
-const dropdownStyle = ref<{ right?: string }>({})
+const dropdownStyle = ref<{ left?: string }>({})
 
 // Computed
 const tabs = computed(() => tabsStore.tabs)
@@ -169,21 +169,20 @@ const updateDropdownPosition = () => {
     const viewportWidth = window.innerWidth
     const dropdownWidth = 320
 
-    // Calculate preferred right position
-    let rightOffset = viewportWidth - rect.right
+    // Start with left edge of the button
+    let leftOffset = rect.left
 
-    // Clamp to ensure dropdown stays within viewport
-    const dropdownRightEdge = rect.right + dropdownWidth
-    if (dropdownRightEdge > viewportWidth) {
-      // Dropdown would overflow right edge, position it to the left of the button
-      rightOffset = viewportWidth - rect.left - dropdownWidth
+    // Check if dropdown would overflow right edge
+    if (leftOffset + dropdownWidth > viewportWidth) {
+      // Position to the right of button, aligned to right edge
+      leftOffset = rect.right - dropdownWidth
     }
 
-    // Ensure minimum right offset (don't go off-screen to the left)
-    rightOffset = Math.max(0, rightOffset)
+    // Clamp to viewport bounds - don't go off-screen left or right
+    leftOffset = Math.max(0, Math.min(leftOffset, viewportWidth - dropdownWidth))
 
     dropdownStyle.value = {
-      right: `${rightOffset}px`
+      left: `${leftOffset}px`
     }
   })
 }

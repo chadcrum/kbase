@@ -322,6 +322,9 @@ const handleToolbarAction = (event: CustomEvent) => {
   const { command } = event.detail
   if (!command) return
 
+  // Ensure editor has focus before executing command
+  editorView.focus()
+
   switch (command) {
     case 'Undo':
       undo(editorView)

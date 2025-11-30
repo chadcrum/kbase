@@ -17,6 +17,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useVaultStore } from '@/stores/vault'
+import { useUIStore } from '@/stores/ui'
 import NoteToolbarTop from './NoteToolbarTop.vue'
 import NoteToolbarActions from './NoteToolbarActions.vue'
 
@@ -36,11 +37,17 @@ const emit = defineEmits<{
   'openSearch': []
 }>()
 
-// Store
+// Stores
 const vaultStore = useVaultStore()
+const uiStore = useUIStore()
 
-// Toolbar left position based on sidebar state
+// Toolbar left position based on sidebar state and mobile view
 const toolbarLeft = computed(() => {
+  // On mobile, toolbar always spans full width (left: 0)
+  if (uiStore.isMobileView) {
+    return '0px'
+  }
+  // On desktop, use sidebar width if visible
   return vaultStore.isSidebarCollapsed ? '0px' : `${vaultStore.sidebarWidth}px`
 })
 

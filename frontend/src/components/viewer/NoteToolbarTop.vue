@@ -273,14 +273,16 @@ onUnmounted(() => {
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border-color);
   gap: 0.5rem;
+  overflow: hidden;
 }
 
 .toolbar-left {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex: 1;
   min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .toolbar-right {
@@ -288,6 +290,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .note-title {
@@ -298,13 +302,16 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  flex: 1;
+  flex-shrink: 2;
+  max-width: 400px;
 }
 
 .file-path-container {
-  flex-shrink: 0;
+  flex-shrink: 1;
   min-width: 0;
-  max-width: 200px;
+  max-width: none;
+  overflow: hidden;
+  flex: 0 1 auto;
 }
 
 .file-path {

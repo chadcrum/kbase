@@ -55,7 +55,7 @@ onBeforeUnmount(() => {
   --text-tertiary: #9ca3af;
   --shadow: rgba(0, 0, 0, 0.1);
   --code-bg: #f3f4f6;
-  --tabs-bar-height: 36px;
+  --tabs-bar-height: 70px;
   --pane-toolbar-height: 56px;
   --pane-toolbar-padding-y: 0.5rem;
   --pane-toolbar-padding-x: 0.75rem;
@@ -94,6 +94,10 @@ body {
 
 /* Mobile-first responsive design */
 @media (max-width: 768px) {
+  :root {
+    --tabs-bar-height: 100px;
+  }
+
   body {
     -webkit-tap-highlight-color: transparent;
   }

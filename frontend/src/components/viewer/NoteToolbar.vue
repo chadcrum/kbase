@@ -75,4 +75,20 @@ const handleToggleWordWrap = () => {
   border-bottom: 1px solid var(--border-color);
   transition: left 0.3s ease;
 }
+
+/* Mobile view: use fixed positioning with touch prevention */
+@media (max-width: 768px) {
+  .note-toolbar {
+    position: fixed;
+    touch-action: none;
+    pointer-events: auto;
+  }
+
+  /* Ensure buttons remain clickable */
+  .note-toolbar button,
+  .note-toolbar .tabs-dropdown-btn,
+  .note-toolbar .tabs-dropdown {
+    pointer-events: auto;
+  }
+}
 </style>

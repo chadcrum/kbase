@@ -419,6 +419,33 @@ test.describe('Desktop Behavior Unchanged', () => {
   - [ ] Doesn't interfere with desktop
 
 ---
+### Phase 5: Toolbar Visual Alignment & Controls
+
+**Goal:** replicate the reference toolbar screenshot across both rows so that the mobile single-pane experience matches [`panel-toolbar-redesign_spec.md`](specs/panel-toolbar-redesign_spec.md:8) and the newly provided mock (hamburger + count dropdown + bold title + subdued path + OmniSearch + close control).
+
+**Scope:** Vue-only changes inside `frontend/src/components/viewer/` and dependent Pinia stores/tests. No backend work.
+
+#### Todo
+- [x] Sidebar toggle: swap the chevron button in [`NoteToolbarTop.vue`](frontend/src/components/viewer/NoteToolbarTop.vue:6) for a hamburger icon that still calls `uiStore.toggleSidebar()` so it collapses the sidebar on desktop and swaps panes on mobile. Match sizing/padding to the mock.
+- [x] Tabs dropdown trigger: display `{{ tabs.length }} ▾` (number plus down arrow) with no clipboard emoji, centered text, and badge styling that mirrors the screenshot. Ensure the count updates reactively from `tabsStore.tabs.length`.
+- [x] Dropdown positioning: rewrite `updateDropdownPosition()` so the Teleported menu clamps within the viewport on both sides (never renders off-screen). Add a unit test that simulates narrow viewports and asserts the computed style stays within `[0, window.innerWidth - dropdownWidth]`.
+- [x] Note title typography: bump font size/weight to visually dominate the row, keep ellipsis truncation, and allow the title to flex-grow so it fills leftover space between the dropdown and metadata.
+- [x] File path metadata: use a smaller gray font per mock, enforce `min-width: 0` on its flex container to prevent overflow, and hide it gracefully when the viewport cannot accommodate it (e.g., via CSS class toggled by media queries or `ResizeObserver`). This also resolves the bug where the path renders off the right edge.
+- [x] OmniSearch plumbing: ensure the search button defined in [`NoteToolbarActions.vue`](frontend/src/components/viewer/NoteToolbarActions.vue:28) emits `openSearch`, that [`NoteToolbar.vue`](frontend/src/components/viewer/NoteToolbar.vue:10) re-emits it, and that [`NoteViewer.vue`](frontend/src/components/viewer/NoteViewer.vue:4) opens the OmniSearch modal when the event fires. Add component tests for the emit chain.
+- [x] Close button behavior: verify the `×` control calls `tabsStore.closeTab()` and clears `vaultStore.selectedNote` when the last tab closes. Capture this in unit tests plus a Playwright regression in [`frontend/e2e/specs/ui-enhancements.spec.ts`](frontend/e2e/specs/ui-enhancements.spec.ts:126).
+- [x] Visual polish: align toolbar background, spacing, and hover states with the mock using CSS variables so both light/dark themes stay consistent. Include responsive checks (<768px, ≥768px).
+
+Phase 5 completed successfully. Updated toolbar components to match the reference mock with hamburger icon, reactive tab count dropdown, improved typography, subdued file path styling, proper event emission chain for OmniSearch, verified close button behavior, and applied consistent visual polish using CSS variables for theme compatibility. All type-checks pass and functionality verified.
+
+**Exit Criteria for Phase 5**
+- Toolbar visually matches the screenshot on both mobile (≤767px) and desktop (≥768px) per manual review.
+- Tabs dropdown cannot render outside the viewport in Playwright or manual testing.
+- OmniSearch button opens the modal and the close button removes the active note.
+- Updated unit + E2E tests cover dropdown positioning, OmniSearch emit chain, and close-button behavior.
+- Type-check and `npm run test` pass.
+
+---
+
 
 ## Documentation Updates
 

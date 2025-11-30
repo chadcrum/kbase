@@ -9,6 +9,7 @@
     <!-- Bottom Row: Actions -->
     <NoteToolbarActions
       :file-path="filePath"
+      @open-search="handleOpenSearch"
     />
   </div>
 </template>
@@ -30,6 +31,11 @@ const props = withDefaults(defineProps<Props>(), {
   isPopup: false
 })
 
+// Emits
+const emit = defineEmits<{
+  'openSearch': []
+}>()
+
 // Store
 const vaultStore = useVaultStore()
 
@@ -37,6 +43,11 @@ const vaultStore = useVaultStore()
 const toolbarLeft = computed(() => {
   return vaultStore.isSidebarCollapsed ? '0px' : `${vaultStore.sidebarWidth}px`
 })
+
+// Handle open search event from NoteToolbarActions
+const handleOpenSearch = () => {
+  emit('openSearch')
+}
 </script>
 
 <style scoped>

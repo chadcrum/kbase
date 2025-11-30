@@ -22,8 +22,8 @@
           aria-haspopup="true"
           :aria-expanded="showTabsDropdown"
         >
-          <span class="tabs-dropdown-icon">📋</span>
           <span class="tab-count">{{ tabs.length }}</span>
+          <span class="dropdown-icon">▾</span>
         </button>
 
         <Teleport to="body">
@@ -73,8 +73,10 @@
     <!-- Right section -->
     <div class="toolbar-right">
       <!-- File path (hidden on mobile) -->
-      <div class="file-path" v-if="filePath">
-        {{ filePath }}
+      <div class="file-path-container" v-if="filePath">
+        <div class="file-path">
+          {{ filePath }}
+        </div>
       </div>
 
       <!-- Close button -->
@@ -140,11 +142,7 @@ const toggleSidebar = () => {
 }
 
 const sidebarToggleIcon = computed(() => {
-  if (uiStore.isMobileView) {
-    return uiStore.activeMobilePane === 'sidebar' ? '»' : '«'
-  } else {
-    return uiStore.sidebarCollapsed ? '»' : '«'
-  }
+  return '☰'
 })
 
 const sidebarToggleTitle = computed(() => {
@@ -170,7 +168,19 @@ const updateDropdownPosition = () => {
     const rect = tabsDropdownBtnRef.value.getBoundingClientRect()
     const viewportWidth = window.innerWidth
     const dropdownWidth = 320
-    const rightOffset = viewportWidth - rect.right
+
+    // Calculate preferred right position
+    let rightOffset = viewportWidth - rect.right
+
+    // Clamp to ensure dropdown stays within viewport
+    const dropdownRightEdge = rect.right + dropdownWidth
+    if (dropdownRightEdge > viewportWidth) {
+      // Dropdown would overflow right edge, position it to the left of the button
+      rightOffset = viewportWidth - rect.left - dropdownWidth
+    }
+
+    // Ensure minimum right offset (don't go off-screen to the left)
+    rightOffset = Math.max(0, rightOffset)
 
     dropdownStyle.value = {
       right: `${rightOffset}px`
@@ -281,23 +291,29 @@ onUnmounted(() => {
 }
 
 .note-title {
-  font-size: 0.875rem;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
   min-width: 0;
+  flex: 1;
+}
+
+.file-path-container {
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: 200px;
 }
 
 .file-path {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-secondary);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
 }
 
 .close-btn {
@@ -371,42 +387,45 @@ onUnmounted(() => {
 .tabs-dropdown-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  width: 1.5rem;
+  justify-content: space-between;
+  width: 2rem;
   height: 1.5rem;
-  padding: 0.25rem;
+  padding: 0.25rem 0.5rem;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
-  color: #667eea;
+  color: var(--text-primary);
   font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px var(--shadow);
+  gap: 0.125rem;
 }
 
 .tabs-dropdown-btn:hover {
-  background: #667eea;
-  color: white;
-  border-color: #667eea;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .tabs-dropdown-btn:active {
   transform: scale(0.98);
 }
 
-.tabs-dropdown-icon {
-  font-size: 0.85rem;
+.tab-count {
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
   line-height: 1;
+  flex-shrink: 0;
 }
 
-.tab-count {
+.dropdown-icon {
   font-size: 0.75rem;
-  font-weight: 600;
-  min-width: 0.75rem;
-  text-align: center;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-left: 0.125rem;
 }
 
 .tabs-dropdown {

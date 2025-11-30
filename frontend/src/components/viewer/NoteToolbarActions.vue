@@ -197,18 +197,17 @@ const executeEditorCommand = (commandName: string) => {
     bubbles: true
   })
 
-  // Try Milkdown editor first
-  const milkdownContainer = document.querySelector('.milkdown-editor-container') as HTMLElement
-  if (milkdownContainer) {
-    milkdownContainer.dispatchEvent(event)
-    return
-  }
-
-  // Fall back to CodeMirror editor
-  const codemirrorEditor = document.querySelector('.codemirror-editor-container') as HTMLElement
-  if (codemirrorEditor) {
-    codemirrorEditor.dispatchEvent(event)
-    return
+  // Dispatch to the editor that is actually active
+  if (isUsingMilkdown.value) {
+    const milkdownContainer = document.querySelector('.milkdown-editor-container') as HTMLElement
+    if (milkdownContainer) {
+      milkdownContainer.dispatchEvent(event)
+    }
+  } else {
+    const codemirrorEditor = document.querySelector('.codemirror-editor-container') as HTMLElement
+    if (codemirrorEditor) {
+      codemirrorEditor.dispatchEvent(event)
+    }
   }
 }
 </script>

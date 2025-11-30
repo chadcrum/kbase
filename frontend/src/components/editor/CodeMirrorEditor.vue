@@ -63,6 +63,7 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null
 let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
 let lastSavedValue = ref<string>(props.modelValue)
 const wordWrapEnabled = ref(true)
+let resizeObserver: ResizeObserver | null = null
 
 // Context menu state
 const showContextMenu = ref(false)
@@ -392,6 +393,11 @@ const insertImageAtCursor = async (imagePath: string, filename: string) => {
   })
 }
 
+// Toolbar action event handler
+const handleToolbarActionEvent = (event: Event) => {
+  handleToolbarAction(event as CustomEvent)
+}
+
 // Initialize CodeMirror editor
 onMounted(() => {
   if (!editorContainer.value) return
@@ -416,13 +422,10 @@ onMounted(() => {
 
     // Add toolbar action event listener (using addEventListener instead of Vue binding
     // to ensure custom events dispatched directly to DOM are properly caught)
-    const toolbarActionListener = (event: Event) => {
-      handleToolbarAction(event as CustomEvent)
-    }
-    editorContainer.value.addEventListener('toolbar-action', toolbarActionListener)
+    editorContainer.value.addEventListener('toolbar-action', handleToolbarActionEvent)
 
     // Handle window resize
-    const resizeObserver = new ResizeObserver(() => {
+    resizeObserver = new ResizeObserver(() => {
       // CodeMirror automatically handles resize, but we can force a refresh if needed
       editorView?.requestMeasure()
     })
@@ -430,14 +433,6 @@ onMounted(() => {
     if (editorContainer.value) {
       resizeObserver.observe(editorContainer.value)
     }
-
-    // Cleanup function for resize observer
-    onBeforeUnmount(() => {
-      resizeObserver.disconnect()
-      if (editorContainer.value) {
-        editorContainer.value.removeEventListener('toolbar-action', toolbarActionListener)
-      }
-    })
   } catch (error) {
     console.error('Failed to initialize CodeMirror editor:', error)
   }
@@ -556,13 +551,24 @@ onBeforeUnmount(() => {
   if (stateSaveTimeout) {
     clearTimeout(stateSaveTimeout)
   }
-  
+
+  // Clean up resize observer
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+
+  // Clean up event listener
+  if (editorContainer.value) {
+    editorContainer.value.removeEventListener('toolbar-action', handleToolbarActionEvent)
+  }
+
   if (editorView) {
     // Save state before destroying
     const state = editorView.state
     const selection = state.selection.main
     const scrollTop = editorView.scrollDOM.scrollTop
-    
+
     if (props.path) {
       updateNoteStateSegment(props.path, 'codemirror', {
         selection: {

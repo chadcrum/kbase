@@ -5,6 +5,7 @@
       v-if="!isPopup"
       :file-path="selectedNote?.path"
       @open-search="handleOpenSearch"
+      @toggle-word-wrap="handleToggleWordWrap"
     />
 
     <!-- Popup title bar (shown only in popup mode) -->
@@ -236,6 +237,12 @@ const handleRetry = () => {
 
 const handleOpenSearch = () => {
   emit('openSearch')
+}
+
+const handleToggleWordWrap = () => {
+  if (codemirrorEditorRef.value && typeof (codemirrorEditorRef.value as any).toggleWordWrap === 'function') {
+    (codemirrorEditorRef.value as any).toggleWordWrap()
+  }
 }
 </script>
 

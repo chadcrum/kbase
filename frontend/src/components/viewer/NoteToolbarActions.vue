@@ -1,7 +1,7 @@
 <template>
   <div class="note-toolbar-actions">
-    <!-- Left section: Editor actions (only for markdown) -->
-    <div class="editor-actions" v-if="isMarkdownFile">
+    <!-- Left section: Editor actions (only for milkdown editor) -->
+    <div class="editor-actions" v-if="isUsingMilkdown">
       <button
         v-for="action in editorActions"
         :key="action.id"
@@ -10,6 +10,17 @@
         :title="action.label"
       >
         {{ action.icon }}
+      </button>
+    </div>
+
+    <!-- Left section: Word wrap toggle (only for codemirror editor) -->
+    <div class="editor-actions" v-if="!isUsingMilkdown && isMarkdownFile">
+      <button
+        class="action-btn"
+        @click="toggleWordWrap"
+        :title="wordWrapTitle"
+      >
+        {{ wordWrapIcon }}
       </button>
     </div>
 
@@ -53,6 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
 // Emits
 const emit = defineEmits<{
   'openSearch': []
+  'toggleWordWrap': []
 }>()
 
 // Store
@@ -73,6 +85,10 @@ const isMarkdownFile = computed(() => {
   return props.filePath?.endsWith('.md') || false
 })
 
+const isUsingMilkdown = computed(() => {
+  return isMarkdownFile.value && editorStore.markdownEditor === 'milkdown'
+})
+
 // Editor toggle
 const toggleEditor = () => {
   editorStore.toggleMarkdownEditor()
@@ -91,6 +107,19 @@ const editorToggleTitle = computed(() => {
 // Search
 const openSearch = () => {
   emit('openSearch')
+}
+
+// Word wrap toggle
+const wordWrapIcon = computed(() => {
+  return '↩️'
+})
+
+const wordWrapTitle = computed(() => {
+  return 'Toggle Word Wrap'
+})
+
+const toggleWordWrap = () => {
+  emit('toggleWordWrap')
 }
 
 // Editor actions for markdown files

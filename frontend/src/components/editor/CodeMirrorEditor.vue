@@ -62,6 +62,7 @@ let editorView: EditorView | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
 let stateSaveTimeout: ReturnType<typeof setTimeout> | null = null
 let lastSavedValue = ref<string>(props.modelValue)
+const wordWrapEnabled = ref(true)
 
 // Context menu state
 const showContextMenu = ref(false)
@@ -137,9 +138,36 @@ const focus = () => {
   editorView.focus()
 }
 
-// Expose focus method to parent component
+// Public method to toggle word wrap
+const toggleWordWrap = () => {
+  if (!editorView) return
+
+  wordWrapEnabled.value = !wordWrapEnabled.value
+
+  // Recreate editor with new extensions
+  const currentContent = editorView.state.doc.toString()
+  const newState = EditorState.create({
+    doc: currentContent,
+    extensions: getExtensions()
+  })
+
+  // Preserve selection and scroll position
+  const selection = editorView.state.selection.main
+  const scrollTop = editorView.scrollDOM.scrollTop
+
+  editorView.setState(newState)
+  editorView.dispatch({
+    selection: { anchor: selection.from, head: selection.to }
+  })
+
+  // Restore scroll position
+  editorView.scrollDOM.scrollTop = scrollTop
+}
+
+// Expose focus and toggleWordWrap methods to parent component
 defineExpose({
-  focus
+  focus,
+  toggleWordWrap
 })
 
 // Detect mobile device
@@ -155,7 +183,7 @@ const getExtensions = (): Extension[] => {
   const extensions: Extension[] = [
     // Basic editor configuration
     EditorState.tabSize.of(2),
-    EditorView.lineWrapping,
+    ...(wordWrapEnabled.value ? [EditorView.lineWrapping] : []),
     EditorView.editable.of(!props.readonly && !props.disabled),
     // Line numbers (disabled on mobile)
     ...(isMobile ? [] : [lineNumbers()]),

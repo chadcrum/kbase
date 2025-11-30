@@ -10,6 +10,7 @@
     <NoteToolbarActions
       :file-path="filePath"
       @open-search="handleOpenSearch"
+      @toggle-word-wrap="handleToggleWordWrap"
     />
   </div>
 </template>
@@ -35,6 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
 // Emits
 const emit = defineEmits<{
   'openSearch': []
+  'toggleWordWrap': []
 }>()
 
 // Stores
@@ -54,6 +56,11 @@ const toolbarLeft = computed(() => {
 // Handle open search event from NoteToolbarActions
 const handleOpenSearch = () => {
   emit('openSearch')
+}
+
+// Handle word wrap toggle event from NoteToolbarActions
+const handleToggleWordWrap = () => {
+  emit('toggleWordWrap')
 }
 </script>
 

@@ -267,7 +267,7 @@ const showMobileToggleButton = computed(() => {
 })
 
 const mobileToggleIcon = computed(() => {
-  return '»' // Clicking will show editor
+  return '☰' // Hamburger icon for consistency
 })
 
 const mobileToggleTitle = computed(() => {

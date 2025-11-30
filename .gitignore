@@ -452,3 +452,4 @@ sw.js
 workbox-*.js
 a.out
 .aider*
+.claude/settings.local.json

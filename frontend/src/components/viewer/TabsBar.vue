@@ -238,17 +238,8 @@ const toggleSidebar = () => {
 }
 
 const sidebarToggleIcon = computed(() => {
-  if (uiStore.isMobileView) {
-    // Mobile: show opposite of current pane
-    return uiStore.activeMobilePane === 'sidebar'
-      ? '»'  // Clicking will show editor
-      : '«';   // Clicking will show sidebar
-  } else {
-    // Desktop: show based on sidebar state
-    return uiStore.sidebarCollapsed
-      ? '»'
-      : '«';
-  }
+  // Always use hamburger icon for consistency across all components
+  return '☰'
 })
 
 const sidebarToggleTitle = computed(() => {
@@ -1370,6 +1361,17 @@ defineExpose({
 
 .tabs-dropdown::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
+}
+
+/* Icon normalization for consistent alignment */
+.toggle-icon,
+.editor-icon,
+.search-icon,
+.tabs-dropdown-icon,
+.tabs-dropdown-item-icon {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-variant-emoji: text;
+  vertical-align: middle;
 }
 
 /* Responsive design */

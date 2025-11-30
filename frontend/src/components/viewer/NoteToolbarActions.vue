@@ -263,6 +263,17 @@ const executeEditorCommand = (commandName: string) => {
 .search-icon {
   font-size: 0.85rem;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Icon normalization for consistent alignment */
+.editor-icon,
+.search-icon {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-variant-emoji: text;
+  vertical-align: middle;
 }
 
 /* Responsive design */

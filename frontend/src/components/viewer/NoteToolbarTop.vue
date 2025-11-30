@@ -381,7 +381,6 @@ onUnmounted(() => {
 
 .toggle-icon {
   line-height: 1;
-  font-weight: bold;
 }
 
 /* Tabs dropdown */
@@ -396,12 +395,12 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   width: 2rem;
-  height: 1.5rem;
+  height: 2rem;
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: var(--text-primary);
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   border-radius: 4px;
@@ -563,6 +562,19 @@ onUnmounted(() => {
   background: var(--text-tertiary);
 }
 
+/* Icon normalization for consistent alignment */
+.toggle-icon,
+.dropdown-icon,
+.tab-count,
+.tabs-dropdown-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-variant-emoji: text;
+  vertical-align: middle;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .note-toolbar-top {
@@ -583,12 +595,12 @@ onUnmounted(() => {
   .close-btn {
     width: 2.25rem;
     height: 2.25rem;
-    font-size: 1.125rem;
+    font-size: 1.25rem;
   }
 
   .tabs-dropdown-icon,
   .tab-count {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
   }
 }
 </style>

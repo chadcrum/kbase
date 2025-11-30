@@ -6,7 +6,6 @@
     @touchstart="handleEditorClick"
     @contextmenu.prevent="handleContextMenu"
     @paste="handlePaste"
-    @toolbar-action="handleToolbarAction"
   ></div>
 
   <!-- Context Menu -->
@@ -415,12 +414,19 @@ onMounted(() => {
       restoreEditorState()
     })
 
+    // Add toolbar action event listener (using addEventListener instead of Vue binding
+    // to ensure custom events dispatched directly to DOM are properly caught)
+    const toolbarActionListener = (event: Event) => {
+      handleToolbarAction(event as CustomEvent)
+    }
+    editorContainer.value.addEventListener('toolbar-action', toolbarActionListener)
+
     // Handle window resize
     const resizeObserver = new ResizeObserver(() => {
       // CodeMirror automatically handles resize, but we can force a refresh if needed
       editorView?.requestMeasure()
     })
-    
+
     if (editorContainer.value) {
       resizeObserver.observe(editorContainer.value)
     }
@@ -428,6 +434,9 @@ onMounted(() => {
     // Cleanup function for resize observer
     onBeforeUnmount(() => {
       resizeObserver.disconnect()
+      if (editorContainer.value) {
+        editorContainer.value.removeEventListener('toolbar-action', toolbarActionListener)
+      }
     })
   } catch (error) {
     console.error('Failed to initialize CodeMirror editor:', error)

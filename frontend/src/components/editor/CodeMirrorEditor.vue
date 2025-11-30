@@ -6,6 +6,7 @@
     @touchstart="handleEditorClick"
     @contextmenu.prevent="handleContextMenu"
     @paste="handlePaste"
+    @toolbar-action="handleToolbarAction"
   ></div>
 
   <!-- Context Menu -->
@@ -23,7 +24,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { EditorState, Extension } from '@codemirror/state'
 import { EditorView, keymap, ViewUpdate, lineNumbers, drawSelection } from '@codemirror/view'
-import { indentWithTab, defaultKeymap } from '@codemirror/commands'
+import { indentWithTab, defaultKeymap, undo, redo } from '@codemirror/commands'
 import { searchKeymap, search } from '@codemirror/search'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { useThemeStore } from '@/stores/theme'
@@ -310,6 +311,23 @@ const handleContextMenuAction = (action: string) => {
   switch (action) {
     case 'insert-date':
       insertDateAtCursor()
+      break
+  }
+}
+
+// Toolbar action handler
+const handleToolbarAction = (event: CustomEvent) => {
+  if (!editorView || props.disabled || props.readonly) return
+
+  const { command } = event.detail
+  if (!command) return
+
+  switch (command) {
+    case 'Undo':
+      undo(editorView)
+      break
+    case 'Redo':
+      redo(editorView)
       break
   }
 }

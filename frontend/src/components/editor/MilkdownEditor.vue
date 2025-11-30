@@ -1010,18 +1010,22 @@ const handleToolbarAction = async (event: CustomEvent) => {
   await editor.action((ctx) => {
     const commandManager = ctx.get(commandsCtx)
 
-    // Map toolbar command names to Milkdown command keys
-    const commandMap: Record<string, any> = {
-      'ToggleBold': commandManager.call(toggleStrongCommand.key),
-      'ToggleItalic': commandManager.call(toggleEmphasisCommand.key),
-      'TurnIntoH2': commandManager.call(wrapInHeadingCommand.key, { level: 2 }),
-      'WrapInBulletList': commandManager.call(wrapInBulletListCommand.key),
-      'TurnIntoCodeFence': commandManager.call(setBlockTypeCommand.key, { type: 'code_block' })
-    }
-
-    const milkdownCommand = commandMap[command]
-    if (milkdownCommand) {
-      return milkdownCommand
+    // Execute the appropriate command based on the toolbar action
+    switch (command) {
+      case 'ToggleBold':
+        return commandManager.call(toggleStrongCommand.key)
+      case 'ToggleItalic':
+        return commandManager.call(toggleEmphasisCommand.key)
+      case 'TurnIntoH2':
+        return commandManager.call(wrapInHeadingCommand.key, { level: 2 })
+      case 'WrapInBulletList':
+        return commandManager.call(wrapInBulletListCommand.key)
+      case 'TurnIntoCodeFence':
+        return commandManager.call(setBlockTypeCommand.key, { type: 'code_block' })
+      case 'Undo':
+        return commandManager.call(undoCommand.key)
+      case 'Redo':
+        return commandManager.call(redoCommand.key)
     }
   })
 }

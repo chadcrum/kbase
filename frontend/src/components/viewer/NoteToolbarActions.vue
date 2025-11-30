@@ -13,9 +13,24 @@
       </button>
     </div>
 
-    <!-- Left section: Word wrap toggle (only for codemirror editor) -->
-    <div class="editor-actions" v-if="!isUsingMilkdown && isMarkdownFile">
+    <!-- Left section: Editor actions (only for codemirror editor) -->
+    <div class="editor-actions" v-if="!isUsingMilkdown">
       <button
+        class="action-btn"
+        @click="executeEditorCommand('Undo')"
+        title="Undo (Ctrl+Z)"
+      >
+        ↶
+      </button>
+      <button
+        class="action-btn"
+        @click="executeEditorCommand('Redo')"
+        title="Redo (Ctrl+Y)"
+      >
+        ↷
+      </button>
+      <button
+        v-if="isMarkdownFile"
         class="action-btn"
         @click="toggleWordWrap"
         :title="wordWrapTitle"
@@ -156,22 +171,45 @@ const editorActions = computed<EditorAction[]>(() => {
       icon: '</>',
       label: 'Code Block',
       onClick: () => executeEditorCommand('TurnIntoCodeFence')
+    },
+    {
+      id: 'undo',
+      icon: '↶',
+      label: 'Undo (Ctrl+Z)',
+      onClick: () => executeEditorCommand('Undo'),
+      shortcut: 'Ctrl+Z'
+    },
+    {
+      id: 'redo',
+      icon: '↷',
+      label: 'Redo (Ctrl+Y)',
+      onClick: () => executeEditorCommand('Redo'),
+      shortcut: 'Ctrl+Y'
     }
   ]
 })
 
-// Execute editor command by finding the active Milkdown editor
+// Execute editor command by dispatching to the active editor
 const executeEditorCommand = (commandName: string) => {
-  // Find the active Milkdown editor in the DOM
-  const milkdownEditor = document.querySelector('.milkdown-editor-container .milkdown .editor .ProseMirror') as HTMLElement
-  if (!milkdownEditor) return
-
-  // Create and dispatch a custom event that the MilkdownEditor can listen to
+  // Create the custom event
   const event = new CustomEvent('toolbar-action', {
     detail: { command: commandName },
     bubbles: true
   })
-  milkdownEditor.dispatchEvent(event)
+
+  // Try Milkdown editor first
+  const milkdownContainer = document.querySelector('.milkdown-editor-container') as HTMLElement
+  if (milkdownContainer) {
+    milkdownContainer.dispatchEvent(event)
+    return
+  }
+
+  // Fall back to CodeMirror editor
+  const codemirrorEditor = document.querySelector('.codemirror-editor-container') as HTMLElement
+  if (codemirrorEditor) {
+    codemirrorEditor.dispatchEvent(event)
+    return
+  }
 }
 </script>
 

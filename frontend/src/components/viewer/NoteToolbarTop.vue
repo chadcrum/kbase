@@ -92,6 +92,11 @@
           {{ noteTitle }}
         </div>
       </div>
+
+      <!-- File timestamps (hidden on mobile) -->
+      <div v-if="formattedTimestamps" class="file-timestamps">
+        {{ formattedTimestamps }}
+      </div>
     </div>
 
     <!-- Right section -->
@@ -168,6 +173,7 @@ import { computed, ref, onMounted, onUnmounted, onBeforeUnmount, nextTick } from
 import { useTabsStore } from '@/stores/tabs'
 import { useVaultStore } from '@/stores/vault'
 import { useUIStore } from '@/stores/ui'
+import { formatCompactTimestamp } from '@/utils/dateUtils'
 import ContextMenu, { type ContextMenuItem } from '@/components/sidebar/ContextMenu.vue'
 import FileHistoryModal from '@/components/common/FileHistoryModal.vue'
 import ShareDialog from '@/components/common/ShareDialog.vue'
@@ -228,6 +234,50 @@ const noteTitle = computed(() => {
   const parts = props.filePath.split('/')
   const filename = parts[parts.length - 1]
   return filename.endsWith('.md') ? filename.slice(0, -3) : filename || 'Untitled'
+})
+
+// Get file timestamps from vault store
+const findFileInTree = (node: any, path: string): any => {
+  if (!node) return null
+
+  // Check if this node matches the path
+  if (node.path === path) return node
+
+  // Search in children if they exist
+  if (node.children && Array.isArray(node.children)) {
+    for (const child of node.children) {
+      const found = findFileInTree(child, path)
+      if (found) return found
+    }
+  }
+
+  return null
+}
+
+const fileTimestamps = computed(() => {
+  if (!props.filePath) return { created: null, modified: null }
+
+  const fileNode = findFileInTree(vaultStore.fileTree, props.filePath)
+  if (!fileNode) return { created: null, modified: null }
+
+  return {
+    created: fileNode.created || null,
+    modified: fileNode.modified || null
+  }
+})
+
+const formattedTimestamps = computed(() => {
+  const { created, modified } = fileTimestamps.value
+  if (!created && !modified) return ''
+
+  let result = ''
+  if (created) result += `c: ${formatCompactTimestamp(created)}`
+  if (modified) {
+    if (result) result += ' | '
+    result += `m: ${formatCompactTimestamp(modified)}`
+  }
+
+  return result
 })
 
 // Context menu items for note title
@@ -704,6 +754,17 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
+.file-timestamps {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
 .close-btn {
   display: flex;
   align-items: center;
@@ -963,6 +1024,10 @@ onBeforeUnmount(() => {
   }
 
   .file-path {
+    display: none;
+  }
+
+  .file-timestamps {
     display: none;
   }
 
